@@ -17,6 +17,7 @@ const sections = [
   { id: 'technical', title: '5. 技术/交易面' },
   { id: 'evidence', title: '6. 证据链' },
   { id: 'nextsteps', title: '7. 下一步研究' },
+  { id: 'disclaimer', title: '8. 免责声明' },
 ];
 
 export function ResearchCard({ card }: ResearchCardProps) {
@@ -44,7 +45,7 @@ export function ResearchCard({ card }: ResearchCardProps) {
             </div>
 
             {/* 卡片头部 - 增强质感 */}
-            <div className="bg-white rounded-2xl border border-[oklch(0.9_0.01_220)] shadow-[0_4px_24px_-10px_rgba(0,0,0,0.08)] p-7 mb-6">
+            <div className="bg-white rounded-2xl border border-[oklch(0.9_0.01_220)] shadow-[0_4px_24px_-10px_rgba(0,0,0,0.08)] p-7 mb-6 relative">
               {/* 装饰线 */}
               <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[oklch(0.35_0.08_220)] via-[oklch(0.5_0.06_220)] to-[oklch(0.35_0.08_220)] rounded-t-2xl opacity-60"></div>
 
@@ -320,7 +321,9 @@ export function ResearchCard({ card }: ResearchCardProps) {
             </ResearchCardSection>
 
             {/* 8. 免责声明 */}
-            <DisclaimerBox text={card.disclaimer} />
+            <section id="disclaimer">
+              <DisclaimerBox text={card.disclaimer} />
+            </section>
 
             {/* 页脚 - 适合截图 */}
             <div className="text-center text-xs text-[oklch(0.65_0.03_220)] pb-8">
@@ -338,9 +341,8 @@ export function ResearchCard({ card }: ResearchCardProps) {
           <div className="hidden lg:block w-56 flex-shrink-0">
             <div className="sticky top-10">
               <div className="bg-white rounded-2xl border border-[oklch(0.9_0.01_220)] shadow-[0_4px_24px_-10px_rgba(0,0,0,0.08)] p-5">
-                <div className="text-xs font-bold text-[oklch(0.35_0.08_220)] mb-4 px-2 tracking-wide flex items-center gap-2">
-                  <div className="w-1 h-1 rounded-full bg-[oklch(0.35_0.08_220)]"></div>
-                  研究框架
+                <div className="text-xs font-bold text-[oklch(0.35_0.08_220)] mb-4 px-2 tracking-wide">
+                  研究卡结构
                 </div>
                 <nav className="space-y-1">
                   {sections.map((section) => (
@@ -352,12 +354,6 @@ export function ResearchCard({ card }: ResearchCardProps) {
                       {section.title}
                     </a>
                   ))}
-                  <a
-                    href="#disclaimer"
-                    className="block px-3 py-2 text-sm text-[oklch(0.55_0.03_220)] hover:text-[oklch(0.35_0.08_220)] hover:bg-[oklch(0.96_0.01_220)] rounded-lg transition-all hover:pl-4"
-                  >
-                    8. 免责声明
-                  </a>
                 </nav>
               </div>
             </div>
