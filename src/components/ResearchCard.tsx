@@ -27,59 +27,136 @@ export function ResearchCard({ card }: ResearchCardProps) {
         <div className="flex flex-col lg:flex-row gap-10">
           {/* 主内容区 - 适合截图 */}
           <div className="flex-1 min-w-0">
-            {/* 页面头部 */}
-            <div className="text-center mb-8">
-              <div className="inline-flex items-center gap-2 text-[oklch(0.35_0.08_220)] mb-3">
-                <div className="w-9 h-9 rounded-xl bg-[oklch(0.35_0.08_220)] flex items-center justify-center shadow-[0_4px_15px_-6px_rgba(0,0,0,0.3)]">
-                  <span className="text-white font-bold text-sm">M</span>
-                </div>
-                <h1 className="text-lg font-semibold tracking-tight">Moki Market</h1>
-              </div>
-              <h2 className="text-base text-[oklch(0.55_0.03_220)] mb-3 tracking-wide">
-                Research Card
-              </h2>
-              <div className="inline-flex items-center gap-2 bg-[oklch(0.96_0.01_220)] text-[oklch(0.55_0.03_220)] px-4 py-1.5 rounded-full text-xs border border-[oklch(0.9_0.01_220)] shadow-sm">
-                <span className="w-1.5 h-1.5 rounded-full bg-[oklch(0.65_0.08_70)] animate-pulse"></span>
-                Sample / Mock
-              </div>
-            </div>
+            {/* 截图友好版摘要卡 */}
+            <div className="bg-white rounded-3xl border border-[oklch(0.9_0.01_220)] shadow-[0_8px_40px_-15px_rgba(0,0,0,0.12)] p-6 sm:p-8 mb-8 relative overflow-hidden">
+              {/* 装饰背景 */}
+              <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[oklch(0.35_0.08_220)] via-[oklch(0.55_0.06_220)] to-[oklch(0.35_0.08_220)]"></div>
+              <div className="absolute -top-24 -right-24 w-48 h-48 bg-[oklch(0.35_0.08_220)] opacity-5 rounded-full blur-3xl"></div>
+              <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-[oklch(0.55_0.06_220)] opacity-5 rounded-full blur-3xl"></div>
 
-            {/* 卡片头部 - 增强质感 */}
-            <div className="bg-white rounded-2xl border border-[oklch(0.9_0.01_220)] shadow-[0_4px_24px_-10px_rgba(0,0,0,0.08)] p-7 mb-6 relative">
-              {/* 装饰线 */}
-              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[oklch(0.35_0.08_220)] via-[oklch(0.5_0.06_220)] to-[oklch(0.35_0.08_220)] rounded-t-2xl opacity-60"></div>
-
-              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-5">
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[oklch(0.96_0.01_220)] to-[oklch(0.92_0.01_220)] flex items-center justify-center border border-[oklch(0.9_0.01_220)] shadow-inner">
-                    <span className="text-2xl font-bold text-[oklch(0.35_0.08_220)] tracking-tight">
-                      {card.ticker}
-                    </span>
-                  </div>
-                  <div>
-                    <div className="text-sm text-[oklch(0.55_0.03_220)] mb-0.5">
-                      {card.companyName}
+              {/* 顶部区域 */}
+              <div className="relative">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-[oklch(0.35_0.08_220)] flex items-center justify-center shadow-[0_4px_12px_-6px_rgba(0,0,0,0.3)]">
+                      <span className="text-white font-bold text-sm">M</span>
                     </div>
-                    <div className="text-xs text-[oklch(0.65_0.03_220)] font-mono bg-[oklch(0.96_0.01_220)] px-2 py-0.5 rounded-md inline-block border border-[oklch(0.92_0.01_220)]">
-                      {card.cardType}
+                    <div>
+                      <div className="text-sm font-semibold text-[oklch(0.35_0.08_220)] tracking-wide">
+                        Moki Market Research Card
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="inline-flex items-center gap-2 bg-[oklch(0.96_0.01_220)] text-[oklch(0.55_0.03_220)] px-3 py-1.5 rounded-full text-xs border border-[oklch(0.92_0.01_220)]">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[oklch(0.65_0.08_70)]"></span>
+                      Sample / Mock
+                    </div>
+                    <div className="text-xs text-[oklch(0.55_0.03_220)] font-mono bg-white px-3 py-1.5 rounded-lg border border-[oklch(0.92_0.01_220)]">
+                      {card.updatedAt}
                     </div>
                   </div>
                 </div>
-                <div className="flex flex-col items-end gap-1">
-                  <div className="text-xs text-[oklch(0.55_0.03_220)]">更新时间</div>
-                  <div className="text-sm text-[oklch(0.35_0.08_220)] font-mono font-medium bg-[oklch(0.96_0.01_220)] px-3 py-1.5 rounded-lg border border-[oklch(0.92_0.01_220)]">
-                    {card.updatedAt}
+
+                {/* 标题区 */}
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6 pb-6 border-b border-dashed border-[oklch(0.92_0.01_220)]">
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[oklch(0.96_0.01_220)] to-[oklch(0.93_0.01_220)] flex items-center justify-center border border-[oklch(0.9_0.01_220)] shadow-inner">
+                      <span className="text-3xl font-bold text-[oklch(0.35_0.08_220)] tracking-tight">
+                        {card.ticker}
+                      </span>
+                    </div>
+                    <div>
+                      <div className="text-sm text-[oklch(0.55_0.03_220)] mb-1">
+                        {card.companyName}
+                      </div>
+                      <h1 className="text-xl font-bold text-[oklch(0.25_0.02_220)] leading-tight tracking-tight mb-1">
+                        {card.title}
+                      </h1>
+                      <p className="text-[oklch(0.55_0.03_220)] leading-relaxed text-sm">
+                        {card.subtitle}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="pt-4 border-t border-dashed border-[oklch(0.92_0.01_220)]">
-                <h2 className="text-xl font-semibold text-[oklch(0.25_0.02_220)] mb-2 leading-tight tracking-tight">
-                  {card.title}
-                </h2>
-                <p className="text-[oklch(0.55_0.03_220)] leading-relaxed text-[15px]">
-                  {card.subtitle}
-                </p>
+                {/* 内容区 - 两列网格 */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-6">
+                  {/* 核心观察指标 */}
+                  <div className="sm:col-span-1">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-1.5 h-1.5 rounded-full bg-[oklch(0.35_0.08_220)]"></div>
+                      <span className="text-xs font-bold text-[oklch(0.35_0.08_220)] tracking-wide uppercase">
+                        核心观察
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      {card.fundamentals.keyMetrics.slice(0, 3).map((metric, idx) => (
+                        <div key={idx} className="bg-[oklch(0.97_0.008_220)] rounded-xl p-3 border border-[oklch(0.92_0.01_220)]">
+                          <div className="text-[10px] text-[oklch(0.55_0.03_220)] uppercase tracking-wide mb-1">
+                            {metric.label}
+                          </div>
+                          <div className="text-base font-bold text-[oklch(0.35_0.08_220)]">
+                            {metric.value}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 风险提醒 */}
+                  <div className="sm:col-span-1">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-1.5 h-1.5 rounded-full bg-[oklch(0.65_0.08_70)]"></div>
+                      <span className="text-xs font-bold text-[oklch(0.55_0.03_220)] tracking-wide uppercase">
+                        风险提醒
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      {card.fundamentals.risks.slice(0, 3).map((risk, idx) => (
+                        <div key={idx} className="bg-[oklch(0.985_0.005_70)] rounded-xl p-3 border border-[oklch(0.88_0.08_70/0.25)]">
+                          <div className="flex items-start gap-2">
+                            <span className="text-[oklch(0.65_0.08_70)] mt-0.5 text-xs">•</span>
+                            <span className="text-sm text-[oklch(0.45_0.04_220)] leading-relaxed">
+                              {risk}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 下一步研究 */}
+                  <div className="sm:col-span-1">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-1.5 h-1.5 rounded-full bg-[oklch(0.45_0.05_220)]"></div>
+                      <span className="text-xs font-bold text-[oklch(0.45_0.05_220)] tracking-wide uppercase">
+                        下一步研究
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      {card.nextSteps.slice(0, 3).map((step, idx) => (
+                        <div key={idx} className="bg-[oklch(0.96_0.01_220)] rounded-xl p-3 border border-[oklch(0.9_0.01_220)]">
+                          <div className="flex items-start justify-between gap-2 mb-1">
+                            <span className="text-sm font-semibold text-[oklch(0.25_0.02_220)] leading-relaxed">
+                              {step.task}
+                            </span>
+                          </div>
+                          <div className="text-xs text-[oklch(0.55_0.03_220)] font-mono">
+                            {step.followUpDate}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 底部免责声明 */}
+                <div className="pt-4 border-t border-dashed border-[oklch(0.92_0.01_220)]">
+                  <p className="text-[10px] text-[oklch(0.55_0.03_220)] leading-relaxed text-center">
+                    {card.disclaimer}
+                  </p>
+                </div>
               </div>
             </div>
 
