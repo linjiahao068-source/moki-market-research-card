@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { ResearchCard as ResearchCardType } from '@/types/research-card';
 import { ResearchCardSection } from './ResearchCardSection';
 import { EvidenceItem } from './EvidenceItem';
@@ -27,6 +28,19 @@ export function ResearchCard({ card }: ResearchCardProps) {
         <div className="flex flex-col lg:flex-row gap-10">
           {/* 主内容区 - 适合截图 */}
           <div className="flex-1 min-w-0">
+            {/* 返回按钮 */}
+            <div className="mb-6">
+              <Link
+                href="/"
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm text-[oklch(0.45_0.05_220)] hover:text-[oklch(0.35_0.08_220)] hover:bg-white rounded-xl border border-transparent hover:border-[oklch(0.9_0.01_220)] transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                返回首页
+              </Link>
+            </div>
+
             {/* 截图友好版摘要卡 */}
             <div className="bg-white rounded-3xl border border-[oklch(0.9_0.01_220)] shadow-[0_8px_40px_-15px_rgba(0,0,0,0.12)] p-6 sm:p-8 mb-8 relative overflow-hidden">
               {/* 装饰背景 */}
