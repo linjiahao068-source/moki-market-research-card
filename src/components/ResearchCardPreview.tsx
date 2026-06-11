@@ -16,12 +16,17 @@ export function ResearchCardPreview({ card }: ResearchCardPreviewProps) {
             </span>
           </div>
           <div>
-            <div className="text-sm text-[oklch(0.55_0.03_220)] mb-1">
+            <div className="text-sm text-[oklch(0.55_0.03_220)] mb-2">
               {card.companyName}
             </div>
-            <div className="inline-flex items-center gap-2 text-xs text-[oklch(0.55_0.03_220)] bg-[oklch(0.96_0.01_220)] px-2 py-1 rounded-full border border-[oklch(0.92_0.01_220)]">
-              <span className="w-1.5 h-1.5 rounded-full bg-[oklch(0.65_0.08_70)]"></span>
-              Sample / Mock
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="inline-flex items-center gap-2 text-xs text-[oklch(0.55_0.03_220)] bg-[oklch(0.96_0.01_220)] px-2 py-1 rounded-full border border-[oklch(0.92_0.01_220)]">
+                <span className="w-1.5 h-1.5 rounded-full bg-[oklch(0.65_0.08_70)]"></span>
+                Sample / Mock
+              </div>
+              <div className="text-xs text-[oklch(0.55_0.03_220)] bg-[oklch(0.96_0.01_220)] px-2 py-1 rounded-full border border-[oklch(0.92_0.01_220)]">
+                {card.cardType}
+              </div>
             </div>
           </div>
         </div>
@@ -34,22 +39,17 @@ export function ResearchCardPreview({ card }: ResearchCardPreviewProps) {
         <h2 className="text-xl font-semibold text-[oklch(0.25_0.02_220)] mb-2 leading-tight">
           {card.title}
         </h2>
-        <p className="text-sm text-[oklch(0.55_0.03_220)] leading-relaxed">
+        <p className="text-sm text-[oklch(0.55_0.03_220)] leading-relaxed mb-4">
           {card.subtitle}
         </p>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
-        {card.fundamentals.keyMetrics.slice(0, 3).map((metric) => (
-          <div key={metric.label} className="bg-[oklch(0.97_0.008_220)] rounded-xl p-3 border border-[oklch(0.92_0.01_220)]">
-            <div className="text-[10px] text-[oklch(0.55_0.03_220)] uppercase tracking-wide mb-1">
-              {metric.label}
-            </div>
-            <div className="text-base font-bold text-[oklch(0.35_0.08_220)]">
-              {metric.value}
-            </div>
+        <div className="bg-[oklch(0.97_0.008_220)] rounded-xl p-4 border border-[oklch(0.92_0.01_220)]">
+          <div className="text-xs font-semibold text-[oklch(0.35_0.08_220)] mb-2">
+            一句话摘要
           </div>
-        ))}
+          <p className="text-sm text-[oklch(0.35_0.05_220)] leading-relaxed">
+            {card.summary}
+          </p>
+        </div>
       </div>
 
       <Link

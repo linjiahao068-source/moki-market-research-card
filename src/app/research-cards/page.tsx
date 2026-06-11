@@ -4,15 +4,15 @@ import { ResearchCardPreview } from '@/components/ResearchCardPreview';
 import { researchCards } from '@/data/researchCards';
 
 export const metadata: Metadata = {
-  title: "研究卡案例｜Moki Market",
-  description: "Moki Market 静态研究卡 Demo 列表。",
+  title: "研究卡样例库｜Moki Market",
+  description: "把 X 舆情、英文新闻、财报线索和市场波动整理成可复盘的研究卡。",
   openGraph: {
-    title: "研究卡案例｜Moki Market",
-    description: "Moki Market 静态研究卡 Demo 列表。",
+    title: "研究卡样例库｜Moki Market",
+    description: "把 X 舆情、英文新闻、财报线索和市场波动整理成可复盘的研究卡。",
   },
   twitter: {
-    title: "研究卡案例｜Moki Market",
-    description: "Moki Market 静态研究卡 Demo 列表。",
+    title: "研究卡样例库｜Moki Market",
+    description: "把 X 舆情、英文新闻、财报线索和市场波动整理成可复盘的研究卡。",
   },
 };
 
@@ -41,10 +41,10 @@ export default function ResearchCardsPage() {
                 <span className="text-sm font-semibold tracking-wide">Moki Market</span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-bold text-[oklch(0.25_0.02_220)] mb-3 tracking-tight">
-                研究卡案例
+                Moki Market 研究卡样例库
               </h1>
               <p className="text-[oklch(0.55_0.03_220)] leading-relaxed max-w-2xl">
-                多研究卡 Demo 的统一入口。当前仅保留 ORCL 静态研究卡案例，用于展示信息整理、证据链和下一步研究任务的结构。
+                把 X 舆情、英文新闻、财报线索和市场波动整理成可复盘的研究卡。
               </p>
             </div>
           </div>
