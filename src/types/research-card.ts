@@ -54,6 +54,7 @@ export interface TechnicalContext {
 }
 
 export interface ResearchCard {
+  slug: string;
   ticker: string;
   companyName: string;
   title: string;

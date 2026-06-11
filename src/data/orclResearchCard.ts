@@ -1,6 +1,7 @@
 import { ResearchCard } from '@/types/research-card';
 
 export const orclResearchCard: ResearchCard = {
+  slug: 'orcl-ai-cloud',
   ticker: 'ORCL',
   companyName: 'Oracle Corporation',
   title: 'ORCL｜AI 云收入兑现研究卡',

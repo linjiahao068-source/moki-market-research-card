@@ -31,7 +31,7 @@ export default function Home() {
         {/* 按钮 */}
         <div className="text-center mb-8">
           <Link
-            href="/research-card"
+            href="/research-card/orcl-ai-cloud"
             className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-[oklch(0.35_0.08_220)] text-white rounded-xl font-medium shadow-[0_4px_15px_-6px_rgba(0,0,0,0.3)] hover:bg-[oklch(0.32_0.08_220)] transition-colors"
           >
             查看 ORCL 研究卡案例
