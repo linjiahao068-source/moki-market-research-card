@@ -8,7 +8,12 @@ export const orclResearchCard: ResearchCard = {
   subtitle: '当前更像：基本面验证 + 情绪分歧，而不是单纯情绪噪音',
   updatedAt: '2026-06-11',
   cardType: 'single-stock',
-  summary: 'Oracle 正处于 AI 云叙事验证期，OCI 增长是核心观察线索，RPO 转收入节奏决定短期业绩弹性，capex 投入规模和数据中心交付节奏影响中期盈利能力。',
+  isMock: true,
+  summary: {
+    oneLine: 'Oracle 正处于 AI 云叙事验证期，OCI 增长是核心观察线索，RPO 转收入节奏决定短期业绩弹性，capex 投入规模和数据中心交付节奏影响中期盈利能力。',
+    currentState: '当前市场讨论从单纯 AI 云叙事，转向订单、收入确认、基础设施投入和交付节奏的基本面验证。',
+    keyQuestion: 'RPO 能否按照可验证节奏转化为 OCI 收入，同时不让 capex 对现金流造成过大压力？'
+  },
   sentiment: {
     heatLevel: 7.5,
     direction: 'high-disagreement',
@@ -29,11 +34,31 @@ export const orclResearchCard: ResearchCard = {
       '技术支持和咨询服务'
     ],
     keyMetrics: [
-      { label: 'OCI 收入同比增速', value: '~40%', note: '最近季度' },
-      { label: '总 RPO', value: '$85B+', note: '剩余履约义务' },
-      { label: '季度 capex', value: '~$3.5B', note: '数据中心投入' },
-      { label: '毛利率', value: '~60%', note: '非 GAAP' },
-      { label: '经营现金流', value: '~$15B/年', note: 'TTM' }
+      {
+        label: 'OCI 收入同比增速',
+        description: '~40%（最近季度）',
+        whyItMatters: '用于观察 AI 云需求是否正在转化为可见收入。'
+      },
+      {
+        label: '总 RPO',
+        description: '$85B+（剩余履约义务）',
+        whyItMatters: '用于观察未来收入池规模和订单兑现节奏。'
+      },
+      {
+        label: '季度 capex',
+        description: '~$3.5B（数据中心投入）',
+        whyItMatters: '用于观察基础设施投入是否对现金流形成压力。'
+      },
+      {
+        label: '毛利率',
+        description: '~60%（非 GAAP）',
+        whyItMatters: '用于观察云基础设施扩张期间盈利能力是否稳定。'
+      },
+      {
+        label: '经营现金流',
+        description: '~$15B/年（TTM）',
+        whyItMatters: '用于观察高投入阶段的资金承受能力。'
+      }
     ],
     risks: [
       'AI 云竞争加剧导致市场份额压力',
@@ -43,18 +68,43 @@ export const orclResearchCard: ResearchCard = {
     ]
   },
   events: {
-    policy: [],
-    product: [
-      'OCI GenAI 服务多区域上线',
-      'Autonomous Database AI 增强功能发布'
-    ],
-    macro: [
-      '美元汇率波动影响海外收入',
-      '企业 IT 支出预算周期观察'
-    ],
-    earningsCalendar: [
-      { date: '2026-09-15', event: 'FY27 Q1 财报发布' },
-      { date: '2026-12-15', event: 'FY27 Q2 财报发布' }
+    items: [
+      {
+        type: 'product',
+        title: 'OCI GenAI 服务多区域上线',
+        description: 'OCI GenAI 服务扩展到更多区域，增强企业 AI 云部署能力。',
+        impactQuestion: '区域扩展是否能提升 AI 云客户转化和收入确认速度？'
+      },
+      {
+        type: 'product',
+        title: 'Autonomous Database AI 增强功能发布',
+        description: '数据库产品继续加入 AI 能力，强化传统数据库业务和云服务之间的连接。',
+        impactQuestion: 'AI 功能增强是否能提升现有数据库客户迁移到 OCI 的动力？'
+      },
+      {
+        type: 'macro',
+        title: '美元汇率波动影响海外收入',
+        description: '海外业务收入可能受到汇率变化影响，需要结合财报披露复盘。',
+        impactQuestion: '汇率变化是否会影响收入增速和管理层指引？'
+      },
+      {
+        type: 'macro',
+        title: '企业 IT 支出预算周期观察',
+        description: '企业云支出受到预算周期和宏观利率环境影响。',
+        impactQuestion: '企业 IT 支出节奏是否支持 OCI 继续保持较高增长？'
+      },
+      {
+        type: 'earnings',
+        title: 'FY27 Q1 财报发布',
+        description: '预计关注 OCI 增速、RPO 转收入节奏、capex 与现金流表现。',
+        impactQuestion: '管理层是否给出更清晰的 AI 云订单兑现路径？'
+      },
+      {
+        type: 'earnings',
+        title: 'FY27 Q2 财报发布',
+        description: '继续观察前一季度指引是否兑现。',
+        impactQuestion: 'AI 云叙事是否能连续多个季度获得基本面验证？'
+      }
     ]
   },
   technicalContext: {

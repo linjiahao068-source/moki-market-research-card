@@ -22,7 +22,7 @@ export function ResearchCardPreview({ card }: ResearchCardPreviewProps) {
             <div className="flex flex-wrap items-center gap-2">
               <div className="inline-flex items-center gap-2 text-xs text-[oklch(0.55_0.03_220)] bg-[oklch(0.96_0.01_220)] px-2 py-1 rounded-full border border-[oklch(0.92_0.01_220)]">
                 <span className="w-1.5 h-1.5 rounded-full bg-[oklch(0.65_0.08_70)]"></span>
-                Sample / Mock
+                {card.isMock ? 'Sample / Mock' : 'Research Card' }
               </div>
               <div className="text-xs text-[oklch(0.55_0.03_220)] bg-[oklch(0.96_0.01_220)] px-2 py-1 rounded-full border border-[oklch(0.92_0.01_220)]">
                 {card.cardType}
@@ -47,7 +47,7 @@ export function ResearchCardPreview({ card }: ResearchCardPreviewProps) {
             一句话摘要
           </div>
           <p className="text-sm text-[oklch(0.35_0.05_220)] leading-relaxed">
-            {card.summary}
+            {card.summary.oneLine}
           </p>
         </div>
       </div>

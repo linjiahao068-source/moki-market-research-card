@@ -64,7 +64,7 @@ export function ResearchCard({ card }: ResearchCardProps) {
                   <div className="flex items-center gap-3">
                     <div className="inline-flex items-center gap-2 bg-[oklch(0.96_0.01_220)] text-[oklch(0.55_0.03_220)] px-3 py-1.5 rounded-full text-xs border border-[oklch(0.92_0.01_220)]">
                       <span className="w-1.5 h-1.5 rounded-full bg-[oklch(0.65_0.08_70)]"></span>
-                      Sample / Mock
+                      {card.isMock ? 'Sample / Mock' : 'Research Card' }
                     </div>
                     <div className="text-xs text-[oklch(0.55_0.03_220)] font-mono bg-white px-3 py-1.5 rounded-lg border border-[oklch(0.92_0.01_220)]">
                       {card.updatedAt}
@@ -111,7 +111,7 @@ export function ResearchCard({ card }: ResearchCardProps) {
                             {metric.label}
                           </div>
                           <div className="text-base font-bold text-[oklch(0.35_0.08_220)]">
-                            {metric.value}
+                            {metric.description}
                           </div>
                         </div>
                       ))}
@@ -156,9 +156,11 @@ export function ResearchCard({ card }: ResearchCardProps) {
                               {step.task}
                             </span>
                           </div>
-                          <div className="text-xs text-[oklch(0.55_0.03_220)] font-mono">
-                            {step.followUpDate}
-                          </div>
+                          {step.followUpDate && (
+                            <div className="text-xs text-[oklch(0.55_0.03_220)] font-mono">
+                              {step.followUpDate}
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -178,7 +180,7 @@ export function ResearchCard({ card }: ResearchCardProps) {
             <ResearchCardSection id="summary" title="1. 一句话摘要" variant="elevated">
               <div className="bg-gradient-to-r from-[oklch(0.96_0.01_220)] to-[oklch(0.94_0.01_220)] rounded-xl p-5 border-l-4 border-[oklch(0.35_0.08_220)]">
                 <p className="text-[oklch(0.25_0.02_220)] leading-relaxed text-[15px]">
-                  {card.summary}
+                  {card.summary.oneLine}
                 </p>
               </div>
             </ResearchCardSection>
@@ -259,8 +261,8 @@ export function ResearchCard({ card }: ResearchCardProps) {
                     {card.fundamentals.keyMetrics.map((metric, idx) => (
                       <div key={idx} className="bg-white rounded-xl p-5 border border-[oklch(0.9_0.01_220)] shadow-sm">
                         <div className="text-[11px] text-[oklch(0.55_0.03_220)] mb-1.5 uppercase tracking-wider">{metric.label}</div>
-                        <div className="text-xl font-bold text-[oklch(0.35_0.08_220)] tracking-tight">{metric.value}</div>
-                        {metric.note && <div className="text-xs text-[oklch(0.65_0.03_220)] mt-2">{metric.note}</div>}
+                        <div className="text-xl font-bold text-[oklch(0.35_0.08_220)] tracking-tight">{metric.description}</div>
+                        <div className="text-xs text-[oklch(0.65_0.03_220)] mt-2">{metric.whyItMatters}</div>
                       </div>
                     ))}
                   </div>
@@ -284,55 +286,25 @@ export function ResearchCard({ card }: ResearchCardProps) {
 
             {/* 4. 政策/事件 */}
             <ResearchCardSection id="events" title="4. 政策/事件">
-              <div className="space-y-5">
-                {card.events.product.length > 0 && (
-                  <div>
-                    <div className="text-xs text-[oklch(0.55_0.03_220)] mb-3 font-semibold tracking-wide flex items-center gap-2">
-                      <span className="w-1 h-1 rounded-full bg-[oklch(0.35_0.08_220)]"></span>
-                      产品动态
+              <div className="space-y-3">
+                {card.events.items.map((event, idx) => (
+                  <div key={idx} className="p-4 bg-white rounded-xl border border-[oklch(0.9_0.01_220)] shadow-sm">
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                      <span className="text-[10px] text-[oklch(0.55_0.03_220)] bg-[oklch(0.96_0.01_220)] px-2 py-0.5 rounded-full border border-[oklch(0.92_0.01_220)] font-mono">
+                        {event.type}
+                      </span>
+                      <span className="text-sm font-semibold text-[oklch(0.25_0.02_220)]">
+                        {event.title}
+                      </span>
                     </div>
-                    <div className="space-y-2.5">
-                      {card.events.product.map((event, idx) => (
-                        <div key={idx} className="flex items-start gap-3 p-4 bg-white rounded-xl border border-[oklch(0.9_0.01_220)] shadow-sm">
-                          <span className="w-2 h-2 rounded-full bg-[oklch(0.35_0.08_220)] mt-2 flex-shrink-0"></span>
-                          <span className="text-sm text-[oklch(0.25_0.02_220)] leading-relaxed">{event}</span>
-                        </div>
-                      ))}
-                    </div>
+                    <p className="text-sm text-[oklch(0.45_0.04_220)] leading-relaxed mb-2">
+                      {event.description}
+                    </p>
+                    <p className="text-xs text-[oklch(0.55_0.03_220)] leading-relaxed bg-[oklch(0.97_0.008_220)] rounded-lg p-3">
+                      待核查问题：{event.impactQuestion}
+                    </p>
                   </div>
-                )}
-                {card.events.macro.length > 0 && (
-                  <div>
-                    <div className="text-xs text-[oklch(0.55_0.03_220)] mb-3 font-semibold tracking-wide flex items-center gap-2">
-                      <span className="w-1 h-1 rounded-full bg-[oklch(0.35_0.08_220)]"></span>
-                      宏观观察
-                    </div>
-                    <div className="space-y-2.5">
-                      {card.events.macro.map((event, idx) => (
-                        <div key={idx} className="flex items-start gap-3 p-4 bg-white rounded-xl border border-[oklch(0.9_0.01_220)] shadow-sm">
-                          <span className="w-2 h-2 rounded-full bg-[oklch(0.35_0.08_220)] mt-2 flex-shrink-0"></span>
-                          <span className="text-sm text-[oklch(0.25_0.02_220)] leading-relaxed">{event}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                <div>
-                  <div className="text-xs text-[oklch(0.55_0.03_220)] mb-3 font-semibold tracking-wide flex items-center gap-2">
-                    <span className="w-1 h-1 rounded-full bg-[oklch(0.35_0.08_220)]"></span>
-                    财报日历
-                  </div>
-                  <div className="space-y-2.5">
-                    {card.events.earningsCalendar.map((item, idx) => (
-                      <div key={idx} className="flex items-center gap-4 p-4 bg-gradient-to-r from-[oklch(0.96_0.01_220)] to-[oklch(0.94_0.01_220)] rounded-xl border border-[oklch(0.92_0.01_220)]">
-                        <span className="text-sm font-mono text-[oklch(0.35_0.08_220)] w-32 font-semibold">
-                          {item.date}
-                        </span>
-                        <span className="text-sm text-[oklch(0.25_0.02_220)]">{item.event}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                ))}
               </div>
             </ResearchCardSection>
 
@@ -399,9 +371,11 @@ export function ResearchCard({ card }: ResearchCardProps) {
                           {step.task}
                         </p>
                       </div>
-                      <span className="text-xs text-[oklch(0.55_0.03_220)] font-mono bg-[oklch(0.96_0.01_220)] px-3 py-1 rounded-lg border border-[oklch(0.92_0.01_220)] whitespace-nowrap">
-                        {step.followUpDate}
-                      </span>
+                      {step.followUpDate && (
+                        <span className="text-xs text-[oklch(0.55_0.03_220)] font-mono bg-[oklch(0.96_0.01_220)] px-3 py-1 rounded-lg border border-[oklch(0.92_0.01_220)] whitespace-nowrap">
+                          {step.followUpDate}
+                        </span>
+                      )}
                     </div>
                     <p className="text-sm text-[oklch(0.55_0.03_220)] leading-relaxed pl-9">
                       {step.whyItMatters}

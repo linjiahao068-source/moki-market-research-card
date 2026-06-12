@@ -10,7 +10,13 @@ export interface Evidence {
 export interface NextStep {
   task: string;
   whyItMatters: string;
-  followUpDate: string;
+  followUpDate?: string;
+}
+
+export interface Summary {
+  oneLine: string;
+  currentState: string;
+  keyQuestion: string;
 }
 
 export interface Sentiment {
@@ -25,20 +31,21 @@ export interface Fundamentals {
   revenueDrivers: string[];
   keyMetrics: Array<{
     label: string;
-    value: string;
-    note?: string;
+    description: string;
+    whyItMatters: string;
   }>;
   risks: string[];
 }
 
+export interface ResearchEvent {
+  type: string;
+  title: string;
+  description: string;
+  impactQuestion: string;
+}
+
 export interface Events {
-  policy: string[];
-  product: string[];
-  macro: string[];
-  earningsCalendar: Array<{
-    date: string;
-    event: string;
-  }>;
+  items: ResearchEvent[];
 }
 
 export interface TechnicalContext {
@@ -59,9 +66,10 @@ export interface ResearchCard {
   companyName: string;
   title: string;
   subtitle: string;
-  updatedAt: string;
   cardType: string;
-  summary: string;
+  updatedAt: string;
+  isMock: boolean;
+  summary: Summary;
   sentiment: Sentiment;
   fundamentals: Fundamentals;
   events: Events;
