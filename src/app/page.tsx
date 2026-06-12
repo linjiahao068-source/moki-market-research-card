@@ -29,15 +29,21 @@ export default function Home() {
         </div>
 
         {/* 按钮 */}
-        <div className="text-center mb-8">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-8">
           <Link
-            href="/research-card/orcl-ai-cloud"
-            className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-[oklch(0.35_0.08_220)] text-white rounded-xl font-medium shadow-[0_4px_15px_-6px_rgba(0,0,0,0.3)] hover:bg-[oklch(0.32_0.08_220)] transition-colors"
+            href="/research-cards"
+            className="inline-flex w-full sm:w-auto items-center justify-center gap-2 px-8 py-4 bg-[oklch(0.35_0.08_220)] text-white rounded-xl font-medium shadow-[0_4px_15px_-6px_rgba(0,0,0,0.3)] hover:bg-[oklch(0.32_0.08_220)] transition-colors"
           >
-            查看 ORCL 研究卡案例
+            查看研究卡样例库
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
             </svg>
+          </Link>
+          <Link
+            href="/research-card/orcl-ai-cloud"
+            className="inline-flex w-full sm:w-auto items-center justify-center gap-2 px-8 py-4 bg-white text-[oklch(0.35_0.08_220)] rounded-xl font-medium border border-[oklch(0.9_0.01_220)] shadow-[0_4px_15px_-10px_rgba(0,0,0,0.2)] hover:bg-[oklch(0.97_0.008_220)] transition-colors"
+          >
+            查看 ORCL 研究卡案例
           </Link>
         </div>
 
