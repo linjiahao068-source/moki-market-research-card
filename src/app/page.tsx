@@ -1,8 +1,10 @@
-'use client';
-
 import Link from 'next/link';
+import { DEFAULT_RESEARCH_CARD_SLUG, getAllResearchCards } from '@/data/researchCards';
 
 export default function Home() {
+  const sampleTickers = getAllResearchCards().map((card) => card.ticker).join(' / ');
+  const defaultResearchCardHref = `/research-card/${DEFAULT_RESEARCH_CARD_SLUG}`;
+
   return (
     <div className="min-h-screen bg-[oklch(0.975_0.008_220)] flex items-center justify-center px-4 py-12">
       <div className="max-w-xl w-full">
@@ -27,7 +29,7 @@ export default function Home() {
             把 X 舆情、英文新闻、财报线索、AI 产业链变化和市场波动，整理成可读、可追踪、可复盘的研究卡。
           </p>
           <p className="text-sm text-[oklch(0.55_0.03_220)]">
-            当前已上线样例：ORCL / NVDA / TSLA
+            当前已上线样例：{sampleTickers}
           </p>
         </div>
 
@@ -43,10 +45,10 @@ export default function Home() {
             </svg>
           </Link>
           <Link
-            href="/research-card/orcl-ai-cloud"
+            href={defaultResearchCardHref}
             className="inline-flex w-full sm:w-auto items-center justify-center gap-2 px-8 py-4 bg-white text-[oklch(0.35_0.08_220)] rounded-xl font-medium border border-[oklch(0.9_0.01_220)] shadow-[0_4px_15px_-10px_rgba(0,0,0,0.2)] hover:bg-[oklch(0.97_0.008_220)] transition-colors"
           >
-            查看 ORCL 研究卡案例
+            查看默认研究卡案例
           </Link>
         </div>
 

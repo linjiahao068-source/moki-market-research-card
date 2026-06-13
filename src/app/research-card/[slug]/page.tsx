@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ResearchCard } from '@/components/ResearchCard';
-import { getResearchCardBySlug, researchCards } from '@/data/researchCards';
+import { getAllResearchCards, getResearchCardBySlug } from '@/data/researchCards';
 
 interface ResearchCardDetailPageProps {
   params: Promise<{
@@ -10,7 +10,7 @@ interface ResearchCardDetailPageProps {
 }
 
 export function generateStaticParams() {
-  return researchCards.map((card) => ({
+  return getAllResearchCards().map((card) => ({
     slug: card.slug,
   }));
 }

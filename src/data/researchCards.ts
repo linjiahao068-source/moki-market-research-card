@@ -352,6 +352,7 @@ export const tslaResearchCard: ResearchCard = {
 };
 
 export const researchCards: ResearchCard[] = [orclResearchCard, nvdaResearchCard, tslaResearchCard];
+export const DEFAULT_RESEARCH_CARD_SLUG = orclResearchCard.slug;
 
 export function getResearchCardBySlug(slug: string) {
   return researchCards.find((card) => card.slug === slug);

@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
+import { DEFAULT_RESEARCH_CARD_SLUG } from '@/data/researchCards';
 
 export default function ResearchCardPage() {
-  redirect('/research-card/orcl-ai-cloud');
+  redirect(`/research-card/${DEFAULT_RESEARCH_CARD_SLUG}`);
 }
