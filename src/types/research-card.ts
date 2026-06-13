@@ -17,6 +17,8 @@ export interface Summary {
   oneLine: string;
   currentState: string;
   keyQuestion: string;
+  bullCase?: string;
+  bearCase?: string;
 }
 
 export interface Sentiment {
@@ -77,4 +79,17 @@ export interface ResearchCard {
   evidence: Evidence[];
   nextSteps: NextStep[];
   disclaimer: string;
+  sections?: Array<{
+    title: string;
+    body: string;
+  }>;
+  keySignals?: string[];
+  risks?: string[];
+  sourceNote?: string;
+  queryInput?: string;
+  market?: string;
+  numericCode?: string;
+  chineseName?: string;
+  matchStatus?: 'matched' | 'unmatched';
+  matchType?: 'symbol' | 'numericCode' | 'chineseName';
 }
