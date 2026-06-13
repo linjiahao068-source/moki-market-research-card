@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from 'next/link';
+import { ChevronLeft, FileText, Search } from 'lucide-react';
 import { ResearchCardPreview } from '@/components/ResearchCardPreview';
 import { researchCards } from '@/data/researchCards';
 
@@ -18,44 +19,47 @@ export const metadata: Metadata = {
 
 export default function ResearchCardsPage() {
   return (
-    <div className="min-h-screen bg-[oklch(0.975_0.008_220)] px-4 py-10">
-      <main className="max-w-[900px] mx-auto">
-        <div className="mb-8">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm text-[oklch(0.45_0.05_220)] hover:text-[oklch(0.35_0.08_220)] hover:bg-white rounded-xl border border-transparent hover:border-[oklch(0.9_0.01_220)] transition-colors mb-6"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            返回首页
-          </Link>
+    <main className="min-h-screen bg-background px-4 py-5 sm:px-6 sm:py-8">
+      <div className="mx-auto w-full max-w-[940px]">
+        <Link
+          href="/"
+          className="mb-5 inline-flex h-9 items-center gap-2 rounded-[8px] border border-transparent px-3 text-sm font-medium text-[oklch(0.42_0.018_160)] transition-colors hover:border-border hover:bg-white hover:text-[oklch(0.2_0.018_160)]"
+        >
+          <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+          返回首页
+        </Link>
 
-          <div className="bg-white rounded-3xl border border-[oklch(0.9_0.01_220)] shadow-[0_8px_40px_-15px_rgba(0,0,0,0.12)] p-6 sm:p-8 relative overflow-hidden">
-            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[oklch(0.35_0.08_220)] via-[oklch(0.55_0.06_220)] to-[oklch(0.35_0.08_220)]"></div>
-            <div className="relative">
-              <div className="inline-flex items-center gap-2 text-[oklch(0.35_0.08_220)] mb-4">
-                <div className="w-10 h-10 rounded-2xl bg-[oklch(0.35_0.08_220)] flex items-center justify-center shadow-[0_4px_12px_-6px_rgba(0,0,0,0.3)]">
-                  <span className="text-white font-bold text-sm">M</span>
-                </div>
-                <span className="text-sm font-semibold tracking-wide">Moki Market</span>
+        <section className="mb-5 rounded-[8px] border border-border bg-white p-5 shadow-[0_12px_40px_-32px_rgba(0,0,0,0.28)] sm:p-6">
+          <div className="mb-4 flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[8px] bg-[var(--brand)]">
+                <FileText className="h-5 w-5 text-[oklch(0.14_0.015_160)]" aria-hidden="true" />
               </div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-[oklch(0.25_0.02_220)] mb-3 tracking-tight">
-                Moki Market 研究卡样例库
-              </h1>
-              <p className="text-[oklch(0.55_0.03_220)] leading-relaxed max-w-2xl">
-                把 X 舆情、英文新闻、财报线索和市场波动整理成可复盘的研究卡。
-              </p>
+              <div className="min-w-0">
+                <div className="text-sm font-semibold text-[var(--brand-ink)]">
+                  Moki Market
+                </div>
+                <h1 className="text-2xl font-bold leading-tight text-[oklch(0.16_0.014_160)] sm:text-3xl">
+                  研究卡样例库
+                </h1>
+              </div>
+            </div>
+            <div className="inline-flex w-fit items-center gap-2 rounded-full border border-[var(--brand-border)] bg-[var(--brand-soft)] px-3 py-1 text-xs font-semibold text-[var(--brand-ink)]">
+              <Search className="h-3.5 w-3.5" aria-hidden="true" />
+              {researchCards.length} cards
             </div>
           </div>
-        </div>
+          <p className="max-w-2xl text-sm leading-relaxed text-[oklch(0.43_0.018_160)] sm:text-base">
+            把 X 舆情、英文新闻、财报线索和市场波动整理成可复盘的研究卡。
+          </p>
+        </section>
 
-        <div className="space-y-5">
+        <div className="space-y-4">
           {researchCards.map((card) => (
             <ResearchCardPreview key={card.slug} card={card} />
           ))}
         </div>
-      </main>
-    </div>
+      </div>
+    </main>
   );
 }

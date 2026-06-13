@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ArrowRight } from 'lucide-react';
 import { ResearchCard } from '@/types/research-card';
 
 interface ResearchCardPreviewProps {
@@ -7,60 +8,66 @@ interface ResearchCardPreviewProps {
 
 export function ResearchCardPreview({ card }: ResearchCardPreviewProps) {
   return (
-    <article className="bg-white rounded-2xl border border-[oklch(0.9_0.01_220)] shadow-[0_4px_24px_-10px_rgba(0,0,0,0.08)] p-6">
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-5">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[oklch(0.96_0.01_220)] to-[oklch(0.92_0.01_220)] flex items-center justify-center border border-[oklch(0.9_0.01_220)] shadow-inner">
-            <span className="text-2xl font-bold text-[oklch(0.35_0.08_220)] tracking-tight">
+    <article className="group rounded-[8px] border border-border bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-colors hover:border-[oklch(0.74_0.13_72)] sm:p-5">
+      <div className="mb-4 flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex min-w-0 items-start gap-3 sm:gap-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[8px] border border-[var(--brand-border)] bg-[var(--brand-soft-strong)] sm:h-14 sm:w-14">
+            <span className="text-lg font-bold tracking-tight text-[var(--brand-ink)] sm:text-2xl">
               {card.ticker}
             </span>
           </div>
-          <div>
-            <div className="text-sm text-[oklch(0.55_0.03_220)] mb-2">
+          <div className="min-w-0">
+            <div className="mb-1 text-sm text-[oklch(0.48_0.018_160)]">
               {card.companyName}
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="inline-flex items-center gap-2 text-xs text-[oklch(0.55_0.03_220)] bg-[oklch(0.96_0.01_220)] px-2 py-1 rounded-full border border-[oklch(0.92_0.01_220)]">
-                <span className="w-1.5 h-1.5 rounded-full bg-[oklch(0.65_0.08_70)]"></span>
-                {card.isMock ? 'Sample / Mock' : 'Research Card' }
-              </div>
-              <div className="text-xs text-[oklch(0.55_0.03_220)] bg-[oklch(0.96_0.01_220)] px-2 py-1 rounded-full border border-[oklch(0.92_0.01_220)]">
-                {card.cardType}
-              </div>
-            </div>
+            <h2 className="text-lg font-semibold leading-snug text-[oklch(0.18_0.014_160)] sm:text-xl">
+              {card.title}
+            </h2>
           </div>
         </div>
-        <div className="text-xs text-[oklch(0.55_0.03_220)] font-mono bg-[oklch(0.96_0.01_220)] px-3 py-1.5 rounded-lg border border-[oklch(0.92_0.01_220)] self-start">
-          {card.updatedAt}
+
+        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+          <div className="inline-flex items-center gap-2 rounded-full border border-[var(--brand-border)] bg-[var(--brand-soft)] px-2.5 py-1 text-xs text-[var(--brand-ink)]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--brand-dot)]"></span>
+            {card.isMock ? 'Sample / Mock' : 'Research Card'}
+          </div>
+          <div className="rounded-full border border-border bg-muted px-2.5 py-1 font-mono text-xs text-[oklch(0.47_0.018_160)]">
+            {card.updatedAt}
+          </div>
         </div>
       </div>
 
-      <div className="mb-5">
-        <h2 className="text-xl font-semibold text-[oklch(0.25_0.02_220)] mb-2 leading-tight">
-          {card.title}
-        </h2>
-        <p className="text-sm text-[oklch(0.55_0.03_220)] leading-relaxed mb-4">
-          {card.subtitle}
+      <p className="mb-4 text-sm leading-relaxed text-[oklch(0.43_0.018_160)]">
+        {card.subtitle}
+      </p>
+
+      <div className="mb-4 border-l-2 border-[var(--brand-dot)] pl-3">
+        <div className="mb-1 text-xs font-semibold text-[var(--brand-ink)]">
+          一句话摘要
+        </div>
+        <p className="text-sm leading-relaxed text-[oklch(0.22_0.018_160)]">
+          {card.summary.oneLine}
         </p>
-        <div className="bg-[oklch(0.97_0.008_220)] rounded-xl p-4 border border-[oklch(0.92_0.01_220)]">
-          <div className="text-xs font-semibold text-[oklch(0.35_0.08_220)] mb-2">
-            一句话摘要
-          </div>
-          <p className="text-sm text-[oklch(0.35_0.05_220)] leading-relaxed">
-            {card.summary.oneLine}
-          </p>
-        </div>
       </div>
 
-      <Link
-        href={`/research-card/${card.slug}`}
-        className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-[oklch(0.35_0.08_220)] text-white rounded-xl text-sm font-medium shadow-[0_4px_15px_-6px_rgba(0,0,0,0.3)] hover:bg-[oklch(0.32_0.08_220)] transition-colors"
-      >
-        查看研究卡
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-        </svg>
-      </Link>
+      <div className="flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap gap-2">
+          <span className="rounded-full bg-muted px-2.5 py-1 text-xs text-[oklch(0.45_0.018_160)]">
+            {card.cardType}
+          </span>
+          <span className="rounded-full bg-muted px-2.5 py-1 text-xs text-[oklch(0.45_0.018_160)]">
+            热度 {card.sentiment.heatLevel}/10
+          </span>
+        </div>
+
+        <Link
+          href={`/research-card/${card.slug}`}
+          className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-[8px] bg-[var(--brand)] px-4 text-sm font-semibold text-[oklch(0.14_0.015_160)] transition-colors hover:bg-[var(--brand-hover)] sm:w-auto"
+        >
+          查看研究卡
+          <ArrowRight className="h-4 w-4" aria-hidden="true" />
+        </Link>
+      </div>
     </article>
   );
 }

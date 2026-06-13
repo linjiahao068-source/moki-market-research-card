@@ -6,24 +6,27 @@ interface ResearchCardSectionProps {
 }
 
 export function ResearchCardSection({ title, children, id, variant = 'default' }: ResearchCardSectionProps) {
-  const baseStyles = "p-6 mb-5";
+  const sectionNumber = title.match(/^\d+/)?.[0];
+  const sectionTitle = title.replace(/^\d+\.\s*/, '');
+  const baseStyles = "mb-4 rounded-[8px] border p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)] sm:p-5";
   const variants = {
-    default: "bg-white rounded-2xl border border-[oklch(0.9_0.01_220)] shadow-sm",
-    elevated: "bg-white rounded-2xl border border-[oklch(0.9_0.01_220)] shadow-[0_4px_20px_-8px_rgba(0,0,0,0.1)]",
-    subtle: "bg-[oklch(0.99_0.005_220)] rounded-2xl border border-[oklch(0.92_0.01_220)]",
+    default: "border-border bg-white",
+    elevated: "border-[oklch(0.87_0.016_85)] bg-white shadow-[0_8px_28px_-24px_rgba(0,0,0,0.24)]",
+    subtle: "border-border bg-[oklch(0.992_0.005_85)]",
   };
 
   return (
-    <section id={id} className="scroll-mt-10">
+    <section id={id} className="scroll-mt-8">
       <div className={`${baseStyles} ${variants[variant]}`}>
-        <h3 className="text-sm font-semibold text-[oklch(0.35_0.08_220)] mb-5 flex items-center gap-3">
-          <span className="w-7 h-7 rounded-lg bg-[oklch(0.96_0.01_220)] flex items-center justify-center text-xs font-bold text-[oklch(0.35_0.08_220)] border border-[oklch(0.92_0.01_220)]">
-            {title.split('.')[0]}
+        <h3 className="mb-4 flex min-w-0 items-center gap-3 text-sm font-semibold text-[oklch(0.2_0.02_160)]">
+          {sectionNumber && (
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[6px] border border-[var(--brand-border)] bg-[var(--brand-soft-strong)] text-xs font-bold text-[var(--brand-ink)]">
+            {sectionNumber}
           </span>
-          <span className="tracking-wide">{title}</span>
-          <span className="flex-1 h-px bg-gradient-to-r from-[oklch(0.92_0.01_220)] to-transparent ml-3"></span>
+          )}
+          <span className="min-w-0 flex-1 leading-snug">{sectionTitle}</span>
         </h3>
-        <div className="text-[oklch(0.25_0.02_220)]">{children}</div>
+        <div className="text-[oklch(0.18_0.014_160)]">{children}</div>
       </div>
     </section>
   );

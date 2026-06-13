@@ -4,16 +4,16 @@ interface DisclaimerBoxProps {
 
 export function DisclaimerBox({ text }: DisclaimerBoxProps) {
   return (
-    <div className="bg-[oklch(0.96_0.01_220)] rounded-2xl border border-[oklch(0.92_0.01_220)] p-6 mb-8">
-      <div className="flex items-center gap-2 mb-3">
-        <span className="w-6 h-6 rounded-lg bg-[oklch(0.92_0.01_220)] flex items-center justify-center text-xs font-bold text-[oklch(0.55_0.03_220)]">
+    <div className="mb-8 rounded-[8px] border border-[var(--risk-border)] bg-[var(--risk-soft)] p-4 sm:p-5">
+      <div className="mb-3 flex items-center gap-2">
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-[6px] bg-[oklch(0.93_0.08_35)] text-xs font-bold text-[var(--risk-ink)]">
           !
         </span>
-        <h3 className="text-sm font-semibold text-[oklch(0.55_0.03_220)] tracking-wide">
+        <h3 className="text-sm font-semibold text-[var(--risk-ink)]">
           8. 免责声明
         </h3>
       </div>
-      <p className="text-[oklch(0.6_0.03_220)] text-sm leading-relaxed">
+      <p className="text-sm leading-relaxed text-[oklch(0.4_0.055_30)]">
         {text}
       </p>
     </div>

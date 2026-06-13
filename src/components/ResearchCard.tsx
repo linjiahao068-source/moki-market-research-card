@@ -1,6 +1,17 @@
 'use client';
 
 import Link from 'next/link';
+import {
+  Activity,
+  ArrowRight,
+  BarChart3,
+  CalendarDays,
+  ChevronLeft,
+  FileText,
+  Search,
+  ShieldAlert,
+  TrendingUp,
+} from 'lucide-react';
 import { ResearchCard as ResearchCardType } from '@/types/research-card';
 import { ResearchCardSection } from './ResearchCardSection';
 import { EvidenceItem } from './EvidenceItem';
@@ -22,95 +33,98 @@ const sections = [
 ];
 
 export function ResearchCard({ card }: ResearchCardProps) {
+  const topMetrics = card.fundamentals.keyMetrics.slice(0, 3);
+  const topRisks = card.fundamentals.risks.slice(0, 3);
+  const topSteps = card.nextSteps.slice(0, 3);
+
   return (
-    <div className="min-h-screen bg-[oklch(0.975_0.008_220)]">
-      <div className="max-w-[1150px] mx-auto px-4 py-10">
-        <div className="flex flex-col lg:flex-row gap-10">
-          {/* 主内容区 - 适合截图 */}
-          <div className="flex-1 min-w-0">
-            {/* 返回按钮 */}
-            <div className="mb-6">
+    <main className="min-h-screen bg-background">
+      <div className="mx-auto w-full max-w-[1180px] px-3 py-4 sm:px-6 sm:py-8">
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_230px]">
+          <div className="min-w-0">
+            <div className="mb-4">
               <Link
                 href="/"
-                className="inline-flex items-center gap-2 px-4 py-2 text-sm text-[oklch(0.45_0.05_220)] hover:text-[oklch(0.35_0.08_220)] hover:bg-white rounded-xl border border-transparent hover:border-[oklch(0.9_0.01_220)] transition-colors"
+                className="inline-flex h-9 items-center gap-2 rounded-[8px] border border-transparent px-3 text-sm font-medium text-[oklch(0.42_0.018_160)] transition-colors hover:border-border hover:bg-white hover:text-[oklch(0.2_0.018_160)]"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
+                <ChevronLeft className="h-4 w-4" aria-hidden="true" />
                 返回首页
               </Link>
             </div>
 
-            {/* 截图友好版摘要卡 */}
-            <div className="bg-white rounded-3xl border border-[oklch(0.9_0.01_220)] shadow-[0_8px_40px_-15px_rgba(0,0,0,0.12)] p-6 sm:p-8 mb-8 relative overflow-hidden">
-              {/* 装饰背景 */}
-              <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[oklch(0.35_0.08_220)] via-[oklch(0.55_0.06_220)] to-[oklch(0.35_0.08_220)]"></div>
-              <div className="absolute -top-24 -right-24 w-48 h-48 bg-[oklch(0.35_0.08_220)] opacity-5 rounded-full blur-3xl"></div>
-              <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-[oklch(0.55_0.06_220)] opacity-5 rounded-full blur-3xl"></div>
-
-              {/* 顶部区域 */}
-              <div className="relative">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-2xl bg-[oklch(0.35_0.08_220)] flex items-center justify-center shadow-[0_4px_12px_-6px_rgba(0,0,0,0.3)]">
-                      <span className="text-white font-bold text-sm">M</span>
-                    </div>
-                    <div>
-                      <div className="text-sm font-semibold text-[oklch(0.35_0.08_220)] tracking-wide">
-                        Moki Market Research Card
-                      </div>
-                    </div>
+            <section className="mb-4 overflow-hidden rounded-[8px] border border-border bg-white shadow-[0_16px_46px_-34px_rgba(0,0,0,0.36)]">
+              <div className="flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-[8px] bg-[var(--brand)]">
+                    <span className="text-xs font-bold text-[oklch(0.14_0.015_160)]">M</span>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <div className="inline-flex items-center gap-2 bg-[oklch(0.96_0.01_220)] text-[oklch(0.55_0.03_220)] px-3 py-1.5 rounded-full text-xs border border-[oklch(0.92_0.01_220)]">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[oklch(0.65_0.08_70)]"></span>
-                      {card.isMock ? 'Sample / Mock' : 'Research Card' }
-                    </div>
-                    <div className="text-xs text-[oklch(0.55_0.03_220)] font-mono bg-white px-3 py-1.5 rounded-lg border border-[oklch(0.92_0.01_220)]">
-                      {card.updatedAt}
+                  <div className="min-w-0">
+                    <div className="text-sm font-semibold text-[oklch(0.18_0.014_160)]">
+                      Moki Market Research Card
                     </div>
                   </div>
                 </div>
 
-                {/* 标题区 */}
-                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6 pb-6 border-b border-dashed border-[oklch(0.92_0.01_220)]">
-                  <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[oklch(0.96_0.01_220)] to-[oklch(0.93_0.01_220)] flex items-center justify-center border border-[oklch(0.9_0.01_220)] shadow-inner">
-                      <span className="text-3xl font-bold text-[oklch(0.35_0.08_220)] tracking-tight">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-2 rounded-full border border-[var(--brand-border)] bg-[var(--brand-soft)] px-2.5 py-1 text-xs font-medium text-[var(--brand-ink)]">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[var(--brand-dot)]"></span>
+                    {card.isMock ? 'Sample / Mock' : 'Research Card'}
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-2.5 py-1 font-mono text-xs text-[oklch(0.47_0.018_160)]">
+                    <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" />
+                    {card.updatedAt}
+                  </span>
+                </div>
+              </div>
+
+              <div className="p-4 sm:p-6">
+                <div className="mb-5 flex min-w-0 flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                  <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start">
+                    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[8px] border border-[var(--brand-border)] bg-[var(--brand-soft-strong)] sm:h-[72px] sm:w-[72px]">
+                      <span className="text-2xl font-bold tracking-tight text-[var(--brand-ink)] sm:text-3xl">
                         {card.ticker}
                       </span>
                     </div>
-                    <div>
-                      <div className="text-sm text-[oklch(0.55_0.03_220)] mb-1">
+                    <div className="min-w-0">
+                      <div className="mb-1 text-sm text-[oklch(0.48_0.018_160)]">
                         {card.companyName}
                       </div>
-                      <h1 className="text-xl font-bold text-[oklch(0.25_0.02_220)] leading-tight tracking-tight mb-1">
+                      <h1 className="mb-2 text-2xl font-bold leading-tight text-[oklch(0.16_0.014_160)] sm:text-3xl">
                         {card.title}
                       </h1>
-                      <p className="text-[oklch(0.55_0.03_220)] leading-relaxed text-sm">
+                      <p className="max-w-3xl text-sm leading-relaxed text-[oklch(0.43_0.018_160)] sm:text-base">
                         {card.subtitle}
                       </p>
                     </div>
                   </div>
+
+                  <div className="w-fit rounded-full border border-border bg-muted px-3 py-1 font-mono text-xs text-[oklch(0.47_0.018_160)]">
+                    {card.cardType}
+                  </div>
                 </div>
 
-                {/* 内容区 - 两列网格 */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-6">
-                  {/* 核心观察指标 */}
-                  <div className="sm:col-span-1">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="w-1.5 h-1.5 rounded-full bg-[oklch(0.35_0.08_220)]"></div>
-                      <span className="text-xs font-bold text-[oklch(0.35_0.08_220)] tracking-wide uppercase">
-                        核心观察
-                      </span>
+                <div className="mb-5 border-l-2 border-[var(--brand-dot)] pl-3 sm:pl-4">
+                  <div className="mb-1 text-xs font-semibold text-[var(--brand-ink)]">
+                    一句话摘要
+                  </div>
+                  <p className="text-sm leading-relaxed text-[oklch(0.2_0.016_160)] sm:text-base">
+                    {card.summary.oneLine}
+                  </p>
+                </div>
+
+                <div className="grid gap-4 border-t border-border pt-5 md:grid-cols-3">
+                  <div className="min-w-0">
+                    <div className="mb-3 flex items-center gap-2 text-xs font-semibold text-[var(--brand-ink)]">
+                      <TrendingUp className="h-4 w-4" aria-hidden="true" />
+                      核心观察
                     </div>
-                    <div className="space-y-2">
-                      {card.fundamentals.keyMetrics.slice(0, 3).map((metric, idx) => (
-                        <div key={idx} className="bg-[oklch(0.97_0.008_220)] rounded-xl p-3 border border-[oklch(0.92_0.01_220)]">
-                          <div className="text-[10px] text-[oklch(0.55_0.03_220)] uppercase tracking-wide mb-1">
+                    <div className="divide-y divide-border rounded-[8px] border border-border">
+                      {topMetrics.map((metric, idx) => (
+                        <div key={idx} className="p-3">
+                          <div className="mb-1 text-[11px] text-[oklch(0.5_0.018_160)]">
                             {metric.label}
                           </div>
-                          <div className="text-base font-bold text-[oklch(0.35_0.08_220)]">
+                          <div className="text-sm font-semibold leading-snug text-[oklch(0.18_0.014_160)]">
                             {metric.description}
                           </div>
                         </div>
@@ -118,46 +132,33 @@ export function ResearchCard({ card }: ResearchCardProps) {
                     </div>
                   </div>
 
-                  {/* 风险提醒 */}
-                  <div className="sm:col-span-1">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="w-1.5 h-1.5 rounded-full bg-[oklch(0.65_0.08_70)]"></div>
-                      <span className="text-xs font-bold text-[oklch(0.55_0.03_220)] tracking-wide uppercase">
-                        风险提醒
-                      </span>
+                  <div className="min-w-0">
+                    <div className="mb-3 flex items-center gap-2 text-xs font-semibold text-[var(--risk-ink)]">
+                      <ShieldAlert className="h-4 w-4" aria-hidden="true" />
+                      风险提醒
                     </div>
                     <div className="space-y-2">
-                      {card.fundamentals.risks.slice(0, 3).map((risk, idx) => (
-                        <div key={idx} className="bg-[oklch(0.985_0.005_70)] rounded-xl p-3 border border-[oklch(0.88_0.08_70/0.25)]">
-                          <div className="flex items-start gap-2">
-                            <span className="text-[oklch(0.65_0.08_70)] mt-0.5 text-xs">•</span>
-                            <span className="text-sm text-[oklch(0.45_0.04_220)] leading-relaxed">
-                              {risk}
-                            </span>
-                          </div>
+                      {topRisks.map((risk, idx) => (
+                        <div key={idx} className="rounded-[8px] border border-[var(--risk-border)] bg-[var(--risk-soft)] p-3 text-sm leading-relaxed text-[var(--risk-ink)]">
+                          {risk}
                         </div>
                       ))}
                     </div>
                   </div>
 
-                  {/* 下一步研究 */}
-                  <div className="sm:col-span-1">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="w-1.5 h-1.5 rounded-full bg-[oklch(0.45_0.05_220)]"></div>
-                      <span className="text-xs font-bold text-[oklch(0.45_0.05_220)] tracking-wide uppercase">
-                        下一步研究
-                      </span>
+                  <div className="min-w-0">
+                    <div className="mb-3 flex items-center gap-2 text-xs font-semibold text-[var(--brand-ink)]">
+                      <Search className="h-4 w-4" aria-hidden="true" />
+                      下一步研究
                     </div>
                     <div className="space-y-2">
-                      {card.nextSteps.slice(0, 3).map((step, idx) => (
-                        <div key={idx} className="bg-[oklch(0.96_0.01_220)] rounded-xl p-3 border border-[oklch(0.9_0.01_220)]">
-                          <div className="flex items-start justify-between gap-2 mb-1">
-                            <span className="text-sm font-semibold text-[oklch(0.25_0.02_220)] leading-relaxed">
-                              {step.task}
-                            </span>
+                      {topSteps.map((step, idx) => (
+                        <div key={idx} className="rounded-[8px] border border-border bg-[oklch(0.992_0.005_85)] p-3">
+                          <div className="text-sm font-semibold leading-snug text-[oklch(0.18_0.014_160)]">
+                            {step.task}
                           </div>
                           {step.followUpDate && (
-                            <div className="text-xs text-[oklch(0.55_0.03_220)] font-mono">
+                            <div className="mt-1 font-mono text-xs text-[oklch(0.5_0.018_160)]">
                               {step.followUpDate}
                             </div>
                           )}
@@ -167,57 +168,63 @@ export function ResearchCard({ card }: ResearchCardProps) {
                   </div>
                 </div>
 
-                {/* 底部免责声明 */}
-                <div className="pt-4 border-t border-dashed border-[oklch(0.92_0.01_220)]">
-                  <p className="text-[10px] text-[oklch(0.55_0.03_220)] leading-relaxed text-center">
-                    {card.disclaimer}
-                  </p>
-                </div>
+                <p className="mt-5 border-t border-border pt-4 text-center text-[11px] leading-relaxed text-[oklch(0.52_0.018_160)]">
+                  {card.disclaimer}
+                </p>
               </div>
-            </div>
+            </section>
 
-            {/* 1. 一句话摘要 */}
             <ResearchCardSection id="summary" title="1. 一句话摘要" variant="elevated">
-              <div className="bg-gradient-to-r from-[oklch(0.96_0.01_220)] to-[oklch(0.94_0.01_220)] rounded-xl p-5 border-l-4 border-[oklch(0.35_0.08_220)]">
-                <p className="text-[oklch(0.25_0.02_220)] leading-relaxed text-[15px]">
+              <div className="rounded-[8px] border border-[var(--brand-border)] bg-[var(--brand-soft)] p-4">
+                <p className="text-sm leading-relaxed text-[oklch(0.2_0.018_160)] sm:text-base">
                   {card.summary.oneLine}
                 </p>
               </div>
             </ResearchCardSection>
 
-            {/* 2. X 舆情面 */}
             <ResearchCardSection id="sentiment" title="2. X 舆情面">
               <div className="space-y-5">
-                <div className="grid grid-cols-3 gap-3 p-4 bg-gradient-to-r from-[oklch(0.96_0.01_220)] to-[oklch(0.94_0.01_220)] rounded-xl border border-[oklch(0.92_0.01_220)]">
-                  <div className="text-center p-3">
-                    <div className="text-[11px] text-[oklch(0.55_0.03_220)] mb-1 uppercase tracking-wider">热度</div>
-                    <div className="text-2xl font-bold text-[oklch(0.35_0.08_220)] tracking-tight">
-                      {card.sentiment.heatLevel}<span className="text-sm text-[oklch(0.55_0.03_220)] font-normal">/10</span>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <div className="rounded-[8px] border border-border bg-[oklch(0.992_0.005_85)] p-4">
+                    <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold text-[oklch(0.48_0.018_160)]">
+                      <Activity className="h-3.5 w-3.5" aria-hidden="true" />
+                      热度
+                    </div>
+                    <div className="text-2xl font-bold tracking-tight text-[var(--brand-ink)]">
+                      {card.sentiment.heatLevel}
+                      <span className="text-sm font-medium text-[oklch(0.5_0.018_160)]">/10</span>
                     </div>
                   </div>
-                  <div className="text-center p-3 border-x border-[oklch(0.92_0.01_220)]">
-                    <div className="text-[11px] text-[oklch(0.55_0.03_220)] mb-1 uppercase tracking-wider">方向</div>
-                    <div className="text-sm font-medium text-[oklch(0.25_0.02_220)]">
+                  <div className="rounded-[8px] border border-border bg-[oklch(0.992_0.005_85)] p-4">
+                    <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold text-[oklch(0.48_0.018_160)]">
+                      <TrendingUp className="h-3.5 w-3.5" aria-hidden="true" />
+                      方向
+                    </div>
+                    <div className="text-sm font-semibold leading-snug text-[oklch(0.18_0.014_160)]">
                       {card.sentiment.direction}
                     </div>
                   </div>
-                  <div className="text-center p-3">
-                    <div className="text-[11px] text-[oklch(0.55_0.03_220)] mb-1 uppercase tracking-wider">分歧</div>
-                    <div className="text-2xl font-bold text-[oklch(0.35_0.08_220)] tracking-tight">
-                      {(card.sentiment.disagreement * 100).toFixed(0)}<span className="text-sm text-[oklch(0.55_0.03_220)] font-normal">%</span>
+                  <div className="rounded-[8px] border border-border bg-[oklch(0.992_0.005_85)] p-4">
+                    <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold text-[oklch(0.48_0.018_160)]">
+                      <BarChart3 className="h-3.5 w-3.5" aria-hidden="true" />
+                      分歧
+                    </div>
+                    <div className="text-2xl font-bold tracking-tight text-[var(--brand-ink)]">
+                      {(card.sentiment.disagreement * 100).toFixed(0)}
+                      <span className="text-sm font-medium text-[oklch(0.5_0.018_160)]">%</span>
                     </div>
                   </div>
                 </div>
+
                 <div>
-                  <div className="text-xs text-[oklch(0.55_0.03_220)] mb-3 font-semibold tracking-wide flex items-center gap-2">
-                    <span className="w-1 h-1 rounded-full bg-[oklch(0.35_0.08_220)]"></span>
+                  <div className="mb-3 text-xs font-semibold text-[oklch(0.45_0.018_160)]">
                     关键讨论
                   </div>
-                  <div className="space-y-2.5">
+                  <div className="space-y-2">
                     {card.sentiment.keyDebates.map((debate, idx) => (
-                      <div key={idx} className="flex items-start gap-3 p-4 bg-white rounded-xl border border-[oklch(0.9_0.01_220)] shadow-sm">
-                        <span className="w-2 h-2 rounded-full bg-[oklch(0.35_0.08_220)] mt-2 flex-shrink-0"></span>
-                        <span className="text-sm text-[oklch(0.25_0.02_220)] leading-relaxed">{debate}</span>
+                      <div key={idx} className="flex gap-3 rounded-[8px] border border-border bg-white p-3 text-sm leading-relaxed text-[oklch(0.2_0.016_160)]">
+                        <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[var(--brand-dot)]"></span>
+                        <span className="min-w-0">{debate}</span>
                       </div>
                     ))}
                   </div>
@@ -225,58 +232,60 @@ export function ResearchCard({ card }: ResearchCardProps) {
               </div>
             </ResearchCardSection>
 
-            {/* 3. 基本面 */}
             <ResearchCardSection id="fundamentals" title="3. 基本面">
-              <div className="space-y-6">
+              <div className="space-y-5">
                 <div>
-                  <div className="text-xs text-[oklch(0.55_0.03_220)] mb-2 font-semibold tracking-wide flex items-center gap-2">
-                    <span className="w-1 h-1 rounded-full bg-[oklch(0.35_0.08_220)]"></span>
+                  <div className="mb-2 text-xs font-semibold text-[oklch(0.45_0.018_160)]">
                     商业模式
                   </div>
-                  <div className="p-4 bg-[oklch(0.99_0.005_220)] rounded-xl border border-[oklch(0.92_0.01_220)]">
-                    <p className="text-sm text-[oklch(0.25_0.02_220)] leading-relaxed">
-                      {card.fundamentals.businessModel}
-                    </p>
-                  </div>
+                  <p className="rounded-[8px] border border-border bg-[oklch(0.992_0.005_85)] p-4 text-sm leading-relaxed text-[oklch(0.2_0.016_160)]">
+                    {card.fundamentals.businessModel}
+                  </p>
                 </div>
+
                 <div>
-                  <div className="text-xs text-[oklch(0.55_0.03_220)] mb-3 font-semibold tracking-wide flex items-center gap-2">
-                    <span className="w-1 h-1 rounded-full bg-[oklch(0.35_0.08_220)]"></span>
+                  <div className="mb-3 text-xs font-semibold text-[oklch(0.45_0.018_160)]">
                     收入驱动
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {card.fundamentals.revenueDrivers.map((driver, idx) => (
-                      <span key={idx} className="px-4 py-2 bg-white text-[oklch(0.25_0.02_220)] text-sm rounded-xl border border-[oklch(0.9_0.01_220)] shadow-sm font-medium">
+                      <span key={idx} className="rounded-full border border-border bg-white px-3 py-1.5 text-sm font-medium text-[oklch(0.2_0.016_160)]">
                         {driver}
                       </span>
                     ))}
                   </div>
                 </div>
+
                 <div>
-                  <div className="text-xs text-[oklch(0.55_0.03_220)] mb-3 font-semibold tracking-wide flex items-center gap-2">
-                    <span className="w-1 h-1 rounded-full bg-[oklch(0.35_0.08_220)]"></span>
+                  <div className="mb-3 text-xs font-semibold text-[oklch(0.45_0.018_160)]">
                     关键指标
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                     {card.fundamentals.keyMetrics.map((metric, idx) => (
-                      <div key={idx} className="bg-white rounded-xl p-5 border border-[oklch(0.9_0.01_220)] shadow-sm">
-                        <div className="text-[11px] text-[oklch(0.55_0.03_220)] mb-1.5 uppercase tracking-wider">{metric.label}</div>
-                        <div className="text-xl font-bold text-[oklch(0.35_0.08_220)] tracking-tight">{metric.description}</div>
-                        <div className="text-xs text-[oklch(0.65_0.03_220)] mt-2">{metric.whyItMatters}</div>
+                      <div key={idx} className="rounded-[8px] border border-border bg-white p-4">
+                        <div className="mb-1 text-[11px] text-[oklch(0.5_0.018_160)]">
+                          {metric.label}
+                        </div>
+                        <div className="text-base font-semibold leading-snug text-[var(--brand-ink)]">
+                          {metric.description}
+                        </div>
+                        <div className="mt-2 text-xs leading-relaxed text-[oklch(0.48_0.018_160)]">
+                          {metric.whyItMatters}
+                        </div>
                       </div>
                     ))}
                   </div>
                 </div>
+
                 <div>
-                  <div className="text-xs text-[oklch(0.55_0.03_220)] mb-3 font-semibold tracking-wide flex items-center gap-2">
-                    <span className="w-1 h-1 rounded-full bg-[oklch(0.65_0.08_70)]"></span>
+                  <div className="mb-3 text-xs font-semibold text-[var(--risk-ink)]">
                     风险提醒
                   </div>
-                  <div className="space-y-2.5">
+                  <div className="space-y-2">
                     {card.fundamentals.risks.map((risk, idx) => (
-                      <div key={idx} className="flex items-start gap-3 p-4 bg-[oklch(0.99_0.005_220)] rounded-xl border border-[oklch(0.65_0.08_70)/0.15]">
-                        <span className="w-2 h-2 rounded-full bg-[oklch(0.65_0.08_70)] mt-2 flex-shrink-0"></span>
-                        <span className="text-sm text-[oklch(0.25_0.02_220)] leading-relaxed">{risk}</span>
+                      <div key={idx} className="flex gap-3 rounded-[8px] border border-[var(--risk-border)] bg-[var(--risk-soft)] p-3 text-sm leading-relaxed text-[var(--risk-ink)]">
+                        <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                        <span className="min-w-0">{risk}</span>
                       </div>
                     ))}
                   </div>
@@ -284,23 +293,22 @@ export function ResearchCard({ card }: ResearchCardProps) {
               </div>
             </ResearchCardSection>
 
-            {/* 4. 政策/事件 */}
             <ResearchCardSection id="events" title="4. 政策/事件">
               <div className="space-y-3">
                 {card.events.items.map((event, idx) => (
-                  <div key={idx} className="p-4 bg-white rounded-xl border border-[oklch(0.9_0.01_220)] shadow-sm">
-                    <div className="flex flex-wrap items-center gap-2 mb-2">
-                      <span className="text-[10px] text-[oklch(0.55_0.03_220)] bg-[oklch(0.96_0.01_220)] px-2 py-0.5 rounded-full border border-[oklch(0.92_0.01_220)] font-mono">
+                  <div key={idx} className="rounded-[8px] border border-border bg-white p-4">
+                    <div className="mb-2 flex min-w-0 flex-wrap items-center gap-2">
+                      <span className="rounded-full border border-border bg-muted px-2.5 py-1 font-mono text-[10px] text-[oklch(0.47_0.018_160)]">
                         {event.type}
                       </span>
-                      <span className="text-sm font-semibold text-[oklch(0.25_0.02_220)]">
+                      <span className="min-w-0 text-sm font-semibold text-[oklch(0.18_0.014_160)]">
                         {event.title}
                       </span>
                     </div>
-                    <p className="text-sm text-[oklch(0.45_0.04_220)] leading-relaxed mb-2">
+                    <p className="mb-3 text-sm leading-relaxed text-[oklch(0.42_0.018_160)]">
                       {event.description}
                     </p>
-                    <p className="text-xs text-[oklch(0.55_0.03_220)] leading-relaxed bg-[oklch(0.97_0.008_220)] rounded-lg p-3">
+                    <p className="rounded-[8px] border-l-2 border-[var(--brand-dot)] bg-[var(--brand-soft)] p-3 text-xs leading-relaxed text-[var(--brand-ink)]">
                       待核查问题：{event.impactQuestion}
                     </p>
                   </div>
@@ -308,76 +316,73 @@ export function ResearchCard({ card }: ResearchCardProps) {
               </div>
             </ResearchCardSection>
 
-            {/* 5. 技术/交易面 */}
             <ResearchCardSection id="technical" title="5. 技术/交易面">
               <div className="space-y-5">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-                  <div className="bg-white rounded-xl p-5 border border-[oklch(0.9_0.01_220)] shadow-sm">
-                    <div className="text-[11px] text-[oklch(0.55_0.03_220)] mb-2 uppercase tracking-wider">价格走势</div>
-                    <div className="text-sm text-[oklch(0.25_0.02_220)] leading-relaxed">{card.technicalContext.priceAction}</div>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                  <div className="rounded-[8px] border border-border bg-white p-4">
+                    <div className="mb-2 text-[11px] font-semibold text-[oklch(0.5_0.018_160)]">价格走势</div>
+                    <div className="text-sm leading-relaxed text-[oklch(0.2_0.016_160)]">{card.technicalContext.priceAction}</div>
                   </div>
-                  <div className="bg-white rounded-xl p-5 border border-[oklch(0.9_0.01_220)] shadow-sm">
-                    <div className="text-[11px] text-[oklch(0.55_0.03_220)] mb-2 uppercase tracking-wider">成交量</div>
-                    <div className="text-sm text-[oklch(0.25_0.02_220)] leading-relaxed">{card.technicalContext.volume}</div>
+                  <div className="rounded-[8px] border border-border bg-white p-4">
+                    <div className="mb-2 text-[11px] font-semibold text-[oklch(0.5_0.018_160)]">成交量</div>
+                    <div className="text-sm leading-relaxed text-[oklch(0.2_0.016_160)]">{card.technicalContext.volume}</div>
                   </div>
-                  <div className="bg-white rounded-xl p-5 border border-[oklch(0.9_0.01_220)] shadow-sm">
-                    <div className="text-[11px] text-[oklch(0.55_0.03_220)] mb-2 uppercase tracking-wider">期权 IV</div>
-                    <div className="text-sm text-[oklch(0.25_0.02_220)] leading-relaxed">{card.technicalContext.optionsIv}</div>
+                  <div className="rounded-[8px] border border-border bg-white p-4">
+                    <div className="mb-2 text-[11px] font-semibold text-[oklch(0.5_0.018_160)]">期权 IV</div>
+                    <div className="text-sm leading-relaxed text-[oklch(0.2_0.016_160)]">{card.technicalContext.optionsIv}</div>
                   </div>
                 </div>
+
                 <div>
-                  <div className="text-xs text-[oklch(0.55_0.03_220)] mb-3 font-semibold tracking-wide flex items-center gap-2">
-                    <span className="w-1 h-1 rounded-full bg-[oklch(0.35_0.08_220)]"></span>
+                  <div className="mb-3 text-xs font-semibold text-[oklch(0.45_0.018_160)]">
                     关键区间
                   </div>
-                  <div className="flex flex-wrap gap-2.5">
+                  <div className="flex flex-wrap gap-2">
                     {card.technicalContext.keyZones.map((zone, idx) => (
-                      <div key={idx} className="px-4 py-2.5 bg-white rounded-xl border border-[oklch(0.9_0.01_220)] shadow-sm">
-                        <span className="text-xs text-[oklch(0.55_0.03_220)]">{zone.type}：</span>
-                        <span className="text-sm font-semibold text-[oklch(0.35_0.08_220)]">{zone.level}</span>
-                        {zone.note && <span className="text-xs text-[oklch(0.65_0.03_220)] ml-1">({zone.note})</span>}
+                      <div key={idx} className="rounded-[8px] border border-border bg-white px-3 py-2">
+                        <span className="text-xs text-[oklch(0.48_0.018_160)]">{zone.type}：</span>
+                        <span className="text-sm font-semibold text-[var(--brand-ink)]">{zone.level}</span>
+                        {zone.note && <span className="ml-1 text-xs text-[oklch(0.48_0.018_160)]">({zone.note})</span>}
                       </div>
                     ))}
                   </div>
                 </div>
-                <div className="p-5 bg-gradient-to-r from-[oklch(0.96_0.01_220)] to-[oklch(0.94_0.01_220)] rounded-xl border border-[oklch(0.92_0.01_220)]">
-                  <p className="text-sm text-[oklch(0.55_0.03_220)] leading-relaxed">
-                    {card.technicalContext.note}
-                  </p>
-                </div>
+
+                <p className="rounded-[8px] border border-border bg-[oklch(0.992_0.005_85)] p-4 text-sm leading-relaxed text-[oklch(0.42_0.018_160)]">
+                  {card.technicalContext.note}
+                </p>
               </div>
             </ResearchCardSection>
 
-            {/* 6. 证据链 - 专业研究记录风格 */}
             <ResearchCardSection id="evidence" title="6. 证据链" variant="subtle">
-              <div className="pt-2">
+              <div className="pt-1">
                 {card.evidence.map((ev) => (
                   <EvidenceItem key={ev.id} evidence={ev} />
                 ))}
               </div>
             </ResearchCardSection>
 
-            {/* 7. 下一步研究 */}
             <ResearchCardSection id="nextsteps" title="7. 下一步研究">
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {card.nextSteps.map((step, idx) => (
-                  <div key={idx} className="bg-white rounded-xl p-5 border border-[oklch(0.9_0.01_220)] shadow-sm">
-                    <div className="flex items-start justify-between mb-2.5 gap-3">
-                      <div className="flex items-center gap-3">
-                        <span className="w-6 h-6 rounded-lg bg-[oklch(0.35_0.08_220)] text-white flex items-center justify-center text-xs font-bold">
+                  <div key={idx} className="rounded-[8px] border border-border bg-white p-4">
+                    <div className="mb-2 flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="flex min-w-0 items-start gap-3">
+                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-[6px] bg-[var(--brand)] text-xs font-bold text-[oklch(0.14_0.015_160)]">
                           {idx + 1}
                         </span>
-                        <p className="font-semibold text-[oklch(0.25_0.02_220)] text-sm leading-relaxed">
+                        <p className="min-w-0 text-sm font-semibold leading-relaxed text-[oklch(0.18_0.014_160)]">
                           {step.task}
                         </p>
                       </div>
                       {step.followUpDate && (
-                        <span className="text-xs text-[oklch(0.55_0.03_220)] font-mono bg-[oklch(0.96_0.01_220)] px-3 py-1 rounded-lg border border-[oklch(0.92_0.01_220)] whitespace-nowrap">
+                        <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-border bg-muted px-2.5 py-1 font-mono text-xs text-[oklch(0.47_0.018_160)]">
+                          <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
                           {step.followUpDate}
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-[oklch(0.55_0.03_220)] leading-relaxed pl-9">
+                    <p className="text-sm leading-relaxed text-[oklch(0.45_0.018_160)] sm:pl-9">
                       {step.whyItMatters}
                     </p>
                   </div>
@@ -385,46 +390,42 @@ export function ResearchCard({ card }: ResearchCardProps) {
               </div>
             </ResearchCardSection>
 
-            {/* 8. 免责声明 */}
             <section id="disclaimer">
               <DisclaimerBox text={card.disclaimer} />
             </section>
 
-            {/* 页脚 - 适合截图 */}
-            <div className="text-center text-xs text-[oklch(0.65_0.03_220)] pb-8">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <div className="w-5 h-5 rounded-lg bg-[oklch(0.35_0.08_220)] flex items-center justify-center shadow-sm">
-                  <span className="text-white font-bold text-[10px]">M</span>
+            <footer className="pb-6 text-center text-xs text-[oklch(0.5_0.018_160)]">
+              <div className="mb-2 flex items-center justify-center gap-2">
+                <div className="flex h-5 w-5 items-center justify-center rounded-[6px] bg-[var(--brand)]">
+                  <span className="text-[10px] font-bold text-[oklch(0.14_0.015_160)]">M</span>
                 </div>
-                <span className="font-medium text-[oklch(0.55_0.03_220)]">Moki Market</span>
+                <span className="font-semibold text-[oklch(0.25_0.035_155)]">Moki Market</span>
               </div>
               <span className="font-mono">Research Card · {card.updatedAt}</span>
-            </div>
+            </footer>
           </div>
 
-          {/* 右侧导航 - 桌面端 */}
-          <div className="hidden lg:block w-56 flex-shrink-0">
-            <div className="sticky top-10">
-              <div className="bg-white rounded-2xl border border-[oklch(0.9_0.01_220)] shadow-[0_4px_24px_-10px_rgba(0,0,0,0.08)] p-5">
-                <div className="text-xs font-bold text-[oklch(0.35_0.08_220)] mb-4 px-2 tracking-wide">
-                  研究卡结构
-                </div>
-                <nav className="space-y-1">
-                  {sections.map((section) => (
-                    <a
-                      key={section.id}
-                      href={`#${section.id}`}
-                      className="block px-3 py-2 text-sm text-[oklch(0.55_0.03_220)] hover:text-[oklch(0.35_0.08_220)] hover:bg-[oklch(0.96_0.01_220)] rounded-lg transition-all hover:pl-4"
-                    >
-                      {section.title}
-                    </a>
-                  ))}
-                </nav>
+          <aside className="hidden lg:block">
+            <div className="sticky top-6 rounded-[8px] border border-border bg-white p-3 shadow-[0_12px_40px_-32px_rgba(0,0,0,0.28)]">
+              <div className="mb-2 flex items-center gap-2 px-2 py-1 text-xs font-semibold text-[var(--brand-ink)]">
+                <FileText className="h-4 w-4" aria-hidden="true" />
+                研究卡结构
               </div>
+              <nav className="space-y-1">
+                {sections.map((section) => (
+                  <a
+                    key={section.id}
+                    href={`#${section.id}`}
+                    className="block rounded-[6px] px-2.5 py-2 text-sm leading-snug text-[oklch(0.45_0.018_160)] transition-colors hover:bg-[var(--brand-soft)] hover:text-[var(--brand-ink)]"
+                  >
+                    {section.title}
+                  </a>
+                ))}
+              </nav>
             </div>
-          </div>
+          </aside>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
