@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
+import { StockSymbolBadge } from '@/components/common/StockSymbolBadge';
 import { ResearchCard } from '@/types/research-card';
 
 interface ResearchCardPreviewProps {
@@ -9,18 +10,17 @@ interface ResearchCardPreviewProps {
 export function ResearchCardPreview({ card }: ResearchCardPreviewProps) {
   return (
     <article className="group rounded-[8px] border border-border bg-white p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-colors hover:border-[oklch(0.74_0.13_72)] sm:p-5">
-      <div className="mb-4 flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex min-w-0 items-start gap-3 sm:gap-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[8px] border border-[var(--brand-border)] bg-[var(--brand-soft-strong)] sm:h-14 sm:w-14">
-            <span className="text-lg font-bold tracking-tight text-[var(--brand-ink)] sm:text-2xl">
-              {card.ticker}
-            </span>
-          </div>
+      <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex min-w-0 items-start gap-4">
+          <StockSymbolBadge
+            symbol={card.ticker || card.companyName.slice(0, 4)}
+            className="flex-shrink-0 rounded-[8px] sm:h-14 sm:w-14"
+          />
           <div className="min-w-0">
-            <div className="mb-1 text-sm text-[oklch(0.48_0.018_160)]">
+            <div className="mb-1 truncate text-sm text-[oklch(0.48_0.018_160)]">
               {card.companyName}
             </div>
-            <h2 className="text-lg font-semibold leading-snug text-[oklch(0.18_0.014_160)] sm:text-xl">
+            <h2 className="max-w-full break-words text-lg font-semibold leading-snug text-[oklch(0.18_0.014_160)] sm:text-xl">
               {card.title}
             </h2>
           </div>

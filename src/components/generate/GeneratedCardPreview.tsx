@@ -1,4 +1,5 @@
 import { AlertTriangle, CheckCircle2, FileText, Search } from 'lucide-react';
+import { StockSymbolBadge } from '@/components/common/StockSymbolBadge';
 import { ResearchCard } from '@/types/research-card';
 import { SecurityRecord } from '@/types/security';
 
@@ -37,6 +38,26 @@ function buildCandidateLabel(candidate: SecurityRecord) {
   return [candidate.symbol, candidate.numericCode, candidate.chineseNameHK, candidate.companyName, candidate.market]
     .filter(Boolean)
     .join(' · ');
+}
+
+function getBadgeSymbol(card: ResearchCard) {
+  if (card.matchType === 'numericCode' && card.numericCode) {
+    return card.numericCode;
+  }
+
+  if (card.ticker && !/\p{Script=Han}/u.test(card.ticker)) {
+    return card.ticker;
+  }
+
+  if (card.numericCode) {
+    return card.numericCode;
+  }
+
+  if (card.queryInput && !/\p{Script=Han}/u.test(card.queryInput)) {
+    return card.queryInput;
+  }
+
+  return '--';
 }
 
 export function GeneratedCardPreview({
@@ -80,17 +101,14 @@ export function GeneratedCardPreview({
   const risks = (card.risks ?? card.fundamentals.risks).slice(0, 4);
   const statusLabel = getMatchStatusLabel(card, isFallback);
   const matchTypeLabel = getMatchTypeLabel(card.matchType);
+  const badgeSymbol = getBadgeSymbol(card);
 
   return (
     <article className="overflow-hidden rounded-[8px] border border-border bg-white shadow-[0_12px_40px_-32px_rgba(0,0,0,0.28)]">
       <div className="border-b border-border bg-[oklch(0.992_0.005_85)] p-4 sm:p-5">
         <div className="mb-4 flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex min-w-0 items-start gap-3">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[8px] border border-[var(--brand-border)] bg-[var(--brand-soft-strong)]">
-              <span className="font-mono text-lg font-bold tracking-tight text-[var(--brand-ink)]">
-                {card.ticker}
-              </span>
-            </div>
+            <StockSymbolBadge symbol={badgeSymbol} className="flex-shrink-0 rounded-[8px] sm:h-14 sm:w-14" />
             <div className="min-w-0">
               <div className="mb-2 flex flex-wrap items-center gap-2">
                 <span className="inline-flex items-center gap-2 rounded-full border border-[var(--brand-border)] bg-[var(--brand-soft)] px-3 py-1 text-xs font-semibold text-[var(--brand-ink)]">
