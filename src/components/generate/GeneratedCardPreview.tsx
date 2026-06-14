@@ -1,9 +1,12 @@
 import { AlertTriangle, CheckCircle2, FileText, Search } from 'lucide-react';
 import { StockSymbolBadge } from '@/components/common/StockSymbolBadge';
 import { BasicDataPanel } from '@/components/data/BasicDataPanel';
+import { EarningsSnapshotPanel } from '@/components/earnings/EarningsSnapshotPanel';
+import { GuidanceComparePanel } from '@/components/earnings/GuidanceComparePanel';
 import { SecurityMatchBadge } from '@/components/security/SecurityMatchBadge';
 import { SecurityMetadataRow } from '@/components/security/SecurityMetadataRow';
 import { BasicCompanyData } from '@/types/basic-data';
+import { EarningsSnapshotData } from '@/types/earnings';
 import { ResearchCard } from '@/types/research-card';
 import { SecurityInputKind, SecurityMarket, SecurityRecord, SecurityResolution } from '@/types/security';
 
@@ -13,6 +16,7 @@ interface GeneratedCardPreviewProps {
   candidates?: SecurityRecord[];
   rawInput?: string;
   basicData?: BasicCompanyData | null;
+  earningsSnapshot?: EarningsSnapshotData | null;
 }
 
 function buildCandidateLabel(candidate: SecurityRecord) {
@@ -83,6 +87,7 @@ export function GeneratedCardPreview({
   candidates = [],
   rawInput = '',
   basicData = null,
+  earningsSnapshot = null,
 }: GeneratedCardPreviewProps) {
   if (!card && candidates.length > 0) {
     return (
@@ -121,6 +126,7 @@ export function GeneratedCardPreview({
   const previewSecurity = getPreviewSecurity(card);
   const previewResolution = getPreviewResolution(card, isFallback, rawInput);
   const dataModeLabel = basicData && basicData.provider !== 'mock' ? '真实基础数据' : 'mock fallback';
+  const sourceNote = `${card.sourceNote ?? card.disclaimer} 财报快照中的预测值和指引对比依赖第三方数据或文本抽取，需结合来源复核。`;
 
   return (
     <article className="overflow-hidden rounded-[8px] border border-border bg-white shadow-[0_12px_40px_-32px_rgba(0,0,0,0.28)]">
@@ -167,6 +173,13 @@ export function GeneratedCardPreview({
           <p className="mb-4 rounded-[8px] border border-[var(--brand-border)] bg-[var(--brand-soft)] p-3 text-xs leading-relaxed text-[var(--brand-ink)]">
             当前输入未匹配到 mock 主数据，已生成通用研究卡雏形。
           </p>
+        )}
+
+        {earningsSnapshot && (
+          <div className="mb-4 space-y-4">
+            <EarningsSnapshotPanel data={earningsSnapshot} />
+            <GuidanceComparePanel guidance={earningsSnapshot.guidance} warnings={earningsSnapshot.warnings} />
+          </div>
         )}
 
         {basicData && (
@@ -254,7 +267,7 @@ export function GeneratedCardPreview({
       </div>
 
       <p className="border-t border-border p-4 text-xs leading-relaxed text-[oklch(0.5_0.018_160)] sm:p-5">
-        {card.sourceNote ?? card.disclaimer}
+        {sourceNote}
       </p>
     </article>
   );

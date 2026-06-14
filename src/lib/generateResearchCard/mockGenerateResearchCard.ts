@@ -1,6 +1,8 @@
 import { BasicCompanyData } from '@/types/basic-data';
+import { EarningsSnapshotData, GuidanceMetricComparison } from '@/types/earnings';
 import { ResearchCard } from '@/types/research-card';
 import { SecurityRecord, SecurityResolution } from '@/types/security';
+import { formatEps, formatMoneyCompact, formatPercent } from '@/lib/earnings/formatEarningsValue';
 import { resolveSecurityInput } from '@/lib/security/resolveSecurityInput';
 
 export const cardTypeOptions = [
@@ -162,6 +164,68 @@ function valueOrDash(value?: string) {
   return value || '--';
 }
 
+function getEarningsMetric(earningsSnapshot: EarningsSnapshotData, metricKey: 'revenue' | 'netIncome' | 'eps') {
+  return earningsSnapshot.metrics.find((metric) => metric.metricKey === metricKey);
+}
+
+function formatMetricActual(earningsSnapshot: EarningsSnapshotData, metricKey: 'revenue' | 'netIncome' | 'eps') {
+  const metric = getEarningsMetric(earningsSnapshot, metricKey);
+
+  if (!metric) {
+    return '--';
+  }
+
+  return metricKey === 'eps' ? formatEps(metric.actual) : formatMoneyCompact(metric.actual, metric.currency ?? 'USD');
+}
+
+function formatMetricSurprise(earningsSnapshot: EarningsSnapshotData, metricKey: 'revenue' | 'eps') {
+  const metric = getEarningsMetric(earningsSnapshot, metricKey);
+
+  if (!metric || metric.estimate === undefined) {
+    return '预测值缺失，未计算较预期差距';
+  }
+
+  return formatPercent(metric.surprisePct);
+}
+
+function formatMetricYoy(earningsSnapshot: EarningsSnapshotData, metricKey: 'revenue' | 'netIncome') {
+  const metric = getEarningsMetric(earningsSnapshot, metricKey);
+
+  return formatPercent(metric?.yoyPct);
+}
+
+function summarizeGuidance(guidance: GuidanceMetricComparison[]) {
+  if (guidance.length === 0) {
+    return '未提取到结构化公司指引';
+  }
+
+  return guidance
+    .map((item) => {
+      const status = item.quality === 'extracted' ? '文本抽取，待复核' : item.quality === 'verified' ? '已验证' : '待补充';
+      return `${item.label}：${status}`;
+    })
+    .join('；');
+}
+
+function buildEarningsSnapshotSection(earningsSnapshotData?: EarningsSnapshotData) {
+  if (!earningsSnapshotData) {
+    return undefined;
+  }
+
+  return {
+    title: '单季度财报快照',
+    body: [
+      `营收公布值：${formatMetricActual(earningsSnapshotData, 'revenue')}`,
+      `营收较预期：${formatMetricSurprise(earningsSnapshotData, 'revenue')}`,
+      `营收同比：${formatMetricYoy(earningsSnapshotData, 'revenue')}`,
+      `净利润公布值：${formatMetricActual(earningsSnapshotData, 'netIncome')}`,
+      `EPS 公布值：${formatMetricActual(earningsSnapshotData, 'eps')}`,
+      `EPS 较预期：${formatMetricSurprise(earningsSnapshotData, 'eps')}`,
+      `指引摘要：${summarizeGuidance(earningsSnapshotData.guidance)}`,
+    ].join('\n'),
+  };
+}
+
 function buildBasicDataSection(basicData?: BasicCompanyData) {
   if (!basicData) {
     return undefined;
@@ -191,11 +255,13 @@ export function mockGenerateResearchCard({
   cardType,
   selectedSecurity,
   basicData,
+  earningsSnapshotData,
 }: {
   rawInput: string;
   cardType: GenerateCardType;
   selectedSecurity?: SecurityRecord;
   basicData?: BasicCompanyData;
+  earningsSnapshotData?: EarningsSnapshotData;
 }): MockGenerateResearchCardResult {
   const resolution = selectedSecurity
     ? ({
@@ -224,7 +290,10 @@ export function mockGenerateResearchCard({
   const cardTypeLabel = getCardTypeLabel(cardType);
   const copy = buildCopy(displaySymbol, security.companyName, security.theme ?? 'general market research context', cardType);
   const basicDataSection = buildBasicDataSection(basicData);
-  const sections = basicDataSection ? [basicDataSection, ...copy.sections] : copy.sections;
+  const earningsSnapshotSection = buildEarningsSnapshotSection(earningsSnapshotData);
+  const sections = [earningsSnapshotSection, basicDataSection, ...copy.sections].filter(
+    (section): section is { title: string; body: string } => Boolean(section)
+  );
   const oneLine = basicData && basicData.provider !== 'mock'
     ? `${copy.oneLine} 本卡已结合 ${basicData.provider} 基础数据快照，但仍需人工复核。`
     : copy.oneLine;
