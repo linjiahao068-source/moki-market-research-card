@@ -62,7 +62,7 @@ export function TickerSubmitSection() {
                   setError('');
                 }
               }}
-              placeholder="输入 ORCL / 00700 / 腾讯控股"
+              placeholder="ORCL / 00700 / 腾讯控股"
               className="h-11 min-w-0 flex-1 rounded-[8px] border border-[var(--brand-border)] bg-white px-3 text-base font-semibold tracking-wide text-[oklch(0.18_0.014_160)] outline-none transition-colors placeholder:font-sans placeholder:font-normal placeholder:tracking-normal placeholder:text-[oklch(0.58_0.018_160)] focus:border-[var(--brand-border)] focus:ring-2 focus:ring-white"
             />
             <button

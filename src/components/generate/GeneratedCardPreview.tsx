@@ -1,7 +1,9 @@
 import { AlertTriangle, CheckCircle2, FileText, Search } from 'lucide-react';
 import { StockSymbolBadge } from '@/components/common/StockSymbolBadge';
+import { SecurityMatchBadge } from '@/components/security/SecurityMatchBadge';
+import { SecurityMetadataRow } from '@/components/security/SecurityMetadataRow';
 import { ResearchCard } from '@/types/research-card';
-import { SecurityRecord } from '@/types/security';
+import { SecurityInputKind, SecurityMarket, SecurityRecord, SecurityResolution } from '@/types/security';
 
 interface GeneratedCardPreviewProps {
   card: ResearchCard | null;
@@ -10,34 +12,46 @@ interface GeneratedCardPreviewProps {
   rawInput?: string;
 }
 
-function getMatchStatusLabel(card: ResearchCard, isFallback: boolean) {
-  if (isFallback || card.matchStatus === 'unmatched') {
-    return '未匹配主数据，使用通用 mock 卡';
-  }
-
-  return '已匹配 mock 主数据';
-}
-
-function getMatchTypeLabel(matchType?: ResearchCard['matchType']) {
-  if (matchType === 'numericCode') {
-    return '数字代码';
-  }
-
-  if (matchType === 'chineseName') {
-    return '中文名';
-  }
-
-  if (matchType === 'symbol') {
-    return 'Ticker';
-  }
-
-  return '通用输入';
-}
-
 function buildCandidateLabel(candidate: SecurityRecord) {
   return [candidate.symbol, candidate.numericCode, candidate.chineseNameHK, candidate.companyName, candidate.market]
     .filter(Boolean)
     .join(' · ');
+}
+
+function getPreviewSecurity(card: ResearchCard): SecurityRecord {
+  return {
+    id: card.slug,
+    market: (card.market as SecurityMarket | undefined) ?? 'UNKNOWN',
+    symbol: card.ticker,
+    numericCode: card.numericCode,
+    companyName: card.companyName,
+    chineseNameHK: card.chineseName,
+  };
+}
+
+function getPreviewResolution(card: ResearchCard, isFallback: boolean, rawInput: string): SecurityResolution {
+  const inputKind = (card.matchType ?? (isFallback ? 'unknown' : 'symbol')) as SecurityInputKind;
+  const normalizedInput = card.queryInput || rawInput || card.ticker;
+  const previewSecurity = getPreviewSecurity(card);
+
+  if (isFallback || card.matchStatus === 'unmatched') {
+    return {
+      status: 'unmatched',
+      inputKind,
+      rawInput: card.queryInput || rawInput,
+      normalizedInput,
+      fallbackSecurity: previewSecurity,
+    };
+  }
+
+  return {
+    status: 'matched',
+    inputKind,
+    matchType: card.matchType ?? 'symbol',
+    rawInput: card.queryInput || rawInput,
+    normalizedInput,
+    security: previewSecurity,
+  };
 }
 
 function getBadgeSymbol(card: ResearchCard) {
@@ -99,9 +113,9 @@ export function GeneratedCardPreview({
 
   const keySignals = card.keySignals?.slice(0, 6) ?? card.fundamentals.revenueDrivers.slice(0, 6);
   const risks = (card.risks ?? card.fundamentals.risks).slice(0, 4);
-  const statusLabel = getMatchStatusLabel(card, isFallback);
-  const matchTypeLabel = getMatchTypeLabel(card.matchType);
   const badgeSymbol = getBadgeSymbol(card);
+  const previewSecurity = getPreviewSecurity(card);
+  const previewResolution = getPreviewResolution(card, isFallback, rawInput);
 
   return (
     <article className="overflow-hidden rounded-[8px] border border-border bg-white shadow-[0_12px_40px_-32px_rgba(0,0,0,0.28)]">
@@ -130,40 +144,20 @@ export function GeneratedCardPreview({
           </div>
         </div>
 
-        <div className="mb-4 grid gap-2 rounded-[8px] border border-border bg-white p-3 text-xs text-[oklch(0.45_0.018_160)] sm:grid-cols-2 lg:grid-cols-3">
-          <div>
-            <span className="font-semibold text-[oklch(0.22_0.018_160)]">用户输入：</span>
-            {card.queryInput || rawInput || '—'}
+        <div className="mb-4 rounded-[8px] border border-border bg-white p-3">
+          <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-[oklch(0.45_0.018_160)]">
+            <div>
+              <span className="font-semibold text-[oklch(0.22_0.018_160)]">用户输入：</span>
+              {card.queryInput || rawInput || '—'}
+            </div>
+            <SecurityMatchBadge resolution={previewResolution} />
           </div>
-          <div>
-            <span className="font-semibold text-[oklch(0.22_0.018_160)]">匹配状态：</span>
-            {statusLabel}
-          </div>
-          <div>
-            <span className="font-semibold text-[oklch(0.22_0.018_160)]">匹配方式：</span>
-            {matchTypeLabel}
-          </div>
-          <div>
-            <span className="font-semibold text-[oklch(0.22_0.018_160)]">symbol：</span>
-            {card.ticker || '—'}
-          </div>
-          <div>
-            <span className="font-semibold text-[oklch(0.22_0.018_160)]">numericCode：</span>
-            {card.numericCode || '—'}
-          </div>
-          <div>
-            <span className="font-semibold text-[oklch(0.22_0.018_160)]">中文名：</span>
-            {card.chineseName || '—'}
-          </div>
-          <div>
-            <span className="font-semibold text-[oklch(0.22_0.018_160)]">market：</span>
-            {card.market || 'UNKNOWN'}
-          </div>
+          <SecurityMetadataRow security={previewSecurity} matchType={card.matchType} />
         </div>
 
         {isFallback && (
           <p className="mb-4 rounded-[8px] border border-[var(--brand-border)] bg-[var(--brand-soft)] p-3 text-xs leading-relaxed text-[var(--brand-ink)]">
-            当前证券未匹配到 mock 主数据，已按输入生成通用研究卡雏形。
+            当前输入未匹配到 mock 主数据，已生成通用研究卡雏形。
           </p>
         )}
 

@@ -1,5 +1,5 @@
 import { ResearchCard } from '@/types/research-card';
-import { SecurityResolution } from '@/types/security';
+import { SecurityRecord, SecurityResolution } from '@/types/security';
 import { resolveSecurityInput } from '@/lib/security/resolveSecurityInput';
 
 export const cardTypeOptions = [
@@ -24,7 +24,7 @@ export type GenerateCardType = (typeof cardTypeOptions)[number]['value'];
 
 const MOCK_UPDATED_AT = '2026-06-14';
 const MOCK_DATE_SLUG = '20260614';
-const SOURCE_NOTE = '当前结果由 Moki Market V0.2.3 mock generator 生成，仅用于产品体验验证，不构成投资建议。';
+const SOURCE_NOTE = '当前结果由 Moki Market V0.2.4 mock security resolver 和 mock generator 生成，仅用于产品体验验证，不构成投资建议。';
 const FALLBACK_SOURCE_NOTE = `${SOURCE_NOTE} 当前证券未匹配到 mock 主数据，已按输入生成通用研究卡雏形。`;
 
 interface CardTypeCopy {
@@ -157,8 +157,25 @@ export type MockGenerateResearchCardResult =
       resolution: Extract<SecurityResolution, { status: 'ambiguous' }>;
     };
 
-export function mockGenerateResearchCard({ rawInput, cardType }: { rawInput: string; cardType: GenerateCardType }): MockGenerateResearchCardResult {
-  const resolution = resolveSecurityInput(rawInput);
+export function mockGenerateResearchCard({
+  rawInput,
+  cardType,
+  selectedSecurity,
+}: {
+  rawInput: string;
+  cardType: GenerateCardType;
+  selectedSecurity?: SecurityRecord;
+}): MockGenerateResearchCardResult {
+  const resolution = selectedSecurity
+    ? ({
+        status: 'matched',
+        inputKind: selectedSecurity.symbol ? 'symbol' : selectedSecurity.numericCode ? 'numericCode' : 'chineseName',
+        matchType: selectedSecurity.symbol ? 'symbol' : selectedSecurity.numericCode ? 'numericCode' : 'chineseName',
+        rawInput,
+        normalizedInput: selectedSecurity.symbol ?? selectedSecurity.numericCode ?? selectedSecurity.chineseNameHK ?? rawInput,
+        security: selectedSecurity,
+      } satisfies Extract<SecurityResolution, { status: 'matched' }>)
+    : resolveSecurityInput(rawInput);
 
   if (resolution.status === 'ambiguous') {
     return {
@@ -175,8 +192,9 @@ export function mockGenerateResearchCard({ rawInput, cardType }: { rawInput: str
     .replace(/[^a-z0-9]+/g, '-');
   const cardTypeLabel = getCardTypeLabel(cardType);
   const copy = buildCopy(displaySymbol, security.companyName, security.theme ?? 'general market research context', cardType);
+  const displayName = security.companyName;
   const title = resolution.status === 'matched'
-    ? `${security.companyName} ${cardTypeLabel}`
+    ? `${displayName} ${cardTypeLabel}`
     : `${rawInput} 通用研究卡`;
 
   return {

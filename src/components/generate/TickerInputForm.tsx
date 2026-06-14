@@ -7,8 +7,10 @@ import {
   GenerateCardType,
   mockGenerateResearchCard,
 } from '@/lib/generateResearchCard/mockGenerateResearchCard';
+import { resolveSecurityInput } from '@/lib/security/resolveSecurityInput';
 import { ResearchCard } from '@/types/research-card';
 import { SecurityRecord } from '@/types/security';
+import { SecurityCandidateList } from '@/components/security/SecurityCandidateList';
 import { CardTypeSelector } from './CardTypeSelector';
 import { GeneratedCardPreview } from './GeneratedCardPreview';
 
@@ -38,16 +40,6 @@ function buildCandidateInput(candidate: SecurityRecord) {
   return candidate.symbol ?? candidate.numericCode ?? candidate.chineseNameHK ?? candidate.companyName;
 }
 
-function buildCandidateFields(candidate: SecurityRecord) {
-  return [
-    ['companyName', candidate.companyName],
-    ['market', candidate.market],
-    ['symbol', candidate.symbol],
-    ['numericCode', candidate.numericCode],
-    ['chineseNameHK', candidate.chineseNameHK],
-  ].filter((field): field is [string, string] => Boolean(field[1]));
-}
-
 export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
   const defaultCardType = cardTypeOptions[0].value;
   const [query, setQuery] = useState(initialQuery);
@@ -59,7 +51,7 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
 
   function handleCandidateSelect(candidate: SecurityRecord) {
     const candidateInput = buildCandidateInput(candidate);
-    const result = mockGenerateResearchCard({ rawInput: candidateInput, cardType });
+    const result = mockGenerateResearchCard({ rawInput: candidateInput, cardType, selectedSecurity: candidate });
 
     if (!result.ok) {
       setError(result.error);
@@ -82,25 +74,34 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const result = mockGenerateResearchCard({ rawInput: query, cardType });
+    const resolution = resolveSecurityInput(query);
 
-    if (!result.ok) {
-      setError(result.error);
-      setCandidates(result.resolution.candidates);
-      setGenerated(null);
-      return;
-    }
-
-    if (!result.resolution.normalizedInput) {
+    if (!resolution.normalizedInput) {
       setError('请输入股票代码、Ticker 或中文名。');
       setCandidates([]);
       setGenerated(null);
       return;
     }
 
-    if (result.resolution.inputKind === 'unknown') {
+    if (resolution.inputKind === 'unknown') {
       setError('暂不支持该输入格式。');
       setCandidates([]);
+      setGenerated(null);
+      return;
+    }
+
+    if (resolution.status === 'ambiguous') {
+      setError('匹配到多个证券，请选择候选项，或输入更精确的股票代码、Ticker 或中文名。');
+      setCandidates(resolution.candidates);
+      setGenerated(null);
+      return;
+    }
+
+    const result = mockGenerateResearchCard({ rawInput: query, cardType });
+
+    if (!result.ok) {
+      setError(result.error);
+      setCandidates(result.resolution.candidates);
       setGenerated(null);
       return;
     }
@@ -147,26 +148,8 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
             <div className="mt-3 rounded-[8px] border border-[var(--risk-border)] bg-[var(--risk-soft)] px-3 py-2 text-sm leading-relaxed text-[var(--risk-ink)]">
               <p>{error}</p>
               {candidates.length > 0 && (
-                <div className="mt-3 space-y-2">
-                  {candidates.map((candidate) => (
-                    <button
-                      key={candidate.id}
-                      type="button"
-                      onClick={() => handleCandidateSelect(candidate)}
-                      className="w-full rounded-[8px] border border-[var(--risk-border)] bg-white/70 p-3 text-left transition-colors hover:bg-white"
-                    >
-                      <div className="mb-2 text-sm font-semibold text-[var(--risk-ink)]">
-                        {candidate.companyName}
-                      </div>
-                      <div className="flex flex-wrap gap-2 text-xs text-[var(--risk-ink)]">
-                        {buildCandidateFields(candidate).map(([label, value]) => (
-                          <span key={label} className="rounded-full border border-[var(--risk-border)] bg-white px-2 py-1">
-                            {label}: {value}
-                          </span>
-                        ))}
-                      </div>
-                    </button>
-                  ))}
+                <div className="mt-3">
+                  <SecurityCandidateList candidates={candidates} onSelect={handleCandidateSelect} />
                 </div>
               )}
             </div>

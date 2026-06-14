@@ -1,13 +1,11 @@
 import { mockSecurities } from '@/data/mockSecurities';
 import { SecurityInputKind, SecurityRecord, SecurityResolution } from '@/types/security';
-import { detectSecurityInputKind } from './detectSecurityInputKind';
 import { normalizeSecurityQuery } from './normalizeSecurityQuery';
 
-// V0.2.3 mock resolver: resolves user security input against a local mock security master.
-// Later this pure resolver can be replaced by a real security master resolver without changing UI semantics.
+// V0.2.4 mock security resolver: resolves user input against local mock securities.
+// Later this pure resolver can be replaced by a real securities master data resolver.
 export function resolveSecurityInput(rawInput: string): SecurityResolution {
-  const { normalizedInput } = normalizeSecurityQuery(rawInput);
-  const inputKind = detectSecurityInputKind(normalizedInput);
+  const { normalizedInput, inputKind } = normalizeSecurityQuery(rawInput);
 
   if (inputKind === 'symbol') {
     const matches = mockSecurities.filter(
@@ -20,7 +18,7 @@ export function resolveSecurityInput(rawInput: string): SecurityResolution {
       matchType: 'symbol',
       rawInput,
       normalizedInput,
-      fallbackSecurity: createFallbackSecurity({ inputKind, normalizedInput }),
+      fallbackSecurity: createFallbackSecurity({ inputKind, rawInput, normalizedInput }),
     });
   }
 
@@ -37,7 +35,7 @@ export function resolveSecurityInput(rawInput: string): SecurityResolution {
       matchType: 'numericCode',
       rawInput,
       normalizedInput,
-      fallbackSecurity: createFallbackSecurity({ inputKind, normalizedInput }),
+      fallbackSecurity: createFallbackSecurity({ inputKind, rawInput, normalizedInput }),
     });
   }
 
@@ -54,7 +52,7 @@ export function resolveSecurityInput(rawInput: string): SecurityResolution {
       matchType: 'chineseName',
       rawInput,
       normalizedInput,
-      fallbackSecurity: createFallbackSecurity({ inputKind, normalizedInput }),
+      fallbackSecurity: createFallbackSecurity({ inputKind, rawInput, normalizedInput }),
     });
   }
 
@@ -63,7 +61,7 @@ export function resolveSecurityInput(rawInput: string): SecurityResolution {
     inputKind,
     rawInput,
     normalizedInput,
-    fallbackSecurity: createFallbackSecurity({ inputKind, normalizedInput: normalizedInput || rawInput }),
+    fallbackSecurity: createFallbackSecurity({ inputKind, rawInput, normalizedInput }),
   };
 }
 
@@ -114,20 +112,22 @@ function resolveMatches({
 
 function createFallbackSecurity({
   inputKind,
+  rawInput,
   normalizedInput,
 }: {
   inputKind: SecurityInputKind;
+  rawInput: string;
   normalizedInput: string;
 }): SecurityRecord {
-  const fallbackName = normalizedInput || 'Unknown Security';
+  const fallbackName = normalizedInput || rawInput || 'Unknown Company';
 
   return {
-    id: `unknown-${fallbackName.toLowerCase()}`,
+    id: `unknown-${normalizedInput}`,
     market: 'UNKNOWN',
     symbol: inputKind === 'symbol' ? normalizedInput : undefined,
     numericCode: inputKind === 'numericCode' ? normalizedInput : undefined,
-    companyName: inputKind === 'chineseName' ? fallbackName : `${fallbackName} Company`,
-    chineseNameHK: inputKind === 'chineseName' ? fallbackName : undefined,
-    theme: 'general market research context',
+    companyName: fallbackName,
+    chineseNameHK: inputKind === 'chineseName' ? normalizedInput : undefined,
+    theme: 'General market research placeholder',
   };
 }

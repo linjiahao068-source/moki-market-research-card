@@ -5,7 +5,7 @@ import { TickerInputForm } from '@/components/generate/TickerInputForm';
 
 export const metadata: Metadata = {
   title: '生成 Moki Market 研究卡｜Moki Market',
-  description: 'V0.2.3 mock 生成模式，用于产品体验验证，不构成投资建议。',
+  description: 'V0.2.4 mock security resolver，用于验证股票识别和研究卡生成流程，不构成投资建议。',
   openGraph: {
     title: '生成 Moki Market 研究卡｜Moki Market',
     description: '输入股票代码、Ticker 或中文名，选择卡片类型，生成本地 mock 研究卡预览。',
@@ -40,13 +40,13 @@ export default async function GeneratePage({ searchParams }: GeneratePageProps) 
 
         <section className="mb-5 rounded-[8px] border border-border bg-white p-5 shadow-[0_12px_40px_-32px_rgba(0,0,0,0.28)] sm:p-6">
           <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[var(--brand-border)] bg-[var(--brand-soft)] px-3 py-1 text-xs font-semibold text-[var(--brand-ink)]">
-            V0.2.3 mock 生成模式
+            V0.2.4 mock security resolver
           </div>
           <h1 className="mb-3 text-3xl font-bold leading-tight text-[oklch(0.16_0.014_160)] sm:text-4xl">
             生成 Moki Market 研究卡
           </h1>
           <p className="max-w-3xl text-sm leading-relaxed text-[oklch(0.43_0.018_160)] sm:text-base">
-            当前为 V0.2.3 mock 生成模式。你可以输入股票代码 / Ticker / 中文名，例如美股 Ticker、港股数字代码或已收录的股票中文名。结果仅用于产品体验验证，不构成投资建议。
+            输入股票代码 / Ticker / 中文名。当前为 V0.2.4 mock security resolver，用于验证股票识别和研究卡生成流程，不构成投资建议。
           </p>
         </section>
 
