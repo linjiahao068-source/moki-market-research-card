@@ -1,3 +1,4 @@
+import { BasicCompanyData } from '@/types/basic-data';
 import { ResearchCard } from '@/types/research-card';
 import { SecurityRecord, SecurityResolution } from '@/types/security';
 import { resolveSecurityInput } from '@/lib/security/resolveSecurityInput';
@@ -24,7 +25,7 @@ export type GenerateCardType = (typeof cardTypeOptions)[number]['value'];
 
 const MOCK_UPDATED_AT = '2026-06-14';
 const MOCK_DATE_SLUG = '20260614';
-const SOURCE_NOTE = '当前结果由 Moki Market V0.2.4 mock security resolver 和 mock generator 生成，仅用于产品体验验证，不构成投资建议。';
+const SOURCE_NOTE = '当前结果结合 Moki Market V0.2.5 基础数据接入层和 mock generator 生成，仅用于产品体验验证，不构成投资建议。';
 const FALLBACK_SOURCE_NOTE = `${SOURCE_NOTE} 当前证券未匹配到 mock 主数据，已按输入生成通用研究卡雏形。`;
 
 interface CardTypeCopy {
@@ -157,14 +158,44 @@ export type MockGenerateResearchCardResult =
       resolution: Extract<SecurityResolution, { status: 'ambiguous' }>;
     };
 
+function valueOrDash(value?: string) {
+  return value || '--';
+}
+
+function buildBasicDataSection(basicData?: BasicCompanyData) {
+  if (!basicData) {
+    return undefined;
+  }
+
+  const financials = basicData.financials ?? {};
+  const latestFiling = basicData.latestFiling;
+  const fallbackText = basicData.provider === 'mock' ? ' 当前基础数据来自 mock fallback。' : '';
+
+  return {
+    title: '基础数据快照',
+    body: [
+      `数据来源：${basicData.provider}`,
+      `最近 filing：${valueOrDash(latestFiling?.formType)} / ${valueOrDash(latestFiling?.filingDate)}`,
+      `Revenue：${valueOrDash(financials.revenue)}`,
+      `Net income：${valueOrDash(financials.netIncome)}`,
+      `Assets：${valueOrDash(financials.assets)}`,
+      `Cash：${valueOrDash(financials.cashAndEquivalents)}`,
+      `数据覆盖状态：${basicData.coverageStatus}`,
+      fallbackText.trim(),
+    ].filter(Boolean).join('\n'),
+  };
+}
+
 export function mockGenerateResearchCard({
   rawInput,
   cardType,
   selectedSecurity,
+  basicData,
 }: {
   rawInput: string;
   cardType: GenerateCardType;
   selectedSecurity?: SecurityRecord;
+  basicData?: BasicCompanyData;
 }): MockGenerateResearchCardResult {
   const resolution = selectedSecurity
     ? ({
@@ -192,6 +223,11 @@ export function mockGenerateResearchCard({
     .replace(/[^a-z0-9]+/g, '-');
   const cardTypeLabel = getCardTypeLabel(cardType);
   const copy = buildCopy(displaySymbol, security.companyName, security.theme ?? 'general market research context', cardType);
+  const basicDataSection = buildBasicDataSection(basicData);
+  const sections = basicDataSection ? [basicDataSection, ...copy.sections] : copy.sections;
+  const oneLine = basicData && basicData.provider !== 'mock'
+    ? `${copy.oneLine} 本卡已结合 ${basicData.provider} 基础数据快照，但仍需人工复核。`
+    : copy.oneLine;
   const displayName = security.companyName;
   const title = resolution.status === 'matched'
     ? `${displayName} ${cardTypeLabel}`
@@ -210,7 +246,7 @@ export function mockGenerateResearchCard({
       updatedAt: MOCK_UPDATED_AT,
       isMock: true,
       summary: {
-        oneLine: copy.oneLine,
+        oneLine,
         currentState: copy.bullCase,
         bullCase: copy.bullCase,
         bearCase: copy.bearCase,
@@ -257,7 +293,7 @@ export function mockGenerateResearchCard({
         followUpDate: '2026-06-30',
       })),
       disclaimer: '仅供信息整理、研究辅助和教育参考，不构成投资建议。',
-      sections: copy.sections,
+      sections,
       keySignals: copy.keySignals,
       risks: copy.risks,
       sourceNote: resolution.status === 'unmatched' ? FALLBACK_SOURCE_NOTE : SOURCE_NOTE,

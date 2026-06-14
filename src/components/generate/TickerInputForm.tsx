@@ -2,15 +2,16 @@
 
 import { FormEvent, useState, useTransition } from 'react';
 import { ArrowRight, Loader2, RotateCcw } from 'lucide-react';
+import { SecurityCandidateList } from '@/components/security/SecurityCandidateList';
 import {
   cardTypeOptions,
   GenerateCardType,
   mockGenerateResearchCard,
 } from '@/lib/generateResearchCard/mockGenerateResearchCard';
 import { resolveSecurityInput } from '@/lib/security/resolveSecurityInput';
+import { BasicCompanyData } from '@/types/basic-data';
 import { ResearchCard } from '@/types/research-card';
 import { SecurityRecord } from '@/types/security';
-import { SecurityCandidateList } from '@/components/security/SecurityCandidateList';
 import { CardTypeSelector } from './CardTypeSelector';
 import { GeneratedCardPreview } from './GeneratedCardPreview';
 
@@ -40,18 +41,69 @@ function buildCandidateInput(candidate: SecurityRecord) {
   return candidate.symbol ?? candidate.numericCode ?? candidate.chineseNameHK ?? candidate.companyName;
 }
 
+async function fetchBasicData(query: string): Promise<{ data: BasicCompanyData | null; error: string }> {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 5000);
+
+  try {
+    const response = await fetch(`/api/basic-data?query=${encodeURIComponent(query)}`, {
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      return {
+        data: null,
+        error: '基础数据获取失败，已使用 mock fallback。',
+      };
+    }
+
+    const payload = await response.json() as { basicData?: BasicCompanyData };
+
+    return {
+      data: payload.basicData ?? null,
+      error: payload.basicData ? '' : '基础数据获取失败，已使用 mock fallback。',
+    };
+  } catch {
+    return {
+      data: null,
+      error: '基础数据获取失败，已使用 mock fallback。',
+    };
+  } finally {
+    window.clearTimeout(timeout);
+  }
+}
+
 export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
   const defaultCardType = cardTypeOptions[0].value;
   const [query, setQuery] = useState(initialQuery);
   const [cardType, setCardType] = useState<GenerateCardType>(defaultCardType);
   const [error, setError] = useState('');
+  const [basicDataError, setBasicDataError] = useState('');
   const [candidates, setCandidates] = useState<SecurityRecord[]>([]);
+  const [basicData, setBasicData] = useState<BasicCompanyData | null>(null);
   const [generated, setGenerated] = useState<GeneratedState | null>(() => resolveInitialCard(initialQuery, defaultCardType));
   const [isPending, startTransition] = useTransition();
+  const [isBasicDataLoading, setIsBasicDataLoading] = useState(false);
 
-  function handleCandidateSelect(candidate: SecurityRecord) {
+  async function handleCandidateSelect(candidate: SecurityRecord) {
     const candidateInput = buildCandidateInput(candidate);
-    const result = mockGenerateResearchCard({ rawInput: candidateInput, cardType, selectedSecurity: candidate });
+    setQuery(candidateInput);
+    setError('');
+    setBasicDataError('');
+    setCandidates([]);
+    setBasicData(null);
+    setIsBasicDataLoading(true);
+    const basicDataResult = await fetchBasicData(candidateInput);
+    setBasicData(basicDataResult.data);
+    setBasicDataError(basicDataResult.error);
+    setIsBasicDataLoading(false);
+
+    const result = mockGenerateResearchCard({
+      rawInput: candidateInput,
+      cardType,
+      selectedSecurity: candidate,
+      basicData: basicDataResult.data ?? undefined,
+    });
 
     if (!result.ok) {
       setError(result.error);
@@ -60,9 +112,6 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
       return;
     }
 
-    setQuery(candidateInput);
-    setError('');
-    setCandidates([]);
     startTransition(() => {
       setGenerated({
         card: result.card,
@@ -71,7 +120,7 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
     });
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const resolution = resolveSecurityInput(query);
@@ -97,7 +146,21 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
       return;
     }
 
-    const result = mockGenerateResearchCard({ rawInput: query, cardType });
+    setError('');
+    setBasicDataError('');
+    setCandidates([]);
+    setBasicData(null);
+    setIsBasicDataLoading(true);
+    const basicDataResult = await fetchBasicData(query);
+    setBasicData(basicDataResult.data);
+    setBasicDataError(basicDataResult.error);
+    setIsBasicDataLoading(false);
+
+    const result = mockGenerateResearchCard({
+      rawInput: query,
+      cardType,
+      basicData: basicDataResult.data ?? undefined,
+    });
 
     if (!result.ok) {
       setError(result.error);
@@ -106,8 +169,6 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
       return;
     }
 
-    setError('');
-    setCandidates([]);
     startTransition(() => {
       setGenerated({
         card: result.card,
@@ -166,13 +227,13 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
         <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
           <button
             type="submit"
-            disabled={isPending}
+            disabled={isPending || isBasicDataLoading}
             className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-[8px] bg-[var(--brand)] px-5 text-sm font-semibold text-[oklch(0.14_0.015_160)] transition-colors hover:bg-[var(--brand-hover)] disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isPending ? (
+            {isPending || isBasicDataLoading ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                生成中
+                {isBasicDataLoading ? '正在获取基础数据...' : '生成中'}
               </>
             ) : (
               <>
@@ -186,7 +247,9 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
             onClick={() => {
               setQuery('');
               setError('');
+              setBasicDataError('');
               setCandidates([]);
+              setBasicData(null);
               setGenerated(null);
               setCardType(defaultCardType);
             }}
@@ -198,12 +261,25 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
         </div>
       </form>
 
-      <GeneratedCardPreview
-        card={generated?.card ?? null}
-        isFallback={generated?.isFallback}
-        candidates={candidates}
-        rawInput={query}
-      />
+      <div className="space-y-4">
+        {isBasicDataLoading && (
+          <div className="rounded-[8px] border border-[var(--brand-border)] bg-[var(--brand-soft)] p-4 text-sm font-semibold text-[var(--brand-ink)]">
+            正在获取基础数据...
+          </div>
+        )}
+        {basicDataError && (
+          <div className="rounded-[8px] border border-[var(--brand-border)] bg-[var(--brand-soft)] p-4 text-sm leading-relaxed text-[var(--brand-ink)]">
+            {basicDataError}
+          </div>
+        )}
+        <GeneratedCardPreview
+          card={generated?.card ?? null}
+          isFallback={generated?.isFallback}
+          candidates={candidates}
+          rawInput={query}
+          basicData={basicData}
+        />
+      </div>
     </div>
   );
 }

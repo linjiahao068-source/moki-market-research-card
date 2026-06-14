@@ -1,7 +1,9 @@
 import { AlertTriangle, CheckCircle2, FileText, Search } from 'lucide-react';
 import { StockSymbolBadge } from '@/components/common/StockSymbolBadge';
+import { BasicDataPanel } from '@/components/data/BasicDataPanel';
 import { SecurityMatchBadge } from '@/components/security/SecurityMatchBadge';
 import { SecurityMetadataRow } from '@/components/security/SecurityMetadataRow';
+import { BasicCompanyData } from '@/types/basic-data';
 import { ResearchCard } from '@/types/research-card';
 import { SecurityInputKind, SecurityMarket, SecurityRecord, SecurityResolution } from '@/types/security';
 
@@ -10,6 +12,7 @@ interface GeneratedCardPreviewProps {
   isFallback?: boolean;
   candidates?: SecurityRecord[];
   rawInput?: string;
+  basicData?: BasicCompanyData | null;
 }
 
 function buildCandidateLabel(candidate: SecurityRecord) {
@@ -79,6 +82,7 @@ export function GeneratedCardPreview({
   isFallback = false,
   candidates = [],
   rawInput = '',
+  basicData = null,
 }: GeneratedCardPreviewProps) {
   if (!card && candidates.length > 0) {
     return (
@@ -116,6 +120,7 @@ export function GeneratedCardPreview({
   const badgeSymbol = getBadgeSymbol(card);
   const previewSecurity = getPreviewSecurity(card);
   const previewResolution = getPreviewResolution(card, isFallback, rawInput);
+  const dataModeLabel = basicData && basicData.provider !== 'mock' ? '真实基础数据' : 'mock fallback';
 
   return (
     <article className="overflow-hidden rounded-[8px] border border-border bg-white shadow-[0_12px_40px_-32px_rgba(0,0,0,0.28)]">
@@ -131,6 +136,9 @@ export function GeneratedCardPreview({
                 </span>
                 <span className="rounded-full border border-border bg-white px-2.5 py-1 font-mono text-xs text-[oklch(0.45_0.018_160)]">
                   {card.cardType}
+                </span>
+                <span className="rounded-full border border-border bg-white px-2.5 py-1 text-xs font-medium text-[oklch(0.45_0.018_160)]">
+                  数据模式：{dataModeLabel}
                 </span>
               </div>
               <p className="text-sm text-[oklch(0.48_0.018_160)]">{card.companyName}</p>
@@ -159,6 +167,12 @@ export function GeneratedCardPreview({
           <p className="mb-4 rounded-[8px] border border-[var(--brand-border)] bg-[var(--brand-soft)] p-3 text-xs leading-relaxed text-[var(--brand-ink)]">
             当前输入未匹配到 mock 主数据，已生成通用研究卡雏形。
           </p>
+        )}
+
+        {basicData && (
+          <div className="mb-4">
+            <BasicDataPanel data={basicData} />
+          </div>
         )}
 
         <div className="rounded-[8px] border-l-2 border-[var(--brand-dot)] bg-white p-4">
