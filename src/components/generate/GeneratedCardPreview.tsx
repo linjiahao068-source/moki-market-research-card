@@ -178,7 +178,11 @@ export function GeneratedCardPreview({
         {earningsSnapshot && (
           <div className="mb-4 space-y-4">
             <EarningsSnapshotPanel data={earningsSnapshot} />
-            <GuidanceComparePanel guidance={earningsSnapshot.guidance} warnings={earningsSnapshot.warnings} />
+            <GuidanceComparePanel
+              guidance={earningsSnapshot.guidance}
+              warnings={earningsSnapshot.warnings}
+              evidence={earningsSnapshot.guidanceEvidence}
+            />
           </div>
         )}
 

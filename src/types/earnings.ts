@@ -1,6 +1,6 @@
 export type EarningsMetricKey = 'revenue' | 'netIncome' | 'eps';
 
-export type MetricSource = 'sec-edgar' | 'fmp' | 'mock' | 'manual' | 'extracted';
+export type MetricSource = 'sec-edgar' | 'fmp' | 'eastmoney' | 'yahoo' | 'mock' | 'manual' | 'extracted';
 
 export type MetricQuality = 'verified' | 'estimated' | 'extracted' | 'missing' | 'fallback';
 
@@ -42,6 +42,8 @@ export interface GuidanceMetricComparison {
   warnings: string[];
 }
 
+import { GlobalGuidanceEvidence } from './global-stock-data';
+
 export interface EarningsSnapshotData {
   provider: MetricSource;
   fetchedAt: string;
@@ -53,6 +55,7 @@ export interface EarningsSnapshotData {
   earningsDate?: string;
   metrics: EarningsMetricComparison[];
   guidance: GuidanceMetricComparison[];
+  guidanceEvidence?: GlobalGuidanceEvidence[];
   sourceLinks: Array<{
     label: string;
     url: string;

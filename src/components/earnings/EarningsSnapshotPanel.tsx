@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { EarningsMetricComparison, EarningsMetricKey, EarningsSnapshotData } from '@/types/earnings';
+import { EarningsMetricComparison, EarningsMetricKey, EarningsSnapshotData, MetricSource } from '@/types/earnings';
 import { formatEps, formatMoneyCompact, formatPercent } from '@/lib/earnings/formatEarningsValue';
 
 interface EarningsSnapshotPanelProps {
@@ -12,6 +12,16 @@ const metricLabels: Record<EarningsMetricKey, string> = {
   revenue: '营收',
   netIncome: '净利润',
   eps: 'EPS',
+};
+
+const providerLabels: Record<MetricSource, string> = {
+  'sec-edgar': 'SEC',
+  fmp: 'FMP',
+  eastmoney: '东财',
+  yahoo: 'Yahoo',
+  mock: 'fallback',
+  manual: 'manual',
+  extracted: '文本抽取',
 };
 
 function getMetric(data: EarningsSnapshotData, metricKey: EarningsMetricKey): EarningsMetricComparison {
@@ -32,7 +42,7 @@ function formatMetricValue(metric: EarningsMetricComparison, value?: number) {
 }
 
 function MetricRow({ metric }: { metric: EarningsMetricComparison }) {
-  const isMissing = metric.quality === 'missing';
+  const isMissing = metric.quality === 'missing' && metric.actual === undefined && metric.estimate === undefined;
 
   return (
     <tr className={isMissing ? 'text-[oklch(0.58_0.018_160)]' : 'text-[oklch(0.2_0.016_160)]'}>
@@ -57,8 +67,10 @@ function MetricRow({ metric }: { metric: EarningsMetricComparison }) {
 
 export function EarningsSnapshotPanel({ data }: EarningsSnapshotPanelProps) {
   const [showExplanation, setShowExplanation] = useState(false);
+  const [showWarnings, setShowWarnings] = useState(false);
   const metrics = [getMetric(data, 'revenue'), getMetric(data, 'netIncome'), getMetric(data, 'eps')];
   const periodTitle = [data.fiscalYear, data.fiscalQuarter].filter(Boolean).join(' 财年 ');
+  const hasManyWarnings = data.warnings.length > 3;
 
   return (
     <section className="rounded-[8px] border border-border bg-white p-4 sm:p-5">
@@ -70,6 +82,9 @@ export function EarningsSnapshotPanel({ data }: EarningsSnapshotPanelProps) {
           </h3>
           <p className="mt-1 text-sm leading-relaxed text-[oklch(0.45_0.018_160)]">
             {periodTitle ? `${periodTitle} 单季报` : '单季度财报数据待补充'}
+          </p>
+          <p className="mt-1 text-xs leading-relaxed text-[oklch(0.5_0.018_160)]">
+            数据来源：{providerLabels[data.provider]}
           </p>
         </div>
         <button
@@ -109,12 +124,20 @@ export function EarningsSnapshotPanel({ data }: EarningsSnapshotPanelProps) {
 
       {data.warnings.length > 0 && (
         <div className="mt-4 rounded-[8px] border border-[var(--brand-border)] bg-[var(--brand-soft)] p-3 text-xs leading-relaxed text-[var(--brand-ink)]">
-          <div className="mb-1 font-semibold">数据提示</div>
-          <ul className="space-y-1">
-            {data.warnings.map((warning) => (
-              <li key={warning}>- {warning}</li>
-            ))}
-          </ul>
+          <button
+            type="button"
+            onClick={() => setShowWarnings((value) => !value)}
+            className="text-left font-semibold hover:underline"
+          >
+            {hasManyWarnings ? '部分字段暂缺，点击查看详情。' : '数据提示'}
+          </button>
+          {(!hasManyWarnings || showWarnings) && (
+            <ul className="mt-2 space-y-1">
+              {data.warnings.map((warning) => (
+                <li key={warning}>- {warning}</li>
+              ))}
+            </ul>
+          )}
         </div>
       )}
     </section>
