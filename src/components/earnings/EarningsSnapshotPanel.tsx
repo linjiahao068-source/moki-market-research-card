@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { EarningsMetricComparison, EarningsMetricKey, EarningsSnapshotData, MetricSource } from '@/types/earnings';
+import { EarningsMetricComparison, EarningsMetricKey, EarningsSnapshotData } from '@/types/earnings';
 import { formatEps, formatMoneyCompact, formatPercent } from '@/lib/earnings/formatEarningsValue';
+import { getExpectationLabel, getExpectationSignal } from '@/lib/earnings/expectationSignal';
 
 interface EarningsSnapshotPanelProps {
   data: EarningsSnapshotData;
@@ -14,23 +15,16 @@ const metricLabels: Record<EarningsMetricKey, string> = {
   eps: 'EPS',
 };
 
-const providerLabels: Record<MetricSource, string> = {
-  'sec-edgar': 'SEC',
-  fmp: 'FMP',
-  eastmoney: '东财',
-  yahoo: 'Yahoo',
-  mock: 'fallback',
-  manual: 'manual',
-  extracted: '文本抽取',
-};
+function getMetric(data: EarningsSnapshotData, metricKey: EarningsMetricKey) {
+  return data.metrics.find((metric) => metric.metricKey === metricKey);
+}
 
-function getMetric(data: EarningsSnapshotData, metricKey: EarningsMetricKey): EarningsMetricComparison {
-  return data.metrics.find((metric) => metric.metricKey === metricKey) ?? {
-    metricKey,
-    label: metricLabels[metricKey],
-    quality: 'missing',
-    warnings: [`${metricLabels[metricKey]} 数据缺失。`],
-  };
+function hasExpectationValue(metric: EarningsMetricComparison | undefined) {
+  return metric?.actual !== undefined || metric?.estimate !== undefined;
+}
+
+function shouldShowNetIncome(metric: EarningsMetricComparison | undefined) {
+  return metric?.actual !== undefined && metric?.estimate !== undefined;
 }
 
 function formatMetricValue(metric: EarningsMetricComparison, value?: number) {
@@ -42,50 +36,69 @@ function formatMetricValue(metric: EarningsMetricComparison, value?: number) {
 }
 
 function MetricRow({ metric }: { metric: EarningsMetricComparison }) {
-  const isMissing = metric.quality === 'missing' && metric.actual === undefined && metric.estimate === undefined;
-
   return (
-    <tr className={isMissing ? 'text-[oklch(0.58_0.018_160)]' : 'text-[oklch(0.2_0.016_160)]'}>
+    <tr className="text-[oklch(0.2_0.016_160)]">
       <td className="whitespace-nowrap px-3 py-3 text-sm font-semibold">
         {metricLabels[metric.metricKey]}
-      </td>
-      <td className="whitespace-nowrap px-3 py-3 font-mono text-sm">
-        {formatMetricValue(metric, metric.estimate)}
       </td>
       <td className="whitespace-nowrap px-3 py-3 font-mono text-sm">
         {formatMetricValue(metric, metric.actual)}
       </td>
       <td className="whitespace-nowrap px-3 py-3 font-mono text-sm">
-        {formatPercent(metric.surprisePct)}
+        {formatMetricValue(metric, metric.estimate)}
       </td>
       <td className="whitespace-nowrap px-3 py-3 font-mono text-sm">
-        {formatPercent(metric.yoyPct)}
+        {formatMetricValue(metric, metric.surpriseAbs)}
+      </td>
+      <td className="whitespace-nowrap px-3 py-3 font-mono text-sm">
+        {formatPercent(metric.surprisePct)}
+      </td>
+      <td className="whitespace-nowrap px-3 py-3 text-sm text-[oklch(0.45_0.018_160)]">
+        {getExpectationLabel(getExpectationSignal(metric.surprisePct, metric.metricKey === 'eps' ? 'eps' : 'default'))}
       </td>
     </tr>
   );
 }
 
+function getGuidanceOverallLabel(data: EarningsSnapshotData) {
+  const firstGuidanceWithGap = data.guidance.find((item) => item.gapPct !== undefined);
+
+  if (!firstGuidanceWithGap) {
+    return undefined;
+  }
+
+  return getExpectationLabel(getExpectationSignal(firstGuidanceWithGap.gapPct));
+}
+
 export function EarningsSnapshotPanel({ data }: EarningsSnapshotPanelProps) {
   const [showExplanation, setShowExplanation] = useState(false);
-  const [showWarnings, setShowWarnings] = useState(false);
-  const metrics = [getMetric(data, 'revenue'), getMetric(data, 'netIncome'), getMetric(data, 'eps')];
+  const revenue = getMetric(data, 'revenue');
+  const eps = getMetric(data, 'eps');
+  const netIncome = getMetric(data, 'netIncome');
+  const metrics = [
+    ...(hasExpectationValue(revenue) ? [revenue as EarningsMetricComparison] : []),
+    ...(hasExpectationValue(eps) ? [eps as EarningsMetricComparison] : []),
+    ...(shouldShowNetIncome(netIncome) ? [netIncome as EarningsMetricComparison] : []),
+  ];
   const periodTitle = [data.fiscalYear, data.fiscalQuarter].filter(Boolean).join(' 财年 ');
-  const hasManyWarnings = data.warnings.length > 3;
+  const guidanceOverallLabel = getGuidanceOverallLabel(data);
 
   return (
     <section className="rounded-[8px] border border-border bg-white p-4 sm:p-5">
       <div className="mb-4 flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <div className="mb-2 text-xs font-semibold text-[var(--brand-ink)]">Earnings Snapshot</div>
+          <div className="mb-2 text-xs font-semibold text-[var(--brand-ink)]">Earnings Expectation</div>
           <h3 className="text-xl font-bold leading-tight text-[oklch(0.16_0.014_160)]">
-            财报快照
+            财报预期差
           </h3>
           <p className="mt-1 text-sm leading-relaxed text-[oklch(0.45_0.018_160)]">
-            {periodTitle ? `${periodTitle} 单季报` : '单季度财报数据待补充'}
+            {periodTitle ? `${periodTitle} 本期 actual vs consensus` : '本期 actual vs consensus'}
           </p>
-          <p className="mt-1 text-xs leading-relaxed text-[oklch(0.5_0.018_160)]">
-            数据来源：{providerLabels[data.provider]}
-          </p>
+          {guidanceOverallLabel && (
+            <p className="mt-1 text-xs leading-relaxed text-[oklch(0.5_0.018_160)]">
+              公司指引：{guidanceOverallLabel}，详见下方公司指引模块。
+            </p>
+          )}
         </div>
         <button
           type="button"
@@ -98,47 +111,44 @@ export function EarningsSnapshotPanel({ data }: EarningsSnapshotPanelProps) {
 
       {showExplanation && (
         <div className="mb-4 rounded-[8px] border border-[var(--brand-border)] bg-[var(--brand-soft)] p-3 text-xs leading-relaxed text-[var(--brand-ink)]">
-          <p>预测值指数据源提供的 consensus / estimate，可能缺失或口径不同。</p>
-          <p className="mt-1">公布值指公司披露或数据源记录的 actual。较预期和同比仅为事实比较，不构成投资建议。</p>
+          <p>Actual 为本期公布值，consensus 为第三方数据源提供的机构平均预期。</p>
+          <p className="mt-1">较预期为公布值与 consensus 的差额及百分比，仅用于事实比较，不构成投资建议。</p>
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-[8px] border border-border">
-        <table className="min-w-[620px] w-full border-collapse bg-white text-left">
-          <thead className="bg-[oklch(0.992_0.005_85)] text-xs font-semibold text-[oklch(0.45_0.018_160)]">
-            <tr>
-              <th className="px-3 py-2">指标</th>
-              <th className="px-3 py-2">预测值</th>
-              <th className="px-3 py-2">公布值</th>
-              <th className="px-3 py-2">较预期</th>
-              <th className="px-3 py-2">同比</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {metrics.map((metric) => (
-              <MetricRow key={metric.metricKey} metric={metric} />
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {data.warnings.length > 0 && (
-        <div className="mt-4 rounded-[8px] border border-[var(--brand-border)] bg-[var(--brand-soft)] p-3 text-xs leading-relaxed text-[var(--brand-ink)]">
-          <button
-            type="button"
-            onClick={() => setShowWarnings((value) => !value)}
-            className="text-left font-semibold hover:underline"
-          >
-            {hasManyWarnings ? '部分字段暂缺，点击查看详情。' : '数据提示'}
-          </button>
-          {(!hasManyWarnings || showWarnings) && (
-            <ul className="mt-2 space-y-1">
-              {data.warnings.map((warning) => (
-                <li key={warning}>- {warning}</li>
-              ))}
-            </ul>
-          )}
+      {metrics.length === 0 ? (
+        <div className="rounded-[8px] border border-[var(--brand-border)] bg-[var(--brand-soft)] p-3 text-sm leading-relaxed text-[var(--brand-ink)]">
+          暂未获取到该公司的财报预期数据。
         </div>
+      ) : (
+        <>
+          <div className="overflow-x-auto rounded-[8px] border border-border">
+            <table className="min-w-[720px] w-full border-collapse bg-white text-left">
+              <thead className="bg-[oklch(0.992_0.005_85)] text-xs font-semibold text-[oklch(0.45_0.018_160)]">
+                <tr>
+                  <th className="px-3 py-2">指标</th>
+                  <th className="px-3 py-2">公布值</th>
+                  <th className="px-3 py-2">Consensus</th>
+                  <th className="px-3 py-2">差额</th>
+                  <th className="px-3 py-2">较预期</th>
+                  <th className="px-3 py-2">Signal</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {metrics.map((metric) => (
+                  <MetricRow key={metric.metricKey} metric={metric} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Show message if no consensus data */}
+          {metrics.every((m) => m.estimate === undefined) && (
+            <p className="mt-3 text-xs leading-relaxed text-[oklch(0.5_0.018_160)]">
+              暂未获取到该公司的市场一致预期。
+            </p>
+          )}
+        </>
       )}
     </section>
   );

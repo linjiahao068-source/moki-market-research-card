@@ -1,6 +1,5 @@
 import { AlertTriangle, CheckCircle2, FileText, Search } from 'lucide-react';
 import { StockSymbolBadge } from '@/components/common/StockSymbolBadge';
-import { BasicDataPanel } from '@/components/data/BasicDataPanel';
 import { EarningsSnapshotPanel } from '@/components/earnings/EarningsSnapshotPanel';
 import { GuidanceComparePanel } from '@/components/earnings/GuidanceComparePanel';
 import { SecurityMatchBadge } from '@/components/security/SecurityMatchBadge';
@@ -59,6 +58,23 @@ function getPreviewResolution(card: ResearchCard, isFallback: boolean, rawInput:
     normalizedInput,
     security: previewSecurity,
   };
+}
+
+function isBasicDataSectionTitle(title: string) {
+  const normalizedTitle = title.trim().toLowerCase();
+
+  return [
+    '基础数据快照',
+    '基础数据面板',
+    'basic data',
+    'basic_data',
+    'basicdata',
+    'basic_snapshot',
+  ].includes(normalizedTitle);
+}
+
+function getNonBasicSections(card: ResearchCard) {
+  return (card.sections ?? []).filter((section) => !isBasicDataSectionTitle(section.title));
 }
 
 function getBadgeSymbol(card: ResearchCard) {
@@ -122,11 +138,36 @@ export function GeneratedCardPreview({
 
   const keySignals = card.keySignals?.slice(0, 6) ?? card.fundamentals.revenueDrivers.slice(0, 6);
   const risks = (card.risks ?? card.fundamentals.risks).slice(0, 4);
+  const nonBasicSections = getNonBasicSections(card).slice(0, 3);
   const badgeSymbol = getBadgeSymbol(card);
   const previewSecurity = getPreviewSecurity(card);
   const previewResolution = getPreviewResolution(card, isFallback, rawInput);
   const dataModeLabel = basicData && basicData.provider !== 'mock' ? '真实基础数据' : 'mock fallback';
-  const sourceNote = `${card.sourceNote ?? card.disclaimer} 财报快照中的预测值和指引对比依赖第三方数据或文本抽取，需结合来源复核。`;
+
+  // Build detailed source note based on earnings snapshot
+  let sourceNote = `${card.sourceNote ?? card.disclaimer}`;
+
+  if (earningsSnapshot?.sourceNote) {
+    // Add consensus source information if available
+    if (earningsSnapshot.sourceNote.includes('consensus:')) {
+      const consensusMatch = earningsSnapshot.sourceNote.match(/consensus: ([^|]+)/);
+      if (consensusMatch) {
+        const consensusSource = consensusMatch[1].trim();
+        if (consensusSource.includes('FMP')) {
+          sourceNote += ' Consensus 来源：FMP analyst estimates。';
+        } else if (consensusSource.includes('Alpha Vantage')) {
+          sourceNote += ' Consensus 来源：Alpha Vantage earnings estimates。';
+        } else if (consensusSource.includes('best-effort') || consensusSource.includes('best_effort')) {
+          sourceNote += ' 当前预期数据为 best-effort 匹配，后续将接入财报前快照数据库。';
+        }
+      }
+    }
+  }
+
+  // Add the fallback note if needed
+  if (!earningsSnapshot?.sourceNote || !earningsSnapshot.sourceNote.includes('consensus:')) {
+    sourceNote += ' 财报快照中的预测值和指引对比依赖第三方数据或文本抽取，需结合来源复核。';
+  }
 
   return (
     <article className="overflow-hidden rounded-[8px] border border-border bg-white shadow-[0_12px_40px_-32px_rgba(0,0,0,0.28)]">
@@ -186,12 +227,6 @@ export function GeneratedCardPreview({
           </div>
         )}
 
-        {basicData && (
-          <div className="mb-4">
-            <BasicDataPanel data={basicData} />
-          </div>
-        )}
-
         <div className="rounded-[8px] border-l-2 border-[var(--brand-dot)] bg-white p-4">
           <div className="mb-1 text-xs font-semibold text-[var(--brand-ink)]">一句话摘要</div>
           <p className="text-sm leading-relaxed text-[oklch(0.2_0.018_160)]">
@@ -243,15 +278,27 @@ export function GeneratedCardPreview({
             <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
             Key signals
           </div>
-          <div className="flex flex-wrap gap-2">
-            {keySignals.map((item) => (
-              <span
-                key={item}
-                className="rounded-full border border-[var(--brand-border)] bg-white px-3 py-1.5 text-sm font-medium leading-relaxed text-[var(--brand-ink)]"
-              >
-                {item}
-              </span>
-            ))}
+          <div className="space-y-3">
+            <div className="flex flex-wrap gap-2">
+              {keySignals.map((item) => (
+                <span
+                  key={item}
+                  className="rounded-full border border-[var(--brand-border)] bg-white px-3 py-1.5 text-sm font-medium leading-relaxed text-[var(--brand-ink)]"
+                >
+                  {item}
+                </span>
+              ))}
+            </div>
+            {nonBasicSections.length > 0 && (
+              <div className="space-y-2">
+                {nonBasicSections.map((section) => (
+                  <div key={section.title} className="rounded-[8px] border border-border bg-white p-3 text-sm leading-relaxed text-[oklch(0.35_0.018_160)]">
+                    <div className="mb-1 font-semibold text-[oklch(0.18_0.014_160)]">{section.title}</div>
+                    {section.body}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </section>
 

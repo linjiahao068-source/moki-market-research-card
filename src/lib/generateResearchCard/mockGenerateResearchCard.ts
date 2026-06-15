@@ -160,10 +160,6 @@ export type MockGenerateResearchCardResult =
       resolution: Extract<SecurityResolution, { status: 'ambiguous' }>;
     };
 
-function valueOrDash(value?: string) {
-  return value || '--';
-}
-
 function getEarningsMetric(earningsSnapshot: EarningsSnapshotData, metricKey: 'revenue' | 'netIncome' | 'eps') {
   return earningsSnapshot.metrics.find((metric) => metric.metricKey === metricKey);
 }
@@ -226,35 +222,10 @@ function buildEarningsSnapshotSection(earningsSnapshotData?: EarningsSnapshotDat
   };
 }
 
-function buildBasicDataSection(basicData?: BasicCompanyData) {
-  if (!basicData) {
-    return undefined;
-  }
-
-  const financials = basicData.financials ?? {};
-  const latestFiling = basicData.latestFiling;
-  const fallbackText = basicData.provider === 'mock' ? ' 当前基础数据来自 mock fallback。' : '';
-
-  return {
-    title: '基础数据快照',
-    body: [
-      `数据来源：${basicData.provider}`,
-      `最近 filing：${valueOrDash(latestFiling?.formType)} / ${valueOrDash(latestFiling?.filingDate)}`,
-      `Revenue：${valueOrDash(financials.revenue)}`,
-      `Net income：${valueOrDash(financials.netIncome)}`,
-      `Assets：${valueOrDash(financials.assets)}`,
-      `Cash：${valueOrDash(financials.cashAndEquivalents)}`,
-      `数据覆盖状态：${basicData.coverageStatus}`,
-      fallbackText.trim(),
-    ].filter(Boolean).join('\n'),
-  };
-}
-
 export function mockGenerateResearchCard({
   rawInput,
   cardType,
   selectedSecurity,
-  basicData,
   earningsSnapshotData,
 }: {
   rawInput: string;
@@ -289,13 +260,12 @@ export function mockGenerateResearchCard({
     .replace(/[^a-z0-9]+/g, '-');
   const cardTypeLabel = getCardTypeLabel(cardType);
   const copy = buildCopy(displaySymbol, security.companyName, security.theme ?? 'general market research context', cardType);
-  const basicDataSection = buildBasicDataSection(basicData);
   const earningsSnapshotSection = buildEarningsSnapshotSection(earningsSnapshotData);
-  const sections = [earningsSnapshotSection, basicDataSection, ...copy.sections].filter(
+  const sections = [earningsSnapshotSection, ...copy.sections].filter(
     (section): section is { title: string; body: string } => Boolean(section)
   );
-  const oneLine = basicData && basicData.provider !== 'mock'
-    ? `${copy.oneLine} 本卡已结合 ${basicData.provider} 基础数据快照，但仍需人工复核。`
+  const oneLine = earningsSnapshotData
+    ? `${copy.oneLine} 本卡已结合单季度财报快照，但预测值和指引仍需结合来源复核。`
     : copy.oneLine;
   const displayName = security.companyName;
   const title = resolution.status === 'matched'

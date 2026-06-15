@@ -1,3 +1,4 @@
+// Deprecated since V0.2.6: Basic data is kept as internal fallback only and no longer rendered as a primary user-facing panel.
 import { ExternalLink } from 'lucide-react';
 import { BasicCompanyData } from '@/types/basic-data';
 import { getMarketLabel } from '@/lib/security/formatSecurityDisplay';

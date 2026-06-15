@@ -1,4 +1,4 @@
-export type GlobalDataSource = 'eastmoney' | 'yahoo' | 'sec-edgar' | 'sina' | 'tencent' | 'mock';
+export type GlobalDataSource = 'eastmoney' | 'yahoo' | 'sec-edgar' | 'sina' | 'tencent' | 'mock' | 'manual';
 
 export interface GlobalStockSearchResult {
   symbol?: string;

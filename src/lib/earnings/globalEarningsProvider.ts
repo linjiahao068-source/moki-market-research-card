@@ -1,6 +1,6 @@
 import { BasicCompanyData } from '@/types/basic-data';
 import { EarningsMetricComparison, EarningsMetricKey, EarningsSnapshotData, GuidanceMetricComparison } from '@/types/earnings';
-import { GlobalAnalystEstimate, GlobalQuarterFinancial } from '@/types/global-stock-data';
+import { GlobalAnalystEstimate, GlobalQuarterFinancial, GlobalGuidanceEvidence } from '@/types/global-stock-data';
 import { SecurityRecord } from '@/types/security';
 import { getBasicCompanyData } from '@/lib/dataProviders/getBasicCompanyData';
 import { fetchEastmoneyQuarterFinancials } from '@/lib/globalStockData/eastmoneyFinancials';
@@ -11,6 +11,9 @@ import { resolveSecurityInput } from '@/lib/security/resolveSecurityInput';
 import { calcSurprise, safePctChange } from './earningsMath';
 import { fetchFmpEarningsEstimates } from './fmpEarningsEstimatesProvider';
 import { buildSecQuarterActuals } from './secQuarterActualsProvider';
+import { earningsProviderConfig } from '@/lib/config/earningsProviders';
+import { getGuidanceData } from './guidanceProvider';
+import { getConsensusEstimates, selectCurrentQuarterConsensus, selectNextQuarterRevenueConsensus } from '@/lib/expectations';
 
 interface GlobalEarningsProviderInput {
   query: string;
@@ -107,6 +110,7 @@ function buildMetric({
   label,
   actual,
   estimate,
+  estimateSource,
   yoyPct,
   missingWarning,
 }: {
@@ -114,6 +118,7 @@ function buildMetric({
   label: string;
   actual: ActualMetricSource;
   estimate?: number;
+  estimateSource?: string;
   yoyPct?: number;
   missingWarning: string;
 }): EarningsMetricComparison {
@@ -125,10 +130,10 @@ function buildMetric({
   }
 
   if (estimate === undefined && metricKey !== 'netIncome') {
-    warnings.push(`${label} estimate unavailable from Yahoo/FMP.`);
+    warnings.push(`${label} estimate unavailable.`);
   }
 
-  if (metricKey === 'netIncome') {
+  if (metricKey === 'netIncome' && estimate === undefined) {
     warnings.push('Net income estimate is not supported by the current provider set.');
   }
 
@@ -150,7 +155,7 @@ function buildMetric({
     periodEnd: actual.periodEnd,
     periodLabel: actual.periodLabel,
     actualSource: actual.source,
-    estimateSource: estimate === undefined ? undefined : 'yahoo',
+    estimateSource: estimate === undefined ? undefined : (estimateSource as 'sec-edgar' | 'eastmoney' | 'yahoo' | 'fmp' | 'manual' | 'mock' | 'extracted' | undefined),
     quality: actual.value !== undefined || estimate !== undefined ? 'estimated' : 'missing',
     warnings,
   };
@@ -166,7 +171,10 @@ export async function getGlobalEarningsSnapshotData({
   const yahooSymbol = resolvedSecurity ? getYahooSymbol(resolvedSecurity) ?? symbol : symbol;
   const warnings: string[] = [];
 
-  const [eastmoneyFinancials, yahooSummary, eastmoneyIndicators, resolvedBasicData] = await Promise.all([
+  // Check if this is US market (only US has estimates providers)
+  const isUsMarket = resolvedSecurity?.market === 'US' || symbol?.match(/^[A-Z]{1,5}$/);
+
+  const [eastmoneyFinancials, yahooSummary, eastmoneyIndicators, resolvedBasicData, guidanceData, consensusResult] = await Promise.all([
     settle(resolvedSecurity ? fetchEastmoneyQuarterFinancials(resolvedSecurity) : Promise.resolve([])),
     settle(fetchYahooQuoteSummary(yahooSymbol, [
       'earnings',
@@ -176,16 +184,25 @@ export async function getGlobalEarningsSnapshotData({
     ])),
     settle(resolvedSecurity ? fetchEastmoneyKeyIndicators(resolvedSecurity) : Promise.resolve([])),
     settle(basicData ? Promise.resolve(basicData) : resolvedSecurity ? getBasicCompanyData(resolvedSecurity) : Promise.resolve(undefined)),
+    settle(getGuidanceData(resolvedSecurity?.symbol)),
+    // Only fetch consensus estimates for US market
+    isUsMarket && resolvedSecurity?.symbol
+      ? settle(getConsensusEstimates(resolvedSecurity.symbol))
+      : settle(Promise.resolve(null)),
   ]);
 
   const secActuals = resolvedBasicData ? buildSecQuarterActuals(resolvedBasicData) : undefined;
   const secMetrics = secActuals?.metrics ?? [];
-  const fmpResult = resolvedSecurity?.symbol
+
+  // Only fetch FMP data if enabled in config
+  const fmpResult = earningsProviderConfig.isFmpEnabled() && resolvedSecurity?.symbol
     ? await fetchFmpEarningsEstimates({ symbol: resolvedSecurity.symbol, companyName: resolvedSecurity.companyName })
     : undefined;
   const fmpSnapshot = fmpResult?.ok ? fmpResult.data : undefined;
 
-  if (fmpResult && !fmpResult.ok) {
+  if (earningsProviderConfig.expectations.provider === 'fmp' && !earningsProviderConfig.expectations.fmpApiKey) {
+    warnings.push('FMP expectations provider is configured but FMP_API_KEY is missing; falling back to other sources.');
+  } else if (fmpResult && !fmpResult.ok) {
     warnings.push(`FMP earnings estimates unavailable: ${fmpResult.error}`);
   }
 
@@ -201,6 +218,7 @@ export async function getGlobalEarningsSnapshotData({
     warnings.push('Eastmoney GMAININDICATOR data unavailable.');
   }
 
+  // First, get actuals data
   const eastmoneyRevenue = firstFinancialWithValue(eastmoneyFinancials, 'revenue');
   const eastmoneyNetIncome = firstFinancialWithValue(eastmoneyFinancials, 'netIncome');
   const eastmoneyEps = firstFinancialWithValue(eastmoneyFinancials, 'dilutedEps');
@@ -229,9 +247,93 @@ export async function getGlobalEarningsSnapshotData({
         ? actualFromMetric(fmpMetrics?.find((metric) => metric.metricKey === 'eps'))
         : actualFromMetric(secEps);
   const yahooEstimates = yahooSummary?.ok ? yahooSummary.analystEstimates : undefined;
-  const revenueEstimate = getEstimate('revenue', yahooEstimates, fmpMetrics);
-  const epsEstimate = getEstimate('eps', yahooEstimates, fmpMetrics);
-  const guidance: GuidanceMetricComparison[] = [];
+
+  // Then, process consensus estimates if available
+  let consensusRevenueEstimate: number | undefined;
+  let consensusEpsEstimate: number | undefined;
+  let consensusNetIncomeEstimate: number | undefined;
+  let consensusSource: string | undefined;
+  let consensusSourceNote: string | undefined;
+  let nextQuarterConsensus: number | undefined;
+
+  if (consensusResult && consensusResult.estimates.length > 0) {
+    // Create a temporary snapshot for matching using actuals fiscal period
+    const tempSnapshot: Partial<EarningsSnapshotData> = {
+      fiscalYear: revenueActual.fiscalYear || '2024',
+      fiscalQuarter: revenueActual.fiscalQuarter || 'Q1',
+    };
+
+    const selection = selectCurrentQuarterConsensus(
+      consensusResult.estimates,
+      tempSnapshot as EarningsSnapshotData
+    );
+
+    if (selection.estimate) {
+      console.debug('[GlobalEarnings] Selected consensus estimate:', selection);
+      consensusRevenueEstimate = selection.estimate.revenueEstimate;
+      consensusEpsEstimate = selection.estimate.epsEstimate;
+      consensusNetIncomeEstimate = selection.estimate.netIncomeEstimate;
+      consensusSource = consensusResult.providerUsed;
+      consensusSourceNote = selection.sourceNoteSuffix
+        ? `${selection.estimate.sourceNote} (${selection.sourceNoteSuffix})`
+        : selection.estimate.sourceNote;
+    }
+
+    // Select next quarter revenue consensus for guidance compare
+    const nextQuarterSelection = selectNextQuarterRevenueConsensus(
+      consensusResult.estimates,
+      tempSnapshot as EarningsSnapshotData
+    );
+    if (nextQuarterSelection.estimate?.revenueEstimate) {
+      nextQuarterConsensus = nextQuarterSelection.estimate.revenueEstimate;
+      console.debug('[GlobalEarnings] Selected next quarter consensus:', nextQuarterConsensus);
+    }
+
+    if (consensusResult.warnings.length > 0) {
+      warnings.push(...consensusResult.warnings);
+    }
+  }
+
+  // Use consensus estimates if available, otherwise fallback to original
+  const revenueEstimate = consensusRevenueEstimate ?? getEstimate('revenue', yahooEstimates, fmpMetrics);
+  const epsEstimate = consensusEpsEstimate ?? getEstimate('eps', yahooEstimates, fmpMetrics);
+
+  // Process guidance data and combine with next quarter consensus
+  let finalGuidance: GuidanceMetricComparison[] = guidanceData?.guidance ?? [];
+  const finalGuidanceEvidence: GlobalGuidanceEvidence[] = guidanceData?.evidence ?? [];
+
+  // If we have guidance and next quarter consensus, calculate gap
+  if (finalGuidance.length > 0 && nextQuarterConsensus !== undefined) {
+    finalGuidance = finalGuidance.map((guidanceItem) => {
+      // Only update next quarter revenue guidance
+      if (guidanceItem.metricKey === 'nextQuarterRevenue' && guidanceItem.guidanceMid !== undefined) {
+        const gapAbs = guidanceItem.guidanceMid - nextQuarterConsensus;
+        const gapPct = nextQuarterConsensus !== 0 ? (gapAbs / nextQuarterConsensus) * 100 : undefined;
+
+        return {
+          ...guidanceItem,
+          consensus: nextQuarterConsensus,
+          gapAbs,
+          gapPct,
+        };
+      }
+      return guidanceItem;
+    });
+  } else if (finalGuidance.length === 0 && nextQuarterConsensus !== undefined) {
+    // Only show empty guidance if we don't have manual data
+    // Don't create fake guidance
+  }
+
+  // Build source notes
+  const sourceNotes: string[] = [];
+  if (revenueActual.source || epsActual.source) {
+    sourceNotes.push(`actual: ${revenueActual.source || epsActual.source || 'SEC'}`);
+  }
+  if (consensusSourceNote) {
+    sourceNotes.push(`consensus: ${consensusSourceNote}`);
+  } else if (revenueEstimate !== undefined || epsEstimate !== undefined) {
+    sourceNotes.push(`consensus: ${consensusSource || 'Yahoo'}`);
+  }
 
   return {
     provider: yahooSummary?.ok ? 'yahoo' : fmpSnapshot ? 'fmp' : secActuals?.provider ?? 'mock',
@@ -248,6 +350,7 @@ export async function getGlobalEarningsSnapshotData({
         label: 'Revenue',
         actual: revenueActual,
         estimate: revenueEstimate,
+        estimateSource: consensusSource || 'yahoo',
         yoyPct: findPriorYearSameQuarterYoy(eastmoneyRevenue, eastmoneyFinancials, 'revenue') ?? findPriorYearSameQuarterYoy(yahooRevenue, yahooSummary?.ok ? yahooSummary.quarterlyFinancials : undefined, 'revenue') ?? secRevenue?.yoyPct,
         missingWarning: 'Revenue actual unavailable from Eastmoney/Yahoo/SEC.',
       }),
@@ -255,6 +358,8 @@ export async function getGlobalEarningsSnapshotData({
         metricKey: 'netIncome',
         label: 'Net income',
         actual: netIncomeActual,
+        estimate: consensusNetIncomeEstimate,
+        estimateSource: consensusSource,
         yoyPct: findPriorYearSameQuarterYoy(eastmoneyNetIncome, eastmoneyFinancials, 'netIncome') ?? findPriorYearSameQuarterYoy(yahooNetIncome, yahooSummary?.ok ? yahooSummary.quarterlyFinancials : undefined, 'netIncome') ?? secNetIncome?.yoyPct,
         missingWarning: 'Net income actual unavailable from Eastmoney/Yahoo/SEC.',
       }),
@@ -263,17 +368,20 @@ export async function getGlobalEarningsSnapshotData({
         label: 'EPS',
         actual: epsActual,
         estimate: epsEstimate,
+        estimateSource: consensusSource || 'yahoo',
         yoyPct: findPriorYearSameQuarterYoy(eastmoneyEps, eastmoneyFinancials, 'dilutedEps') ?? findPriorYearSameQuarterYoy(yahooEps, yahooSummary?.ok ? yahooSummary.quarterlyFinancials : undefined, 'dilutedEps') ?? secEps?.yoyPct,
         missingWarning: 'EPS actual unavailable from Eastmoney/Yahoo/FMP/SEC.',
       }),
     ],
-    guidance,
+    guidance: finalGuidance,
+    guidanceEvidence: finalGuidanceEvidence,
     sourceLinks: [
       ...(resolvedBasicData?.sourceLinks ?? []),
       ...(yahooSummary?.ok ? [{ label: 'Yahoo quoteSummary', url: `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(yahooSymbol)}` }] : []),
       ...(fmpSnapshot?.sourceLinks ?? []),
       ...(secActuals?.sourceLinks ?? []),
     ],
+    sourceNote: sourceNotes.length > 0 ? sourceNotes.join(' | ') : undefined,
     warnings: [
       ...warnings,
       ...(resolvedBasicData?.warnings ?? []),
@@ -281,7 +389,7 @@ export async function getGlobalEarningsSnapshotData({
       ...(fmpSnapshot?.warnings ?? []),
       ...(eastmoneyFinancials ?? []).flatMap((item) => item.warnings ?? []),
       ...(eastmoneyIndicators ?? []).flatMap((item) => item.warnings ?? []),
-      'Guidance extraction is not part of global earnings provider yet; guidance remains empty unless another provider supplies structured data.',
+      ...(guidanceData?.warnings ?? []),
     ],
   };
 }

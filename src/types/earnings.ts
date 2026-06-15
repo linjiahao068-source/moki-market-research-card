@@ -60,5 +60,6 @@ export interface EarningsSnapshotData {
     label: string;
     url: string;
   }>;
+  sourceNote?: string;
   warnings: string[];
 }
