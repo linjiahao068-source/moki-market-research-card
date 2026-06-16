@@ -1,3 +1,8 @@
+import type { EarningsSnapshotData, GuidanceMetricComparison } from './earnings';
+import type { GlobalGuidanceEvidence } from './global-stock-data';
+import type { BullBaseBearScenarioSummary } from './scenario';
+import type { SerenityAnalysisBundle } from './serenity';
+
 export interface Evidence {
   id: string;
   sourceLabel: string;
@@ -62,8 +67,6 @@ export interface TechnicalContext {
   note: string;
 }
 
-import type { SerenityAnalysisBundle } from './serenity';
-
 export interface ResearchCard {
   slug: string;
   ticker: string;
@@ -98,4 +101,21 @@ export interface ResearchCard {
   matchType?: 'symbol' | 'numericCode' | 'chineseName';
   // Optional: 估值情景（包含 Serenity 分析）
   valuationScenarios?: SerenityAnalysisBundle;
+  serenityAnalysis?: SerenityAnalysisBundle;
+  enhancedEarnings?: EarningsSnapshotData;
+  guidanceData?: {
+    guidance: GuidanceMetricComparison[];
+    guidanceEvidence?: GlobalGuidanceEvidence[];
+    source?: string;
+    confidence?: number;
+    warnings?: string[];
+  };
+  advancedScenarios?: BullBaseBearScenarioSummary;
+  dataQuality?: {
+    score?: number;
+    sourceSummary?: string;
+    realDataAvailable?: boolean;
+    coverageStatus?: string;
+    warnings?: string[];
+  };
 }

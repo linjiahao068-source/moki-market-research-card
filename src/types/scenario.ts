@@ -1,6 +1,6 @@
 export type ScenarioCase = 'bull' | 'base' | 'bear';
 
-export type ScenarioSource = 'manual_override' | 'serenity_framework' | 'rule_based' | 'mock';
+export type ScenarioSource = 'manual_override' | 'serenity_framework' | 'rule_based' | 'data_driven' | 'mock';
 
 export type ValuationMethod = 'pe_multiple' | 'ps_multiple' | 'ev_ebitda' | 'dcf' | 'peer_comps' | 'not_specified';
 

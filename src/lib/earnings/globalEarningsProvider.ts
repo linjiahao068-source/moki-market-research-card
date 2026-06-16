@@ -283,7 +283,7 @@ export async function getGlobalEarningsSnapshotData({
       ...(fmpSnapshot?.warnings ?? []),
       ...(eastmoneyFinancials ?? []).flatMap((item) => item.warnings ?? []),
       ...(eastmoneyIndicators ?? []).flatMap((item) => item.warnings ?? []),
-      'Guidance extraction is not part of global earnings provider yet; guidance remains empty unless another provider supplies structured data.',
+      'Guidance evidence is merged by the enhanced earnings API when available.',
     ],
     currentPrice: yahooSummary?.ok ? yahooSummary.currentPrice : undefined,
     targetPriceMean: yahooSummary?.ok ? yahooSummary.targetPriceMean : undefined,

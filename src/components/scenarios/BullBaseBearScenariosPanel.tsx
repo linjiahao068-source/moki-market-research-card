@@ -39,8 +39,8 @@ export function BullBaseBearScenariosPanel({
               <th className="px-3 py-2">Scenario</th>
               <th className="px-3 py-2">Probability</th>
               <th className="px-3 py-2">Core Assumptions</th>
-              <th className="px-3 py-2">Target Price</th>
-              <th className="px-3 py-2">Implied Return</th>
+              <th className="px-3 py-2">Valuation Output</th>
+              <th className="px-3 py-2">Scenario Change</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -108,11 +108,11 @@ export function BullBaseBearScenariosPanel({
 
       {/* 底部汇总信息 */}
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        {/* 概率加权目标价 */}
+        {/* 概率加权估值演算 */}
         {scenarios.probabilityWeightedTargetPrice !== null && scenarios.probabilityWeightedTargetPrice !== undefined && (
           <div className="rounded-[8px] border border-border bg-white p-3">
             <div className="text-xs font-semibold text-[var(--brand-ink)]">
-              概率加权目标价
+              概率加权估值演算
             </div>
             <div className="mt-1 font-mono text-lg font-bold text-[oklch(0.16_0.014_160)]">
               {scenarios.currency === 'USD' ? '$' : ''}{scenarios.probabilityWeightedTargetPrice.toFixed(1)}
@@ -120,21 +120,21 @@ export function BullBaseBearScenariosPanel({
           </div>
         )}
 
-        {/* 风险收益汇总 */}
+        {/* 情景变化汇总 */}
         {scenarios.riskRewardSummary && (
           <div className="rounded-[8px] border border-border bg-white p-3">
             <div className="text-xs font-semibold text-[var(--brand-ink)]">
-              风险收益
+              情景变化
             </div>
             <div className="mt-1 space-y-1 text-xs text-[oklch(0.2_0.016_160)]">
               {scenarios.riskRewardSummary.expectedReturnPct !== null && scenarios.riskRewardSummary.expectedReturnPct !== undefined && (
                 <div>
-                  预期回报: {scenarios.riskRewardSummary.expectedReturnPct > 0 ? '+' : ''}{scenarios.riskRewardSummary.expectedReturnPct.toFixed(1)}%
+                  概率加权变化: {scenarios.riskRewardSummary.expectedReturnPct > 0 ? '+' : ''}{scenarios.riskRewardSummary.expectedReturnPct.toFixed(1)}%
                 </div>
               )}
               {scenarios.riskRewardSummary.upsideDownsideRatio !== null && scenarios.riskRewardSummary.upsideDownsideRatio !== undefined && (
                 <div>
-                  盈亏比: {scenarios.riskRewardSummary.upsideDownsideRatio.toFixed(2)}x
+                  上下行幅度比: {scenarios.riskRewardSummary.upsideDownsideRatio.toFixed(2)}x
                 </div>
               )}
             </div>

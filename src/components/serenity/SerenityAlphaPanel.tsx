@@ -203,12 +203,12 @@ export function SerenityAlphaPanel({ analysis }: SerenityAlphaPanelProps) {
         </ul>
       </div>
 
-      {/* 仓位建议 */}
+      {/* 研究姿态 */}
       <div className="mb-4">
-        <div className="text-xs font-semibold text-[var(--brand-ink)] mb-1">I. 仓位建议</div>
+        <div className="text-xs font-semibold text-[var(--brand-ink)] mb-1">I. 研究姿态</div>
         <div className="rounded-[6px] border border-border bg-[oklch(0.992_0.005_85)] p-3">
           <div className="text-xs font-semibold text-[var(--brand-ink)] mb-1">
-            策略：{analysis.positionGuidance.posture}
+            姿态：{analysis.positionGuidance.posture}
           </div>
           <ul className="text-sm text-[oklch(0.2_0.016_160)] space-y-1">
             {analysis.positionGuidance.conditions.map((condition, idx) => (

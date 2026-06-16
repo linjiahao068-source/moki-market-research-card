@@ -141,7 +141,7 @@ export function getRuleBasedScenario(
   }
 
   if (!currentPrice) {
-    warnings.push('注意：缺少当前价格，隐含收益率未计算。');
+    warnings.push('注意：缺少当前价格，情景变化幅度未计算。');
   }
 
   return buildScenarioSummary({

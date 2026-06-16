@@ -116,7 +116,7 @@ function buildScenarioFromConfig(
 
   let derivationNote = '';
   if (config.epsFullYear !== undefined && config.valuationMultiple !== undefined) {
-    derivationNote = `目标价 = 预期 EPS $${config.epsFullYear.toFixed(2)} × PE ${config.valuationMultiple.toFixed(1)}x`;
+    derivationNote = `估值演算 = 预期 EPS $${config.epsFullYear.toFixed(2)} × PE ${config.valuationMultiple.toFixed(1)}x`;
   }
 
   return {

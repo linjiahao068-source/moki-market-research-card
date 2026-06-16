@@ -84,9 +84,9 @@ export function generateSerenityAlpha(ticker: string, companyName: string): Sere
     positionGuidance: {
       posture: 'observe',
       conditions: [
-        '先观察，不急于建仓',
+        '先观察，暂不形成操作结论',
         '等待财报验证信号',
-        '确认后再考虑小仓试错',
+        '确认后再更新研究假设',
       ],
     },
 

@@ -101,7 +101,7 @@ export function generateBayesianValuation(ticker: string, companyName: string): 
     ],
 
     valuationState: 'expensive_but_tradable',
-    valuationReasoning: '估值略高但基本面仍在改善，可交易但降低长期回报预期。',
+    valuationReasoning: '估值略高但基本面仍在改善，需要继续跟踪验证。',
 
     upsideDrivers: [
       '需求持续超预期',
@@ -135,15 +135,15 @@ export function generateBayesianValuation(ticker: string, companyName: string): 
     ],
 
     positionGuidance: {
-      posture: '小仓试错，验证后加仓',
+      posture: '观察验证，等待证据补充',
       conditions: [
-        '当前估值略高，控制仓位',
+        '当前估值略高，谨慎解读',
         '等待财报验证增长质量',
-        '验证通过后考虑加仓',
-        '如果验证失败则退出',
+        '验证通过后更新研究假设',
+        '如果验证失败则下调假设等级',
       ],
     },
 
-    conclusionOneLiner: '内在增长健康但股价已领先基本面，建议小仓验证，控制风险。',
+    conclusionOneLiner: '内在增长健康但股价已领先基本面，需要等待后续财报验证。',
   };
 }

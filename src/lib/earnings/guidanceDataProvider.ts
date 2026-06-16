@@ -3,158 +3,97 @@
  * 从多个来源提取公司指引数据
  */
 
-import type { GuidanceMetricComparison } from '@/types/earnings';
 import type { BasicCompanyData } from '@/types/basic-data';
 import type { SecurityRecord } from '@/types/security';
-import type { GlobalGuidanceEvidence } from '@/types/global-stock-data';
+import { getGuidanceEvidence } from './guidanceEvidenceProvider';
+import { extractGuidanceFromSec } from './secGuidanceExtractor';
+import { fetchFmpGuidance } from './fmpGuidanceProvider';
+import { extractGuidanceFromYahoo } from './yahooGuidanceExtractor';
+import type { GuidanceDataResult } from './guidanceTypes';
 
-export interface GuidanceDataResult {
-  guidance: GuidanceMetricComparison[];
-  guidanceEvidence: GlobalGuidanceEvidence[];
-  source: string;
-  confidence: number;
-  warnings: string[];
-}
+export type { GuidanceDataResult } from './guidanceTypes';
 
 /**
  * 主函数：获取指引数据
  */
 export async function getGuidanceData({
   ticker,
-  security: _security,
+  security,
   basicData
 }: {
   ticker: string;
   security?: SecurityRecord;
   basicData?: BasicCompanyData;
 }): Promise<GuidanceDataResult> {
-  // 尝试从多个来源获取，优先级从高到低
+  const normalizedTicker = (security?.symbol ?? ticker).trim().toUpperCase();
   const results: { data: GuidanceDataResult; priority: number }[] = [];
+  const warnings: string[] = [];
+  const evidenceLookup = await getGuidanceEvidence(normalizedTicker);
+  const evidence = evidenceLookup.evidence;
+
+  warnings.push(...evidenceLookup.warnings);
 
   try {
-    // 优先级1: SEC filings
-    const secGuidance = await extractGuidanceFromSec(ticker, basicData);
-    if (secGuidance.guidance.length > 0) {
-      results.push({ data: secGuidance, priority: 1 });
-    }
+    const secGuidance = await extractGuidanceFromSec(normalizedTicker, basicData, evidence);
+    results.push({ data: secGuidance, priority: 1 });
   } catch (e) {
-    console.log('SEC guidance extraction skipped:', e);
-  }
-
-  try {
-    // 优先级2: FMP (如果有 API Key)
-    const fmpGuidance = await fetchFmpGuidance(ticker);
-    if (fmpGuidance.guidance.length > 0) {
-      results.push({ data: fmpGuidance, priority: 2 });
-    }
-  } catch (e) {
-    console.log('FMP guidance fetch skipped:', e);
+    warnings.push(e instanceof Error ? e.message : 'SEC guidance extraction skipped.');
   }
 
   try {
-    // 优先级3: Yahoo Finance
-    const yahooGuidance = await extractGuidanceFromYahoo(ticker);
-    if (yahooGuidance.guidance.length > 0) {
-      results.push({ data: yahooGuidance, priority: 3 });
-    }
+    const fmpGuidance = await fetchFmpGuidance(normalizedTicker);
+    results.push({ data: fmpGuidance, priority: 2 });
   } catch (e) {
-    console.log('Yahoo guidance extraction skipped:', e);
+    warnings.push(e instanceof Error ? e.message : 'FMP guidance fetch skipped.');
   }
 
-  // 返回优先级最高的结果，如果都没有，返回空结果
-  if (results.length > 0) {
-    results.sort((a, b) => a.priority - b.priority);
-    return results[0].data;
+  try {
+    const yahooGuidance = await extractGuidanceFromYahoo(normalizedTicker, evidence);
+    results.push({ data: yahooGuidance, priority: 3 });
+  } catch (e) {
+    warnings.push(e instanceof Error ? e.message : 'Yahoo guidance extraction skipped.');
   }
 
-  // 没有指引数据，返回空结果
+  const evidenceByKey = new Map<string, GuidanceDataResult['guidanceEvidence'][number]>();
+  const allWarnings = [...warnings];
+
+  for (const result of results) {
+    for (const item of result.data.guidanceEvidence) {
+      const key = item.url ?? `${item.source}-${item.title ?? item.snippet ?? evidenceByKey.size}`;
+      evidenceByKey.set(key, item);
+    }
+    allWarnings.push(...result.data.warnings);
+  }
+
+  const structuredResults = results
+    .filter((result) => result.data.guidance.length > 0)
+    .sort((a, b) => a.priority - b.priority);
+
+  if (structuredResults.length > 0) {
+    const primary = structuredResults[0].data;
+    return {
+      ...primary,
+      guidanceEvidence: Array.from(evidenceByKey.values()),
+      warnings: [...new Set([...allWarnings, ...primary.warnings])],
+    };
+  }
+
+  const mergedEvidence = Array.from(evidenceByKey.values());
+  if (mergedEvidence.length > 0) {
+    return {
+      guidance: [],
+      guidanceEvidence: mergedEvidence,
+      source: 'SEC/Yahoo guidance evidence',
+      confidence: 0.3,
+      warnings: [...new Set(allWarnings)],
+    };
+  }
+
   return {
     guidance: [],
     guidanceEvidence: [],
     source: '暂无指引数据',
     confidence: 0,
-    warnings: ['当前股票暂未找到公开的业绩指引数据']
-  };
-}
-
-/**
- * 从 SEC filings 提取指引信息
- */
-async function extractGuidanceFromSec(
-  _ticker: string,
-  basicData?: BasicCompanyData
-): Promise<GuidanceDataResult> {
-  const guidance: GuidanceMetricComparison[] = [];
-  const evidence: GlobalGuidanceEvidence[] = [];
-  const warnings: string[] = [];
-
-  // 尝试从最新的 filing 中查找
-  if (basicData?.latestFiling) {
-    // 这里是占位，后续可以实现真实的 SEC filing 解析
-    warnings.push('SEC指引提取功能开发中');
-
-    // 如果有 source links，可以添加为证据
-    if (basicData.sourceLinks) {
-      basicData.sourceLinks.forEach(link => {
-        if (link.label.toLowerCase().includes('8-k') ||
-            link.label.toLowerCase().includes('earnings')) {
-          evidence.push({
-            source: 'sec-edgar',
-            snippet: `${link.label} 可能包含指引`,
-            publishedAt: basicData.latestFiling!.filingDate,
-            url: link.url,
-            evidenceType: 'sec-filing'
-          });
-        }
-      });
-    }
-  }
-
-  return {
-    guidance,
-    guidanceEvidence: evidence,
-    source: 'SEC EDGAR (placeholder)',
-    confidence: guidance.length > 0 ? 0.85 : 0,
-    warnings
-  };
-}
-
-/**
- * 从 FMP 获取指引数据
- */
-async function fetchFmpGuidance(_ticker: string): Promise<GuidanceDataResult> {
-  // 检查是否有 API Key
-  const apiKey = process.env.FMP_API_KEY;
-  if (!apiKey) {
-    return {
-      guidance: [],
-      guidanceEvidence: [],
-      source: 'FMP (需要 API Key)',
-      confidence: 0,
-      warnings: ['FMP_API_KEY 未配置，无法获取指引数据']
-    };
-  }
-
-  // 这里是占位，后续可以实现真实的 FMP API 调用
-  return {
-    guidance: [],
-    guidanceEvidence: [],
-    source: 'FMP (placeholder)',
-    confidence: 0,
-    warnings: ['FMP指引获取功能开发中']
-  };
-}
-
-/**
- * 从 Yahoo Finance 提取指引
- */
-async function extractGuidanceFromYahoo(_ticker: string): Promise<GuidanceDataResult> {
-  // 这里是占位，后续可以实现从 Yahoo 提取指引
-  return {
-    guidance: [],
-    guidanceEvidence: [],
-    source: 'Yahoo Finance (placeholder)',
-    confidence: 0,
-    warnings: ['Yahoo指引提取功能开发中']
+    warnings: [...new Set([...allWarnings, '当前股票暂未找到公开的业绩指引数据'])],
   };
 }

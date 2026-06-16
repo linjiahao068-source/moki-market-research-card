@@ -1,4 +1,4 @@
-export type GlobalDataSource = 'eastmoney' | 'yahoo' | 'sec-edgar' | 'sina' | 'tencent' | 'mock';
+export type GlobalDataSource = 'eastmoney' | 'yahoo' | 'sec-edgar' | 'fmp' | 'sina' | 'tencent' | 'mock';
 
 export interface GlobalStockSearchResult {
   symbol?: string;
@@ -50,7 +50,7 @@ export interface GlobalGuidanceEvidence {
   url?: string;
   publishedAt?: string;
   snippet?: string;
-  evidenceType?: 'news' | 'sec-filing' | 'transcript' | 'unknown';
+  evidenceType?: 'news' | 'sec-filing' | 'transcript' | 'analyst-estimate' | 'unknown';
   extracted?: boolean;
   warnings?: string[];
 }

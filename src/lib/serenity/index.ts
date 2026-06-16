@@ -53,13 +53,21 @@ function calculateDataAvailability(input: SerenityDataInput): {
   hasSufficientData: boolean;
   overallScore: number;
 } {
-  const hasBasicData = !!input.basicData;
-  const hasEarningsData = !!input.earningsSnapshot;
+  const hasBasicData = !!input.basicData &&
+    input.basicData.provider !== 'mock' &&
+    input.basicData.coverageStatus !== 'empty' &&
+    input.basicData.coverageStatus !== 'failed';
+  const hasEarningsData = !!input.earningsSnapshot &&
+    input.earningsSnapshot.provider !== 'mock';
   const hasValuationData = hasEarningsData && (
     input.earningsSnapshot?.currentPrice !== undefined ||
-    input.earningsSnapshot?.forwardPE !== undefined
+    input.earningsSnapshot?.forwardPE !== undefined ||
+    input.earningsSnapshot?.trailingPE !== undefined
   );
-  const hasGrowthData = hasEarningsData && !!input.earningsSnapshot?.metrics && input.earningsSnapshot.metrics.length > 0;
+  const hasGrowthData = hasEarningsData && !!input.earningsSnapshot?.metrics && input.earningsSnapshot.metrics.some((metric) =>
+    metric.quality !== 'missing' &&
+    (metric.actual !== undefined || metric.estimate !== undefined || metric.yoyPct !== undefined)
+  );
   const hasSufficientData = hasBasicData && hasEarningsData && hasValuationData;
 
   const overallScore = [
@@ -100,9 +108,9 @@ function buildDataNotice(
   if (availability.hasSufficientData) {
     return `Serenity Analysis 基于真实数据生成 · 数据来源: ${uniqueSources.join(' + ')} · 数据覆盖率 ${(availability.overallScore * 100).toFixed(0)}%`;
   } else if (availability.overallScore > 0) {
-    return `Serenity Analysis 基于部分真实数据生成 · 数据来源: ${uniqueSources.join(' + ')} · 部分模块因数据不足暂未启用`;
+    return `Serenity Analysis 基于部分真实数据生成 · 数据来源: ${uniqueSources.join(' + ') || '待补充'} · 部分模块因数据不足暂未启用`;
   } else {
-    return `Serenity Analysis 当前为演示版本 · 真实数据接入中 · 数据仅供参考不构成投资建议`;
+    return `Serenity Analysis 当前为演示或占位数据 · 真实数据接入中 · 数据仅供研究参考，不构成投资建议`;
   }
 }
 

@@ -18,11 +18,11 @@ const VALUATION_TIER_LABELS: Record<string, string> = {
 };
 
 const POSITION_TYPE_LABELS: Record<string, string> = {
-  core_growth: '核心成长',
-  high_beta_growth: '高beta成长',
-  turnaround: '反转',
-  option_like: '期权特性',
-  cyclical: '周期',
+  core_growth: '核心成长观察',
+  high_beta_growth: '高波动成长观察',
+  turnaround: '反转验证',
+  option_like: '可选性观察',
+  cyclical: '周期复盘',
 };
 
 const getValuationTierColor = (tier: string) => {
@@ -68,7 +68,7 @@ export function TamAdjPegPanel({ analysis }: TamAdjPegPanelProps) {
             </div>
           </div>
           <div className="text-right">
-            <div className="text-xs font-semibold text-[var(--brand-ink)] mb-1">适合的仓位类型</div>
+            <div className="text-xs font-semibold text-[var(--brand-ink)] mb-1">适合的研究分类</div>
             <div className="inline-flex items-center rounded-full border border-[var(--brand-border)] bg-white px-3 py-1 text-sm font-semibold text-[var(--brand-ink)]">
               {POSITION_TYPE_LABELS[analysis.conclusion.suitablePositionType] || analysis.conclusion.suitablePositionType}
             </div>
@@ -83,13 +83,13 @@ export function TamAdjPegPanel({ analysis }: TamAdjPegPanelProps) {
           <div className="rounded-[6px] border border-border bg-white p-2 text-center">
             <div className="text-xs text-[oklch(0.45_0.018_160)]">当前 PE</div>
             <div className="text-xl font-bold text-[oklch(0.2_0.016_160)]">
-              {analysis.currentValuation.currentPe?.toFixed(1) || '—'}x
+              {analysis.currentValuation.currentPE?.toFixed(1) || '—'}x
             </div>
           </div>
           <div className="rounded-[6px] border border-border bg-white p-2 text-center">
             <div className="text-xs text-[oklch(0.45_0.018_160)]">Forward PE</div>
             <div className="text-xl font-bold text-[var(--brand-ink)]">
-              {analysis.currentValuation.forwardPe?.toFixed(1) || '—'}x
+              {analysis.currentValuation.forwardPE?.toFixed(1) || '—'}x
             </div>
           </div>
           <div className="rounded-[6px] border border-border bg-white p-2 text-center">
@@ -199,7 +199,7 @@ export function TamAdjPegPanel({ analysis }: TamAdjPegPanelProps) {
           </div>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mt-2">
             <div className="text-sm text-[oklch(0.2_0.016_160)]">
-              {analysis.currentValuation.forwardPe?.toFixed(1)} / ({(analysis.growthBreakdown.epsCagr2To3Yr || 0) * 100} × {analysis.tamRunwayFactor.estimate.toFixed(2)} × {analysis.qualityFactor.estimate.toFixed(2)})
+              {analysis.currentValuation.forwardPE?.toFixed(1)} / ({(analysis.growthBreakdown.epsCagr2To3Yr || 0) * 100} × {analysis.tamRunwayFactor.estimate.toFixed(2)} × {analysis.qualityFactor.estimate.toFixed(2)})
             </div>
             <div className="text-center">
               <div className="text-xs text-[oklch(0.45_0.018_160)]">调整后增长率</div>

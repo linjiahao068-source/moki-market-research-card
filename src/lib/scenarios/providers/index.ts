@@ -6,6 +6,7 @@ import {
   buildScenariosFromRealData
 } from '../scenarioCalculator';
 import { buildScenarioSourceNote } from '../serenityScenarioFramework';
+import { getAdvancedScenarios } from './advancedScenarioProvider';
 import { getManualScenario, supportsManualScenario } from './manualScenarioProvider';
 import { getRuleBasedScenario, canGenerateRuleBasedScenario } from './ruleBasedScenarioProvider';
 
@@ -47,7 +48,23 @@ export function getBullBaseBearScenarios(
   const currency = inputCurrency ?? basicData?.profile?.currency ?? 'USD';
   const companyName = inputCompanyName ?? basicData?.profile?.companyName ?? earningsSnapshot?.companyName ?? ticker.toUpperCase();
 
-  // Phase 3: 优先用真实数据构建
+  // Phase 3: 优先用增强真实数据构建
+  if (earningsSnapshot && earningsSnapshot.provider !== 'mock') {
+    const enhancedSnapshot = earningsSnapshot as EarningsSnapshotData & { historicalQuarters?: unknown[] };
+    const advancedScenario = getAdvancedScenarios({
+      ticker,
+      companyName,
+      basicData: basicData ?? undefined,
+      earningsSnapshot,
+      historicalQuarters: enhancedSnapshot.historicalQuarters,
+    });
+
+    if (advancedScenario.dataStatus !== 'placeholder') {
+      return advancedScenario;
+    }
+  }
+
+  // 备选：用基础真实数据构建
   const realDataScenarios = buildScenariosFromRealData(ticker, companyName, earningsSnapshot);
   if (realDataScenarios.length > 0) {
     return buildScenarioSummary({

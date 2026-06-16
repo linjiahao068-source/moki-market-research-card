@@ -30,10 +30,10 @@ export interface AlphaValidationMetric {
 
 export type AlphaPositionPosture =
   | "observe" // 观察
-  | "small_test" // 小仓试错
-  | "consider_adding" // 验证后加仓
-  | "trade_only" // 只交易不投资
-  | "exit_or_downgrade"; // 降级或退出
+  | "small_test" // 小规模研究验证
+  | "consider_adding" // 验证后提高关注等级
+  | "trade_only" // 仅作市场背景观察
+  | "exit_or_downgrade"; // 降低关注等级
 
 export interface SerenityAlphaAnalysis {
   version: "1.0";
@@ -84,7 +84,7 @@ export interface SerenityAlphaAnalysis {
   // H. 下行风险
   downsideRisks: string[];
 
-  // I. 仓位建议（条件化表述）
+  // I. 研究姿态（条件化表述）
   positionGuidance: {
     posture: AlphaPositionPosture;
     conditions: string[];
@@ -120,7 +120,7 @@ export interface GrowthHypothesisItem {
 export type ValuationState =
   | "undervalued" // 低估
   | "fair_value" // 合理
-  | "expensive_but_tradable" // 高估但可交易
+  | "expensive_but_tradable" // 偏高但仍需跟踪验证
   | "bubble_like"; // 泡沫化
 
 export type PriceGrowthDivergence =
@@ -186,7 +186,7 @@ export interface BayesianGrowthValuation {
   // 11. 关键跟踪指标
   trackingIndicators: string[];
 
-  // 12. 仓位建议（条件化表述）
+  // 12. 研究姿态（条件化表述）
   positionGuidance: {
     posture: string;
     conditions: string[];

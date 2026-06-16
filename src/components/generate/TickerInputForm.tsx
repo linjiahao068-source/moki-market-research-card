@@ -6,6 +6,7 @@ import { SecurityCandidateList } from '@/components/security/SecurityCandidateLi
 import {
   cardTypeOptions,
   GenerateCardType,
+  generateRealDataResearchCard,
   mockGenerateResearchCard,
 } from '@/lib/generateResearchCard/mockGenerateResearchCard';
 import { resolveSecurityInput } from '@/lib/security/resolveSecurityInput';
@@ -54,7 +55,7 @@ async function fetchBasicData(query: string): Promise<{ data: BasicCompanyData |
     if (!response.ok) {
       return {
         data: null,
-        error: '基础数据获取失败，已使用 mock fallback。',
+        error: '基础数据获取失败，已使用 fallback。',
       };
     }
 
@@ -62,12 +63,12 @@ async function fetchBasicData(query: string): Promise<{ data: BasicCompanyData |
 
     return {
       data: payload.basicData ?? null,
-      error: payload.basicData ? '' : '基础数据获取失败，已使用 mock fallback。',
+      error: payload.basicData ? '' : '基础数据获取失败，已使用 fallback。',
     };
   } catch {
     return {
       data: null,
-      error: '基础数据获取失败，已使用 mock fallback。',
+      error: '基础数据获取失败，已使用 fallback。',
     };
   } finally {
     window.clearTimeout(timeout);
@@ -141,7 +142,7 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
     setEarningsSnapshotError(earningsSnapshotResult.error);
     setIsEarningsSnapshotLoading(false);
 
-    const result = mockGenerateResearchCard({
+    const result = generateRealDataResearchCard({
       rawInput: candidateInput,
       cardType,
       selectedSecurity: candidate,
@@ -207,7 +208,7 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
     setEarningsSnapshotError(earningsSnapshotResult.error);
     setIsEarningsSnapshotLoading(false);
 
-    const result = mockGenerateResearchCard({
+    const result = generateRealDataResearchCard({
       rawInput: query,
       cardType,
       basicData: basicDataResult.data ?? undefined,
@@ -255,7 +256,7 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
             className="h-11 w-full rounded-[8px] border border-border bg-white px-3 text-base font-semibold tracking-wide text-[oklch(0.18_0.014_160)] outline-none transition-colors placeholder:font-sans placeholder:font-normal placeholder:tracking-normal placeholder:text-[oklch(0.58_0.018_160)] focus:border-[var(--brand-border)] focus:ring-2 focus:ring-[var(--brand-soft)]"
           />
           <p className="mt-2 text-xs leading-relaxed text-[oklch(0.48_0.018_160)]">
-            支持股票代码 / Ticker / 中文名，包括英文 Ticker、数字股票代码和 mock security master 中的中文名。中文名仅精确匹配，不做模糊搜索。
+            支持股票代码 / Ticker / 中文名，包括英文 Ticker、数字股票代码和证券主数据中的中文名。中文名仅精确匹配，不做模糊搜索。
           </p>
           {error && (
             <div className="mt-3 rounded-[8px] border border-[var(--risk-border)] bg-[var(--risk-soft)] px-3 py-2 text-sm leading-relaxed text-[var(--risk-ink)]">
@@ -289,7 +290,7 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
               </>
             ) : (
               <>
-                生成 mock 研究卡
+                生成研究卡
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </>
             )}

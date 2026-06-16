@@ -2,7 +2,7 @@
  * 高级情景提供者 - 完全基于真实数据驱动
  */
 
-import type { BullBaseBearScenario, BullBaseBearScenarioSummary, ScenarioSource } from '@/types/scenario';
+import type { BullBaseBearScenario, BullBaseBearScenarioSummary } from '@/types/scenario';
 import type { BasicCompanyData } from '@/types/basic-data';
 import type { EarningsSnapshotData } from '@/types/earnings';
 import type { SecurityRecord } from '@/types/security';
@@ -30,6 +30,12 @@ export interface PeerValuation {
   pe?: number;
   forwardPe?: number;
   evSales?: number;
+}
+
+interface HistoricalQuarterLike {
+  revenue?: number;
+  netIncome?: number;
+  dilutedEps?: number;
 }
 
 /**
@@ -78,14 +84,45 @@ function calculateHistoricalVolatility(
   historicalQuarters?: unknown[],
   _earningsSnapshot?: EarningsSnapshotData
 ): number {
-  // 如果没有足够历史数据，使用默认波动率
-  if (!historicalQuarters || historicalQuarters.length < 4) {
+  const quarters = (historicalQuarters ?? []).filter((quarter): quarter is HistoricalQuarterLike => (
+    typeof quarter === 'object' && quarter !== null
+  ));
+  const series = quarters
+    .map((quarter) => quarter.dilutedEps ?? quarter.revenue ?? quarter.netIncome)
+    .filter((value): value is number => typeof value === 'number' && Number.isFinite(value) && value !== 0);
+
+  if (series.length < 4) {
+    const epsMetric = _earningsSnapshot?.metrics.find((metric) => metric.metricKey === 'eps');
+    const revenueMetric = _earningsSnapshot?.metrics.find((metric) => metric.metricKey === 'revenue');
+    const yoySignals = [epsMetric?.yoyPct, revenueMetric?.yoyPct]
+      .filter((value): value is number => typeof value === 'number' && Number.isFinite(value))
+      .map((value) => Math.abs(value) / 100);
+
+    if (yoySignals.length > 0) {
+      return Math.max(0.12, Math.min(0.35, yoySignals.reduce((sum, value) => sum + value, 0) / yoySignals.length));
+    }
+
     return 0.2; // 20% 作为基准
   }
 
-  // 这里可以实现真实的历史波动率计算
-  // 暂时返回默认值
-  return 0.2;
+  const changes: number[] = [];
+  for (let index = 1; index < series.length; index += 1) {
+    const previous = Math.abs(series[index]);
+    const current = series[index - 1];
+
+    if (previous > 0) {
+      changes.push((current - series[index]) / previous);
+    }
+  }
+
+  if (changes.length < 2) {
+    return 0.2;
+  }
+
+  const average = changes.reduce((sum, value) => sum + value, 0) / changes.length;
+  const variance = changes.reduce((sum, value) => sum + ((value - average) ** 2), 0) / changes.length;
+
+  return Math.max(0.12, Math.min(0.4, Math.sqrt(variance)));
 }
 
 /**
@@ -124,8 +161,8 @@ function buildBullScenario(
       '估值倍数扩张',
       '行业催化剂出现'
     ],
-    source: 'data-driven' as ScenarioSource,
-    derivationNote: `目标价 = 预期 EPS $${bullEps.toFixed(2)} × PE ${bullMultiple.toFixed(1)}x (基准 +${(multipleExpansion * 100).toFixed(0)}%)`
+    source: 'data_driven',
+    derivationNote: `估值演算 = 预期 EPS $${bullEps.toFixed(2)} × PE ${bullMultiple.toFixed(1)}x (基准 +${(multipleExpansion * 100).toFixed(0)}%)`
   };
 }
 
@@ -158,8 +195,8 @@ function buildBaseScenario(
     triggerConditions: [
       '业绩符合指引'
     ],
-    source: 'data-driven' as ScenarioSource,
-    derivationNote: `目标价 = 预期 EPS $${baseEpsVal.toFixed(2)} × PE ${baseMultipleVal.toFixed(1)}x`
+    source: 'data_driven',
+    derivationNote: `估值演算 = 预期 EPS $${baseEpsVal.toFixed(2)} × PE ${baseMultipleVal.toFixed(1)}x`
   };
 }
 
@@ -199,9 +236,41 @@ function buildBearScenario(
       '估值倍数收缩',
       '行业或宏观风险出现'
     ],
-    source: 'data-driven' as ScenarioSource,
-    derivationNote: `目标价 = 预期 EPS $${bearEps.toFixed(2)} × PE ${bearMultiple.toFixed(1)}x (基准 -${(multipleContraction * 100).toFixed(0)}%)`
+    source: 'data_driven',
+    derivationNote: `估值演算 = 预期 EPS $${bearEps.toFixed(2)} × PE ${bearMultiple.toFixed(1)}x (基准 -${(multipleContraction * 100).toFixed(0)}%)`
   };
+}
+
+/**
+ * 根据历史波动率调整三情景概率
+ */
+function adjustProbabilitiesByHistory(
+  scenarios: BullBaseBearScenario[],
+  volatility: number
+): BullBaseBearScenario[] {
+  const boundedVolatility = Math.max(0.12, Math.min(0.4, volatility));
+  const stressWeight = (boundedVolatility - 0.12) / 0.28;
+
+  return scenarios.map((scenario) => {
+    if (scenario.case === 'bull') {
+      return {
+        ...scenario,
+        probability: 0.22 + (stressWeight * 0.04),
+      };
+    }
+
+    if (scenario.case === 'bear') {
+      return {
+        ...scenario,
+        probability: 0.16 + (stressWeight * 0.12),
+      };
+    }
+
+    return {
+      ...scenario,
+      probability: 0.62 - (stressWeight * 0.16),
+    };
+  });
 }
 
 /**
@@ -248,7 +317,7 @@ export function getAdvancedScenarios(
   const baseScenario = buildBaseScenario(baseEps, baseMultiple, currentPrice);
   const bearScenario = buildBearScenario(baseEps, baseMultiple, volatility, currentPrice);
 
-  const scenarios = [bullScenario, baseScenario, bearScenario];
+  const scenarios = adjustProbabilitiesByHistory([bullScenario, baseScenario, bearScenario], volatility);
 
   // 4. 标准化概率
   const normalizedScenarios = normalizeScenarioProbabilities(scenarios);

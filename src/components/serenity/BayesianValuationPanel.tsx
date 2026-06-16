@@ -11,7 +11,7 @@ interface BayesianValuationPanelProps {
 const VALUATION_STATE_LABELS: Record<string, string> = {
   undervalued: '低估',
   fair_value: '合理',
-  expensive_but_tradable: '高估但可交易',
+  expensive_but_tradable: '偏高但仍需跟踪验证',
   bubble_like: '泡沫化',
 };
 
@@ -247,9 +247,9 @@ export function BayesianValuationPanel({ analysis }: BayesianValuationPanelProps
         </div>
       </div>
 
-      {/* 仓位建议 */}
+      {/* 研究姿态 */}
       <div className="mb-4">
-        <div className="text-xs font-semibold text-[var(--brand-ink)] mb-1">仓位建议</div>
+        <div className="text-xs font-semibold text-[var(--brand-ink)] mb-1">研究姿态</div>
         <div className="rounded-[6px] border border-border bg-[oklch(0.992_0.005_85)] p-3">
           <div className="text-xs font-semibold text-[var(--brand-ink)] mb-1">
             {analysis.positionGuidance.posture}

@@ -12,12 +12,12 @@ import type { TamAdjPegValuation } from '@/types/serenity';
 export function generateTamAdjPeg(ticker: string, companyName: string): TamAdjPegValuation {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const _ = { ticker, companyName }; // Placeholder for future use
-  const forwardPe = 35;
+  const forwardPE = 35;
   const epsCagr2To3Yr = 0.25;
   const tamRunwayFactor = 1.25;
   const qualityFactor = 1.0;
   const adjustedGrowth = epsCagr2To3Yr * tamRunwayFactor * qualityFactor;
-  const tamAdjPeg = forwardPe / (adjustedGrowth * 100);
+  const tamAdjPeg = forwardPE / (adjustedGrowth * 100);
 
   return {
     version: '1.0',
@@ -27,9 +27,9 @@ export function generateTamAdjPeg(ticker: string, companyName: string): TamAdjPe
     ticker,
 
     currentValuation: {
-      currentPe: 40,
-      forwardPe,
-      traditionalPeg: forwardPe / (epsCagr2To3Yr * 100),
+      currentPE: 40,
+      forwardPE,
+      traditionalPeg: forwardPE / (epsCagr2To3Yr * 100),
     },
 
     growthBreakdown: {

@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
 import { AlertTriangle, CheckCircle2, FileText, Search, ChevronDown, ChevronUp } from 'lucide-react';
 import { StockSymbolBadge } from '@/components/common/StockSymbolBadge';
-import { EarningsSnapshotPanel } from '@/components/earnings/EarningsSnapshotPanel';
-import { GuidanceComparePanel } from '@/components/earnings/GuidanceComparePanel';
-import { BullBaseBearScenariosPanel } from '@/components/scenarios/BullBaseBearScenariosPanel';
+import { EnhancedEarningsSnapshotPanel } from '@/components/earnings/EnhancedEarningsSnapshotPanel';
+import { EnhancedGuidanceComparePanel } from '@/components/earnings/EnhancedGuidanceComparePanel';
+import { EnhancedBullBaseBearScenariosPanel } from '@/components/scenarios/EnhancedBullBaseBearScenariosPanel';
 import {
   SerenityAlphaPanel,
   BayesianValuationPanel,
@@ -19,7 +19,7 @@ import { EarningsSnapshotData } from '@/types/earnings';
 import { ResearchCard } from '@/types/research-card';
 import { SecurityInputKind, SecurityMarket, SecurityRecord, SecurityResolution } from '@/types/security';
 import { getBullBaseBearScenarios } from '@/lib/scenarios/providers';
-import { generateSerenityBundle } from '@/lib/serenity';
+import { generateSerenityBundle, generateSerenityBundleFromRealData } from '@/lib/serenity';
 
 interface GeneratedCardPreviewProps {
   card: ResearchCard | null;
@@ -92,6 +92,20 @@ function getBadgeSymbol(card: ResearchCard) {
   return '--';
 }
 
+function hasUsableSerenityData(
+  basicData?: BasicCompanyData | null,
+  earningsSnapshot?: EarningsSnapshotData | null
+) {
+  const hasBasicData = !!basicData &&
+    basicData.provider !== 'mock' &&
+    basicData.coverageStatus !== 'empty' &&
+    basicData.coverageStatus !== 'failed';
+
+  const hasEarningsData = !!earningsSnapshot && earningsSnapshot.provider !== 'mock';
+
+  return hasBasicData || hasEarningsData;
+}
+
 export function GeneratedCardPreview({
   card,
   isFallback = false,
@@ -106,9 +120,14 @@ export function GeneratedCardPreview({
       return null;
     }
 
+    if (card.advancedScenarios) {
+      return card.advancedScenarios;
+    }
+
+    const activeEarningsSnapshot = earningsSnapshot ?? card.enhancedEarnings ?? null;
     let currentPrice: number | null = null;
-    if (earningsSnapshot?.currentPrice !== null && earningsSnapshot?.currentPrice !== undefined) {
-      currentPrice = earningsSnapshot.currentPrice;
+    if (activeEarningsSnapshot?.currentPrice !== null && activeEarningsSnapshot?.currentPrice !== undefined) {
+      currentPrice = activeEarningsSnapshot.currentPrice;
     } else if (basicData?.quote?.price) {
       currentPrice = parseFloat(basicData.quote.price);
     }
@@ -118,7 +137,7 @@ export function GeneratedCardPreview({
       companyName: card.companyName,
       currency: 'USD',
       currentPrice,
-      earningsSnapshot,
+      earningsSnapshot: activeEarningsSnapshot,
       basicData,
     });
   }, [card, basicData, earningsSnapshot]);
@@ -128,8 +147,28 @@ export function GeneratedCardPreview({
     if (!card) {
       return null;
     }
+
+    if (card.serenityAnalysis) {
+      return card.serenityAnalysis;
+    }
+
+    const activeEarningsSnapshot = earningsSnapshot ?? card.enhancedEarnings ?? null;
+    if (hasUsableSerenityData(basicData, activeEarningsSnapshot)) {
+      try {
+        return generateSerenityBundleFromRealData({
+          ticker: card.ticker,
+          companyName: card.companyName,
+          security: getPreviewSecurity(card),
+          basicData: basicData ?? undefined,
+          earningsSnapshot: activeEarningsSnapshot ?? undefined,
+        });
+      } catch {
+        return generateSerenityBundle(card.ticker, card.companyName);
+      }
+    }
+
     return generateSerenityBundle(card.ticker, card.companyName);
-  }, [card]);
+  }, [card, basicData, earningsSnapshot]);
 
   // Serenity 面板展开状态
   const [showSerenity, setShowSerenity] = useState(false);
@@ -161,7 +200,7 @@ export function GeneratedCardPreview({
   if (!card) {
     return (
       <div className="rounded-[8px] border border-dashed border-border bg-white p-5 text-sm leading-relaxed text-[oklch(0.48_0.018_160)]">
-        输入股票代码、Ticker或中文名并点击生成后，这里会显示 mock 研究卡预览。
+        输入股票代码、Ticker或中文名并点击生成后，这里会显示研究卡预览。
       </div>
     );
   }
@@ -171,7 +210,18 @@ export function GeneratedCardPreview({
   const badgeSymbol = getBadgeSymbol(card);
   const previewSecurity = getPreviewSecurity(card);
   const previewResolution = getPreviewResolution(card, isFallback, rawInput);
-  const dataModeLabel = basicData && basicData.provider !== 'mock' ? '真实基础数据' : 'mock fallback';
+  const activeEarningsSnapshot = earningsSnapshot ?? card.enhancedEarnings ?? null;
+  const activeGuidanceMeta = activeEarningsSnapshot as (EarningsSnapshotData & {
+    guidanceSource?: string;
+    guidanceConfidence?: number;
+    dataQualityScore?: number;
+  }) | null;
+  const realDataAvailable = Boolean(
+    card.dataQuality?.realDataAvailable ||
+    hasUsableSerenityData(basicData, activeEarningsSnapshot)
+  );
+  const dataQualityScore = card.dataQuality?.score ?? activeGuidanceMeta?.dataQualityScore;
+  const dataModeLabel = realDataAvailable ? '真实数据' : 'fallback';
   const sourceNote = `${card.sourceNote ?? card.disclaimer} 财报快照中的预测值和指引对比依赖第三方数据或文本抽取，需结合来源复核。`;
 
   return (
@@ -184,7 +234,7 @@ export function GeneratedCardPreview({
               <div className="mb-2 flex flex-wrap items-center gap-2">
                 <span className="inline-flex items-center gap-2 rounded-full border border-[var(--brand-border)] bg-[var(--brand-soft)] px-3 py-1 text-xs font-semibold text-[var(--brand-ink)]">
                   <span className="h-1.5 w-1.5 rounded-full bg-[var(--brand-dot)]" />
-                  {isFallback ? 'Mock Fallback' : card.isMock ? 'Mock Preview' : 'Research Card'}
+                  {isFallback ? 'Fallback Preview' : card.isMock ? 'Fallback Preview' : 'Research Card'}
                 </span>
                 <span className="rounded-full border border-border bg-white px-2.5 py-1 font-mono text-xs text-[oklch(0.45_0.018_160)]">
                   {card.cardType}
@@ -192,6 +242,16 @@ export function GeneratedCardPreview({
                 <span className="rounded-full border border-border bg-white px-2.5 py-1 text-xs font-medium text-[oklch(0.45_0.018_160)]">
                   数据模式：{dataModeLabel}
                 </span>
+                {realDataAvailable && (
+                  <span className="rounded-full border border-[var(--brand-border)] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--brand-ink)]">
+                    真实数据
+                  </span>
+                )}
+                {dataQualityScore !== undefined && (
+                  <span className="rounded-full border border-border bg-white px-2.5 py-1 text-xs font-medium text-[oklch(0.45_0.018_160)]">
+                    数据质量 {dataQualityScore.toFixed(1)}/10
+                  </span>
+                )}
               </div>
               <p className="text-sm text-[oklch(0.48_0.018_160)]">{card.companyName}</p>
               <h2 className="mt-1 text-2xl font-bold leading-tight text-[oklch(0.16_0.014_160)]">
@@ -217,24 +277,26 @@ export function GeneratedCardPreview({
 
         {isFallback && (
           <p className="mb-4 rounded-[8px] border border-[var(--brand-border)] bg-[var(--brand-soft)] p-3 text-xs leading-relaxed text-[var(--brand-ink)]">
-            当前输入未匹配到 mock 主数据，已生成通用研究卡雏形。
+            当前输入未匹配到证券主数据，已生成通用研究卡雏形。
           </p>
         )}
 
-        {earningsSnapshot && (
+        {activeEarningsSnapshot && (
           <div className="mb-4 space-y-4">
-            <EarningsSnapshotPanel data={earningsSnapshot} />
-            <GuidanceComparePanel
-              guidance={earningsSnapshot.guidance}
-              warnings={earningsSnapshot.warnings}
-              evidence={earningsSnapshot.guidanceEvidence}
+            <EnhancedEarningsSnapshotPanel data={activeEarningsSnapshot} />
+            <EnhancedGuidanceComparePanel
+              guidance={card.guidanceData?.guidance ?? activeEarningsSnapshot.guidance}
+              guidanceEvidence={card.guidanceData?.guidanceEvidence ?? activeEarningsSnapshot.guidanceEvidence}
+              warnings={card.guidanceData?.warnings ?? activeEarningsSnapshot.warnings}
+              source={card.guidanceData?.source ?? activeGuidanceMeta?.guidanceSource}
+              confidence={card.guidanceData?.confidence ?? activeGuidanceMeta?.guidanceConfidence}
             />
           </div>
         )}
 
         {/* Scenarios Panel */}
         <div className="mb-4">
-          <BullBaseBearScenariosPanel scenarios={scenarios} />
+          <EnhancedBullBaseBearScenariosPanel scenarios={scenarios} />
         </div>
 
         {/* Serenity Skills Analysis (可折叠) */}

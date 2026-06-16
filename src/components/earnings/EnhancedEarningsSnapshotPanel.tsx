@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { CheckCircle, AlertTriangle, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { EarningsMetricComparison, EarningsMetricKey, EarningsSnapshotData, MetricSource } from '@/types/earnings';
-import { EnhancedEarningsSnapshot } from '@/lib/earnings/enhancedEarningsProvider';
+import type { EnhancedEarningsSnapshot } from '@/lib/earnings/enhancedEarningsProvider';
 import { formatEps, formatMoneyCompact, formatPercent } from '@/lib/earnings/formatEarningsValue';
 
 interface EnhancedEarningsSnapshotPanelProps {
@@ -203,7 +203,7 @@ function ValuationDataSection({ data }: { data: EarningsSnapshotData | EnhancedE
         )}
         {data.targetPriceMean !== undefined && (
           <div>
-            <p className="text-xs text-gray-500">目标均价</p>
+            <p className="text-xs text-gray-500">分析师均值估值参考</p>
             <p className="text-lg font-bold text-gray-900">${data.targetPriceMean.toFixed(2)}</p>
           </div>
         )}

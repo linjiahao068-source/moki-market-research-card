@@ -1,6 +1,6 @@
 'use client';
 
-import { TrendingUp, Minus, TrendingDown, Target, AlertCircle } from 'lucide-react';
+import { TrendingUp, Minus, TrendingDown, Gauge, AlertCircle } from 'lucide-react';
 import type { BullBaseBearScenarioSummary, BullBaseBearScenario } from '@/types/scenario';
 
 interface EnhancedBullBaseBearScenariosPanelProps {
@@ -17,7 +17,7 @@ function ScenarioDataHeader({ scenarios }: { scenarios: BullBaseBearScenarioSumm
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-white p-4">
       <div className="flex items-center gap-3">
-        <Target className="h-5 w-5 text-blue-500" />
+        <Gauge className="h-5 w-5 text-[var(--brand-ink)]" />
         <div>
           <h3 className="text-sm font-semibold text-gray-800">买方情景推演</h3>
           <p className="text-xs text-gray-500">
@@ -37,7 +37,7 @@ function ScenarioDataHeader({ scenarios }: { scenarios: BullBaseBearScenarioSumm
 }
 
 /**
- * 收益率颜色类
+ * 情景变化颜色类
  */
 function getReturnColor(returnPct?: number | null) {
   if (returnPct === undefined || returnPct === null) return 'text-gray-600';
@@ -51,12 +51,10 @@ function getReturnColor(returnPct?: number | null) {
  */
 function ScenarioCard({
   scenario,
-  type,
-  _currentPrice
+  type
 }: {
   scenario: BullBaseBearScenario;
   type: 'bull' | 'base' | 'bear';
-  _currentPrice?: number;
 }) {
   const Icon = type === 'bull' ? TrendingUp : type === 'base' ? Minus : TrendingDown;
   const borderColor = type === 'bull' ? 'border-green-200 bg-green-50' :
@@ -80,10 +78,10 @@ function ScenarioCard({
         </span>
       </div>
 
-      {/* 目标价和收益率 */}
+      {/* 估值演算和情景变化 */}
       {scenario.targetPrice !== undefined && scenario.targetPrice !== null && (
         <div className="mb-3">
-          <p className="text-xs text-gray-500">目标价</p>
+          <p className="text-xs text-gray-500">估值演算</p>
           <div className="flex items-baseline gap-2">
             <span className="text-xl font-bold text-gray-900">
               ${scenario.targetPrice.toFixed(2)}
@@ -149,34 +147,34 @@ function RiskRewardSummary({ summary, currentPrice }: { summary?: BullBaseBearSc
     <div className="rounded-lg border border-border bg-white p-4">
       <h4 className="mb-3 text-sm font-semibold text-gray-700">概率加权汇总</h4>
       <div className="grid gap-4 md:grid-cols-3">
-        {/* 预期收益率 */}
+        {/* 概率加权变化 */}
         {expectedReturn !== undefined && (
           <div>
-            <p className="text-xs text-gray-500">预期收益率</p>
+            <p className="text-xs text-gray-500">概率加权变化</p>
             <p className={`text-lg font-bold ${getReturnColor(expectedReturn)}`}>
               {expectedReturn > 0 ? '+' : ''}{expectedReturn.toFixed(1)}%
             </p>
           </div>
         )}
 
-        {/* 加权目标价 */}
+        {/* 加权估值演算 */}
         {weightedTarget !== undefined && weightedTarget !== null && (
           <div>
-            <p className="text-xs text-gray-500">概率加权目标价</p>
+            <p className="text-xs text-gray-500">概率加权估值演算</p>
             <p className="text-lg font-bold text-gray-900">${weightedTarget.toFixed(2)}</p>
             {currentPrice && (
               <p className={`text-xs ${getReturnColor(calculateImpliedReturnSimple(weightedTarget, currentPrice))}`}>
-                vs现价: {calculateImpliedReturnSimple(weightedTarget, currentPrice) > 0 ? '+' : ''}
+                vs 当前价格: {calculateImpliedReturnSimple(weightedTarget, currentPrice) > 0 ? '+' : ''}
                 {calculateImpliedReturnSimple(weightedTarget, currentPrice).toFixed(1)}%
               </p>
             )}
           </div>
         )}
 
-        {/* 盈亏比 */}
+        {/* 上下行幅度比 */}
         {bullUpside !== undefined && bullUpside !== null && bearDownside !== undefined && bearDownside !== null && bearDownside < 0 && (
           <div>
-            <p className="text-xs text-gray-500">盈亏比</p>
+            <p className="text-xs text-gray-500">上下行幅度比</p>
             <p className="text-lg font-bold text-gray-900">
               {Math.abs(bullUpside / bearDownside).toFixed(2)}x
             </p>
@@ -193,7 +191,7 @@ function RiskRewardSummary({ summary, currentPrice }: { summary?: BullBaseBearSc
 }
 
 /**
- * 简单计算隐含收益率
+ * 简单计算相对当前价格的情景变化幅度
  */
 function calculateImpliedReturnSimple(targetPrice: number, currentPrice: number): number {
   if (!currentPrice || !targetPrice || currentPrice === 0) return 0;
@@ -260,21 +258,18 @@ export function EnhancedBullBaseBearScenariosPanel({ scenarios }: EnhancedBullBa
           <ScenarioCard
             scenario={bearScenario}
             type="bear"
-            _currentPrice={scenarios.currentPrice}
           />
         )}
         {baseScenario && (
           <ScenarioCard
             scenario={baseScenario}
             type="base"
-            _currentPrice={scenarios.currentPrice}
           />
         )}
         {bullScenario && (
           <ScenarioCard
             scenario={bullScenario}
             type="bull"
-            _currentPrice={scenarios.currentPrice}
           />
         )}
       </div>

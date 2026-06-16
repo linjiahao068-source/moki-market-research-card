@@ -47,7 +47,7 @@ export async function findSecCompanyByTicker(symbol: string): Promise<SecCompany
     return null;
   }
 
-  const records = await fetchCompanyTickers();
+  const records = await fetchCompanyTickers().catch(() => []);
   const match = records.find((record) => record.ticker.toUpperCase() === normalizedSymbol);
 
   if (!match) {

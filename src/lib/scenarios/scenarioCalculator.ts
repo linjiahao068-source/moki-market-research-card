@@ -45,7 +45,7 @@ function extractRealisticInputs(earningsSnapshot?: EarningsSnapshotData | null):
 }
 
 /**
- * 计算隐含收益率
+ * 计算相对当前价格的情景变化幅度
  */
 export function calculateImpliedReturn(
   targetPrice: number | undefined | null,
@@ -58,7 +58,7 @@ export function calculateImpliedReturn(
 }
 
 /**
- * 基于 EPS 和估值倍数计算目标价
+ * 基于 EPS 和估值倍数计算估值演算值
  */
 export function calculatePeTargetPrice(
   epsAssumption: number | undefined | null,
@@ -97,7 +97,7 @@ export function normalizeScenarioProbabilities(scenarios: BullBaseBearScenario[]
 }
 
 /**
- * 计算概率加权目标价
+ * 计算概率加权估值演算值
  */
 export function calculateProbabilityWeightedTarget(scenarios: BullBaseBearScenario[]): number | null {
   const normalizedScenarios = normalizeScenarioProbabilities(scenarios);
@@ -120,7 +120,7 @@ export function calculateProbabilityWeightedTarget(scenarios: BullBaseBearScenar
 }
 
 /**
- * 计算风险收益汇总
+ * 计算上下行幅度汇总
  */
 export function calculateRiskRewardSummary(
   scenarios: BullBaseBearScenario[],
@@ -153,7 +153,7 @@ export function calculateRiskRewardSummary(
     upsideDownsideRatio,
     bullCaseUpsidePct: bullUpside ?? undefined,
     bearCaseDownsidePct: bearDownside ?? undefined,
-    summaryText: '基于情景假设的风险收益分析，不构成投资建议。'
+    summaryText: '基于情景假设的上下行幅度分析，不构成投资建议。'
   };
 }
 
@@ -195,7 +195,7 @@ export function buildScenariosFromRealData(
         impliedReturnPct: isValidNumber(currentPrice) ? calculateImpliedReturn(bullTargetPrice, currentPrice) : null,
         triggerConditions: ['业绩超预期', '估值扩张'],
         source: 'rule_based',
-        derivationNote: `目标价 = 预期 EPS $${bullEps.toFixed(2)} × PE ${bullMultiple.toFixed(1)}x`,
+        derivationNote: `估值演算 = 预期 EPS $${bullEps.toFixed(2)} × PE ${bullMultiple.toFixed(1)}x`,
       },
       {
         case: 'base',
@@ -210,7 +210,7 @@ export function buildScenariosFromRealData(
         impliedReturnPct: isValidNumber(currentPrice) ? calculateImpliedReturn(baseTargetPrice, currentPrice) : null,
         triggerConditions: ['业绩符合指引'],
         source: 'rule_based',
-        derivationNote: `目标价 = 预期 EPS $${baseEpsVal.toFixed(2)} × PE ${baseMultipleVal.toFixed(1)}x`,
+        derivationNote: `估值演算 = 预期 EPS $${baseEpsVal.toFixed(2)} × PE ${baseMultipleVal.toFixed(1)}x`,
       },
       {
         case: 'bear',
@@ -225,7 +225,7 @@ export function buildScenariosFromRealData(
         impliedReturnPct: isValidNumber(currentPrice) ? calculateImpliedReturn(bearTargetPrice, currentPrice) : null,
         triggerConditions: ['业绩低于预期', '估值收缩'],
         source: 'rule_based',
-        derivationNote: `目标价 = 预期 EPS $${bearEps.toFixed(2)} × PE ${bearMultiple.toFixed(1)}x`,
+        derivationNote: `估值演算 = 预期 EPS $${bearEps.toFixed(2)} × PE ${bearMultiple.toFixed(1)}x`,
       }
     ];
   }
@@ -300,7 +300,7 @@ export const TEST_SCENARIOS: BullBaseBearScenario[] = [
     impliedReturnPct: 45.6,
     triggerConditions: ['产品超预期', '宏观政策利好'],
     source: 'mock',
-    derivationNote: '目标价 = 预期 EPS $7.0 × PE 16.0x',
+    derivationNote: '估值演算 = 预期 EPS $7.0 × PE 16.0x',
   },
   {
     case: 'base',
@@ -321,7 +321,7 @@ export const TEST_SCENARIOS: BullBaseBearScenario[] = [
     impliedReturnPct: 8.0,
     triggerConditions: ['业绩符合指引'],
     source: 'mock',
-    derivationNote: '目标价 = 预期 EPS $5.0 × PE 14.0x',
+    derivationNote: '估值演算 = 预期 EPS $5.0 × PE 14.0x',
   },
   {
     case: 'bear',
@@ -342,7 +342,7 @@ export const TEST_SCENARIOS: BullBaseBearScenario[] = [
     impliedReturnPct: -24.0,
     triggerConditions: ['宏观经济下行', '行业竞争恶化'],
     source: 'mock',
-    derivationNote: '目标价 = 预期 EPS $3.0 × PE 11.0x',
+    derivationNote: '估值演算 = 预期 EPS $3.0 × PE 11.0x',
   }
 ];
 
@@ -353,8 +353,8 @@ export function runSelfTests(): void {
   console.log('1. calculateImpliedReturn (100 → 110):', calculateImpliedReturn(110, 100));
   console.log('2. calculatePeTargetPrice (5.0 × 20):', calculatePeTargetPrice(5.0, 20));
 
-  console.log('\n3. 概率加权目标价:', calculateProbabilityWeightedTarget(TEST_SCENARIOS));
-  console.log('\n4. 风险收益汇总:', calculateRiskRewardSummary(TEST_SCENARIOS, 100));
+  console.log('\n3. 概率加权估值演算:', calculateProbabilityWeightedTarget(TEST_SCENARIOS));
+  console.log('\n4. 上下行幅度汇总:', calculateRiskRewardSummary(TEST_SCENARIOS, 100));
 
   console.log('\n=== 自测完成 ===');
 }

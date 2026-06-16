@@ -193,7 +193,7 @@ function determineValuationState(
   // 简化判断
   if (priceGrowthDivergence.state === 'price_ahead_of_fundamentals') {
     state = 'expensive_but_tradable';
-    reasoning = '估值略高但基本面仍在改善，可交易但降低长期回报预期';
+    reasoning = '估值略高但基本面仍在改善，需要继续跟踪验证';
   } else if (priceGrowthDivergence.state === 'price_lagging_fundamentals') {
     state = 'undervalued';
     reasoning = '估值较低但基本面改善，存在修复空间';
@@ -270,7 +270,7 @@ function buildTrackingIndicators(input: SerenityDataInput) {
 }
 
 /**
- * 构建仓位建议
+ * 构建研究姿态
  */
 function buildPositionGuidance(
   valuationState: BayesianGrowthValuation['valuationState'],
@@ -280,14 +280,14 @@ function buildPositionGuidance(
   let conditions: string[] = [];
 
   if (valuationState === 'undervalued') {
-    posture = 'small test, add after validation';
-    conditions = ['估值有吸引力', '等待验证', '验证通过考虑加仓'];
+    posture = '观察验证，等待证据补充';
+    conditions = ['估值演算较有吸引力', '等待验证', '验证通过后更新研究假设'];
   } else if (valuationState === 'expensive_but_tradable') {
-    posture = 'small test, add after validation';
-    conditions = ['当前估值略高，控制仓位', '等待财报验证增长质量', '验证通过考虑加仓', '如果验证失败则退出'];
+    posture = '观察验证，等待证据补充';
+    conditions = ['当前估值略高，谨慎解读', '等待财报验证增长质量', '验证通过后更新研究假设', '如果验证失败则下调假设等级'];
   } else {
-    posture = 'small test, add after validation';
-    conditions = ['估值合理', '等待验证', '视验证情况调整'];
+    posture = '持续跟踪，等待新证据';
+    conditions = ['估值演算大致合理', '等待验证', '视验证情况更新研究假设'];
   }
 
   return {
@@ -305,11 +305,11 @@ function buildConclusionOneLiner(
   marketImpliedGrowth: ReturnType<typeof calculateMarketImpliedGrowth>
 ) {
   if (valuationState === 'undervalued') {
-    return '内在增长健康但估值未反映，存在修复空间，建议关注';
+    return '内在增长健康但估值未充分反映，后续重点观察验证进展';
   } else if (valuationState === 'expensive_but_tradable') {
-    return '内在增长健康但股价已领先基本面，建议小仓验证，控制风险';
+    return '内在增长健康但股价已领先基本面，需要等待后续财报验证';
   } else {
-    return '内在增长与估值匹配，持有为主，关注验证';
+    return '内在增长与估值演算大致匹配，继续关注验证指标';
   }
 }
 

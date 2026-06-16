@@ -6,6 +6,10 @@
 import type { EarningsSnapshotData, EarningsMetricComparison } from '@/types/earnings';
 import type { BasicCompanyData } from '@/types/basic-data';
 import type { SecurityRecord } from '@/types/security';
+import type { GlobalQuarterFinancial } from '@/types/global-stock-data';
+import { fetchEastmoneyQuarterFinancials } from '@/lib/globalStockData/eastmoneyFinancials';
+import { getYahooSymbol } from '@/lib/globalStockData/marketSymbol';
+import { fetchYahooQuoteSummary } from '@/lib/globalStockData/yahooQuoteSummary';
 import { getGlobalEarningsSnapshotData } from './globalEarningsProvider';
 
 // 扩展财报快照类型
@@ -26,6 +30,10 @@ export interface EnhancedEarningsSnapshot extends EarningsSnapshotData {
 
   // 各指标置信度
   metricConfidence?: Record<string, number>;
+
+  // 公司指引来源信息
+  guidanceSource?: string;
+  guidanceConfidence?: number;
 }
 
 // 增长计算结果
@@ -84,26 +92,53 @@ export async function getEnhancedEarningsSnapshot({
  * 从多个来源获取历史季度数据
  */
 async function fetchHistoricalQuarters(
-  _security?: SecurityRecord,
+  security?: SecurityRecord,
   _basicData?: BasicCompanyData
 ): Promise<EnhancedEarningsSnapshot['historicalQuarters']> {
-  const quarters: EnhancedEarningsSnapshot['historicalQuarters'] = [];
+  void _basicData;
+  if (!security) {
+    return [];
+  }
 
-  // TODO: 后续可以从以下来源获取历史数据：
-  // 1. 东方财富历史财务数据
-  // 2. Yahoo Finance 历史财务
-  // 3. SEC filings 历史提取
+  const [eastmoneyQuarters, yahooSummary] = await Promise.all([
+    fetchEastmoneyQuarterFinancials(security).catch(() => [] as GlobalQuarterFinancial[]),
+    fetchYahooQuoteSummary(getYahooSymbol(security) ?? security.symbol ?? security.numericCode ?? '', [
+      'incomeStatementHistoryQuarterly',
+    ]).catch(() => undefined),
+  ]);
+  const yahooQuarters = yahooSummary?.ok ? yahooSummary.quarterlyFinancials : [];
+  const merged = new Map<string, NonNullable<EnhancedEarningsSnapshot['historicalQuarters']>[number]>();
 
-  // 暂时返回空（后续实现）
-  // 占位示例：
-  // if (security?.symbol === 'ORCL') {
-  //   quarters.push(
-  //     { periodEnd: '2026-02-28', fiscalYear: '2026', fiscalQuarter: 'Q3', revenue: 13300000000, netIncome: 3200000000, dilutedEps: 1.16, source: 'SEC EDGAR' },
-  //     { periodEnd: '2025-11-30', fiscalYear: '2025', fiscalQuarter: 'Q2', revenue: 12900000000, netIncome: 2800000000, dilutedEps: 1.02, source: 'SEC EDGAR' }
-  //   );
-  // }
+  for (const quarter of [...eastmoneyQuarters, ...yahooQuarters]) {
+    if (
+      quarter.revenue === undefined &&
+      quarter.netIncome === undefined &&
+      quarter.dilutedEps === undefined
+    ) {
+      continue;
+    }
 
-  return quarters;
+    const key = [
+      quarter.periodEnd,
+      quarter.fiscalYear,
+      quarter.fiscalQuarter,
+      quarter.source,
+    ].filter(Boolean).join('|') || `${merged.size}`;
+
+    if (!merged.has(key)) {
+      merged.set(key, {
+        periodEnd: quarter.periodEnd,
+        fiscalYear: quarter.fiscalYear,
+        fiscalQuarter: quarter.fiscalQuarter,
+        revenue: quarter.revenue,
+        netIncome: quarter.netIncome,
+        dilutedEps: quarter.dilutedEps,
+        source: quarter.sourceLabel ?? quarter.source,
+      });
+    }
+  }
+
+  return Array.from(merged.values()).slice(0, 8);
 }
 
 /**
@@ -131,6 +166,7 @@ function calculateGrowthRates(
   metric: EarningsMetricComparison,
   _historicalQuarters: EnhancedEarningsSnapshot['historicalQuarters']
 ): GrowthRates {
+  void _historicalQuarters;
   const result: GrowthRates = {};
 
   // 如果有同比数据，直接使用

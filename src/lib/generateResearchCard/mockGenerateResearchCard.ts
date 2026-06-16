@@ -1,9 +1,11 @@
-import { BasicCompanyData } from '@/types/basic-data';
-import { EarningsSnapshotData, GuidanceMetricComparison } from '@/types/earnings';
-import { ResearchCard } from '@/types/research-card';
-import { SecurityRecord, SecurityResolution } from '@/types/security';
+import type { BasicCompanyData } from '@/types/basic-data';
+import type { EarningsSnapshotData, GuidanceMetricComparison } from '@/types/earnings';
+import type { Evidence, ResearchCard, ResearchEvent } from '@/types/research-card';
+import type { SecurityRecord, SecurityResolution } from '@/types/security';
 import { formatEps, formatMoneyCompact, formatPercent } from '@/lib/earnings/formatEarningsValue';
+import { getBullBaseBearScenarios } from '@/lib/scenarios/providers';
 import { resolveSecurityInput } from '@/lib/security/resolveSecurityInput';
+import { generateSerenityBundleFromRealData } from '@/lib/serenity';
 
 export const cardTypeOptions = [
   {
@@ -28,7 +30,8 @@ export type GenerateCardType = (typeof cardTypeOptions)[number]['value'];
 const MOCK_UPDATED_AT = '2026-06-14';
 const MOCK_DATE_SLUG = '20260614';
 const SOURCE_NOTE = '当前结果结合 Moki Market V0.2.5 基础数据接入层和 mock generator 生成，仅用于产品体验验证，不构成投资建议。';
-const FALLBACK_SOURCE_NOTE = `${SOURCE_NOTE} 当前证券未匹配到 mock 主数据，已按输入生成通用研究卡雏形。`;
+const FALLBACK_SOURCE_NOTE = `${SOURCE_NOTE} 当前证券未匹配到证券主数据，已按输入生成通用研究卡雏形。`;
+const REAL_DATA_SOURCE_NOTE = '当前结果结合 Moki Market 真实数据接入层生成，包含基础数据、财报快照、指引证据、三情景演算和 Serenity 分析；仅供研究辅助，不构成投资建议。';
 
 interface CardTypeCopy {
   subtitle: string;
@@ -207,6 +210,57 @@ function summarizeGuidance(guidance: GuidanceMetricComparison[]) {
     .join('；');
 }
 
+function normalizeRealCopy(text: string) {
+  return text
+    .replace(/sample\/mock：/g, '')
+    .replace(/当前 mock 研究主题为/g, '当前研究主题为')
+    .replace(/当前 mock 主题为/g, '当前研究主题为')
+    .replace(/的 mock 观察卡/g, '观察卡')
+    .replace(/ mock /g, ' ')
+    .replace(/ mock/g, '')
+    .trim();
+}
+
+function normalizeMetricCopy(metrics: CardTypeCopy['keyMetrics']): CardTypeCopy['keyMetrics'] {
+  return metrics.map((metric) => ({
+    ...metric,
+    description: normalizeRealCopy(metric.description),
+    whyItMatters: normalizeRealCopy(metric.whyItMatters),
+  }));
+}
+
+function normalizeEventCopy(events: ResearchEvent[]): ResearchEvent[] {
+  return events.map((event) => ({
+    ...event,
+    title: normalizeRealCopy(event.title),
+    description: normalizeRealCopy(event.description),
+    impactQuestion: normalizeRealCopy(event.impactQuestion),
+  }));
+}
+
+function isRealBasicData(basicData?: BasicCompanyData) {
+  return !!basicData &&
+    basicData.provider !== 'mock' &&
+    basicData.coverageStatus !== 'empty' &&
+    basicData.coverageStatus !== 'failed';
+}
+
+function isRealEarningsSnapshot(earningsSnapshotData?: EarningsSnapshotData) {
+  return !!earningsSnapshotData && earningsSnapshotData.provider !== 'mock';
+}
+
+function getEnhancedScore(earningsSnapshotData?: EarningsSnapshotData) {
+  const maybeEnhanced = earningsSnapshotData as (EarningsSnapshotData & { dataQualityScore?: number }) | undefined;
+  return maybeEnhanced?.dataQualityScore;
+}
+
+function getGuidanceMeta(earningsSnapshotData?: EarningsSnapshotData) {
+  return earningsSnapshotData as (EarningsSnapshotData & {
+    guidanceSource?: string;
+    guidanceConfidence?: number;
+  }) | undefined;
+}
+
 function buildEarningsSnapshotSection(earningsSnapshotData?: EarningsSnapshotData) {
   if (!earningsSnapshotData) {
     return undefined;
@@ -250,18 +304,214 @@ function buildBasicDataSection(basicData?: BasicCompanyData) {
   };
 }
 
+function buildKeyMetricsFromData(
+  fallbackMetrics: CardTypeCopy['keyMetrics'],
+  basicData?: BasicCompanyData,
+  earningsSnapshotData?: EarningsSnapshotData
+): CardTypeCopy['keyMetrics'] {
+  const metrics: CardTypeCopy['keyMetrics'] = [];
+
+  if (earningsSnapshotData) {
+    const revenue = getEarningsMetric(earningsSnapshotData, 'revenue');
+    const eps = getEarningsMetric(earningsSnapshotData, 'eps');
+
+    if (revenue?.actual !== undefined || revenue?.estimate !== undefined) {
+      metrics.push({
+        label: 'Revenue',
+        description: `actual ${formatMetricActual(earningsSnapshotData, 'revenue')} / consensus ${revenue.estimate !== undefined ? formatMoneyCompact(revenue.estimate, revenue.currency ?? 'USD') : '--'}`,
+        whyItMatters: `YoY ${formatMetricYoy(earningsSnapshotData, 'revenue')}，用于复盘收入兑现质量。`,
+      });
+    }
+
+    if (eps?.actual !== undefined || eps?.estimate !== undefined) {
+      metrics.push({
+        label: 'EPS',
+        description: `actual ${formatMetricActual(earningsSnapshotData, 'eps')} / consensus ${eps.estimate !== undefined ? formatEps(eps.estimate) : '--'}`,
+        whyItMatters: `较预期 ${formatMetricSurprise(earningsSnapshotData, 'eps')}，用于观察利润兑现。`,
+      });
+    }
+  }
+
+  if (basicData?.financials?.cashAndEquivalents) {
+    metrics.push({
+      label: 'Cash',
+      description: basicData.financials.cashAndEquivalents,
+      whyItMatters: '用于观察资产负债表缓冲和投入能力。',
+    });
+  }
+
+  return [...metrics, ...fallbackMetrics].slice(0, 6);
+}
+
+function buildEventsFromData(
+  fallbackEvents: ResearchEvent[],
+  basicData?: BasicCompanyData,
+  earningsSnapshotData?: EarningsSnapshotData
+): ResearchEvent[] {
+  const events: ResearchEvent[] = [];
+
+  if (earningsSnapshotData?.reportDate || earningsSnapshotData?.earningsDate) {
+    events.push({
+      type: 'earnings-snapshot',
+      title: '财报快照更新',
+      description: [
+        earningsSnapshotData.reportDate ? `报告期 ${earningsSnapshotData.reportDate}` : undefined,
+        earningsSnapshotData.earningsDate ? `财报日 ${earningsSnapshotData.earningsDate}` : undefined,
+        `来源 ${earningsSnapshotData.provider}`,
+      ].filter(Boolean).join(' / '),
+      impactQuestion: '财报数据是否改变原有研究假设？',
+    });
+  }
+
+  if (basicData?.latestFiling) {
+    events.push({
+      type: 'filing',
+      title: `${basicData.latestFiling.formType ?? 'Filing'} 文件更新`,
+      description: `filing date ${basicData.latestFiling.filingDate ?? '--'}，source ${basicData.provider}`,
+      impactQuestion: '最新文件是否补充了收入、利润或风险披露线索？',
+    });
+  }
+
+  const firstEvidence = earningsSnapshotData?.guidanceEvidence?.[0];
+  if (firstEvidence) {
+    events.push({
+      type: 'guidance-evidence',
+      title: firstEvidence.title ?? '指引证据更新',
+      description: firstEvidence.snippet ?? firstEvidence.source ?? 'guidance-related evidence',
+      impactQuestion: '该证据是否提供了可复核的管理层或市场预期线索？',
+    });
+  }
+
+  return [...events, ...fallbackEvents].slice(0, 6);
+}
+
+function buildEvidenceChain({
+  slugSymbol,
+  cardType,
+  basicData,
+  earningsSnapshotData,
+}: {
+  slugSymbol: string;
+  cardType: GenerateCardType;
+  basicData?: BasicCompanyData;
+  earningsSnapshotData?: EarningsSnapshotData;
+}): Evidence[] {
+  const evidence: Evidence[] = [];
+
+  basicData?.sourceLinks?.slice(0, 3).forEach((link, index) => {
+    evidence.push({
+      id: `${slugSymbol}-${cardType}-basic-${index + 1}`,
+      sourceLabel: link.label,
+      sourceType: basicData.provider,
+      timestamp: basicData.fetchedAt,
+      summary: `基础数据来源：${link.label}`,
+      confidence: isRealBasicData(basicData) ? 0.75 : 0.45,
+    });
+  });
+
+  earningsSnapshotData?.sourceLinks?.slice(0, 3).forEach((link, index) => {
+    evidence.push({
+      id: `${slugSymbol}-${cardType}-earnings-${index + 1}`,
+      sourceLabel: link.label,
+      sourceType: earningsSnapshotData.provider,
+      timestamp: earningsSnapshotData.fetchedAt,
+      summary: `财报快照来源：${link.label}`,
+      confidence: isRealEarningsSnapshot(earningsSnapshotData) ? 0.7 : 0.45,
+    });
+  });
+
+  earningsSnapshotData?.guidanceEvidence?.slice(0, 3).forEach((item, index) => {
+    evidence.push({
+      id: `${slugSymbol}-${cardType}-guidance-${index + 1}`,
+      sourceLabel: item.title ?? item.source ?? 'Guidance evidence',
+      sourceType: item.source ?? 'guidance-evidence',
+      timestamp: item.publishedAt ?? earningsSnapshotData.fetchedAt,
+      summary: item.snippet ?? '指引相关证据，需结合原文复核。',
+      confidence: item.extracted ? 0.65 : 0.45,
+    });
+  });
+
+  if (evidence.length > 0) {
+    return evidence;
+  }
+
+  return [
+    {
+      id: `${slugSymbol.toLowerCase()}-${cardType}-mock-001`,
+      sourceLabel: 'Sample 财报与新闻清单',
+      sourceType: 'mock-source-checklist',
+      timestamp: MOCK_UPDATED_AT,
+      summary: '[Mock] 需要补充真实财报、公告、新闻和社交平台来源。',
+      confidence: 0.55,
+    },
+  ];
+}
+
+function buildRealDataSections(
+  copySections: CardTypeCopy['sections'],
+  basicData?: BasicCompanyData,
+  earningsSnapshotData?: EarningsSnapshotData
+) {
+  const earningsSnapshotSection = buildEarningsSnapshotSection(earningsSnapshotData);
+  const basicDataSection = buildBasicDataSection(basicData);
+  const guidanceSection = earningsSnapshotData && (
+    earningsSnapshotData.guidance.length > 0 || (earningsSnapshotData.guidanceEvidence?.length ?? 0) > 0
+  )
+    ? {
+        title: '公司指引与证据',
+        body: [
+          `结构化指引：${summarizeGuidance(earningsSnapshotData.guidance)}`,
+          `证据数量：${earningsSnapshotData.guidanceEvidence?.length ?? 0}`,
+          `来源：${getGuidanceMeta(earningsSnapshotData)?.guidanceSource ?? earningsSnapshotData.provider}`,
+        ].join('\n'),
+      }
+    : undefined;
+
+  return [earningsSnapshotSection, basicDataSection, guidanceSection, ...copySections].filter(
+    (section): section is { title: string; body: string } => Boolean(section)
+  );
+}
+
+function buildDataQuality(
+  basicData?: BasicCompanyData,
+  earningsSnapshotData?: EarningsSnapshotData
+): ResearchCard['dataQuality'] {
+  const realBasicData = isRealBasicData(basicData);
+  const realEarningsData = isRealEarningsSnapshot(earningsSnapshotData);
+  const score = getEnhancedScore(earningsSnapshotData);
+  const fallbackScore = Math.min(10, (realBasicData ? 3 : 0) + (realEarningsData ? 4 : 0) + ((earningsSnapshotData?.guidanceEvidence?.length ?? 0) > 0 ? 1 : 0));
+  const sources = [
+    realBasicData ? basicData?.provider : undefined,
+    realEarningsData ? earningsSnapshotData?.provider : undefined,
+    earningsSnapshotData?.guidanceEvidence?.length ? 'guidance evidence' : undefined,
+  ].filter(Boolean);
+
+  return {
+    score: score ?? fallbackScore,
+    sourceSummary: sources.length > 0 ? sources.join(' + ') : 'fallback',
+    realDataAvailable: realBasicData || realEarningsData,
+    coverageStatus: basicData?.coverageStatus,
+    warnings: [
+      ...(basicData?.warnings ?? []),
+      ...(earningsSnapshotData?.warnings ?? []),
+    ].slice(0, 8),
+  };
+}
+
 export function mockGenerateResearchCard({
   rawInput,
   cardType,
   selectedSecurity,
   basicData,
   earningsSnapshotData,
+  useRealData = false,
 }: {
   rawInput: string;
   cardType: GenerateCardType;
   selectedSecurity?: SecurityRecord;
   basicData?: BasicCompanyData;
   earningsSnapshotData?: EarningsSnapshotData;
+  useRealData?: boolean;
 }): MockGenerateResearchCardResult {
   const resolution = selectedSecurity
     ? ({
@@ -289,14 +539,56 @@ export function mockGenerateResearchCard({
     .replace(/[^a-z0-9]+/g, '-');
   const cardTypeLabel = getCardTypeLabel(cardType);
   const copy = buildCopy(displaySymbol, security.companyName, security.theme ?? 'general market research context', cardType);
-  const basicDataSection = buildBasicDataSection(basicData);
-  const earningsSnapshotSection = buildEarningsSnapshotSection(earningsSnapshotData);
-  const sections = [earningsSnapshotSection, basicDataSection, ...copy.sections].filter(
-    (section): section is { title: string; body: string } => Boolean(section)
-  );
-  const oneLine = basicData && basicData.provider !== 'mock'
-    ? `${copy.oneLine} 本卡已结合 ${basicData.provider} 基础数据快照，但仍需人工复核。`
-    : copy.oneLine;
+  const dataQuality = buildDataQuality(basicData, earningsSnapshotData);
+  const realDataAvailable = useRealData && Boolean(dataQuality?.realDataAvailable);
+  const displayCopy = realDataAvailable
+    ? {
+        ...copy,
+        subtitle: normalizeRealCopy(copy.subtitle),
+        oneLine: normalizeRealCopy(copy.oneLine),
+        bullCase: normalizeRealCopy(copy.bullCase),
+        bearCase: normalizeRealCopy(copy.bearCase),
+        keyQuestion: normalizeRealCopy(copy.keyQuestion),
+        sections: copy.sections.map((section) => ({
+          title: normalizeRealCopy(section.title),
+          body: normalizeRealCopy(section.body),
+        })),
+        keySignals: copy.keySignals.map(normalizeRealCopy),
+        risks: copy.risks.map(normalizeRealCopy),
+        revenueDrivers: copy.revenueDrivers.map(normalizeRealCopy),
+        keyMetrics: normalizeMetricCopy(copy.keyMetrics),
+        events: normalizeEventCopy(copy.events),
+      }
+    : copy;
+  const sections = realDataAvailable
+    ? buildRealDataSections(displayCopy.sections, basicData, earningsSnapshotData)
+    : buildRealDataSections(displayCopy.sections, undefined, undefined);
+  const keyMetrics = realDataAvailable
+    ? buildKeyMetricsFromData(displayCopy.keyMetrics, basicData, earningsSnapshotData)
+    : displayCopy.keyMetrics;
+  const events = realDataAvailable
+    ? buildEventsFromData(displayCopy.events, basicData, earningsSnapshotData)
+    : displayCopy.events;
+  const advancedScenarios = realDataAvailable
+    ? getBullBaseBearScenarios({
+        ticker: displaySymbol,
+        companyName: security.companyName,
+        basicData,
+        earningsSnapshot: earningsSnapshotData,
+      })
+    : undefined;
+  const serenityAnalysis = realDataAvailable
+    ? generateSerenityBundleFromRealData({
+        ticker: displaySymbol,
+        companyName: security.companyName,
+        security,
+        basicData,
+        earningsSnapshot: earningsSnapshotData,
+      })
+    : undefined;
+  const oneLine = realDataAvailable
+    ? `${displayCopy.oneLine} 本卡已结合 ${dataQuality?.sourceSummary ?? '真实数据'}，仍需结合原始来源复核。`
+    : displayCopy.oneLine;
   const displayName = security.companyName;
   const title = resolution.status === 'matched'
     ? `${displayName} ${cardTypeLabel}`
@@ -310,16 +602,16 @@ export function mockGenerateResearchCard({
       ticker: displaySymbol,
       companyName: security.companyName,
       title,
-      subtitle: copy.subtitle,
+      subtitle: displayCopy.subtitle,
       cardType,
       updatedAt: MOCK_UPDATED_AT,
-      isMock: true,
+      isMock: !realDataAvailable,
       summary: {
         oneLine,
         currentState: copy.bullCase,
-        bullCase: copy.bullCase,
-        bearCase: copy.bearCase,
-        keyQuestion: copy.keyQuestion,
+        bullCase: displayCopy.bullCase,
+        bearCase: displayCopy.bearCase,
+        keyQuestion: displayCopy.keyQuestion,
       },
       sentiment: {
         heatLevel: 7.2,
@@ -328,13 +620,15 @@ export function mockGenerateResearchCard({
         keyDebates: [copy.bullCase, copy.bearCase, copy.keyQuestion],
       },
       fundamentals: {
-        businessModel: `${security.companyName} 当前 mock 主题为 ${security.theme ?? 'general market research context'}。需要后续补充真实财报、新闻和公告来源。`,
-        revenueDrivers: copy.revenueDrivers,
-        keyMetrics: copy.keyMetrics,
-        risks: copy.risks,
+        businessModel: realDataAvailable
+          ? `${security.companyName} 当前研究主题为 ${security.theme ?? 'general market research context'}。本卡已接入可用基础数据与财报快照，仍需结合原始来源复核。`
+          : `${security.companyName} 当前 mock 主题为 ${security.theme ?? 'general market research context'}。需要后续补充真实财报、新闻和公告来源。`,
+        revenueDrivers: displayCopy.revenueDrivers,
+        keyMetrics,
+        risks: displayCopy.risks,
       },
       events: {
-        items: copy.events,
+        items: events,
       },
       technicalContext: {
         priceAction: 'sample/mock：价格波动只作为市场背景，不形成操作建议。',
@@ -346,33 +640,46 @@ export function mockGenerateResearchCard({
         ],
         note: '技术/交易面仅用于理解市场背景，不构成操作建议。',
       },
-      evidence: [
-        {
-          id: `${slugSymbol.toLowerCase()}-${cardType}-mock-001`,
-          sourceLabel: 'Sample 财报与新闻清单',
-          sourceType: 'mock-source-checklist',
-          timestamp: MOCK_UPDATED_AT,
-          summary: '[Mock] 需要补充真实财报、公告、新闻和社交平台来源。',
-          confidence: 0.55,
-        },
-      ],
-      nextSteps: copy.keySignals.slice(0, 3).map((signal) => ({
+      evidence: buildEvidenceChain({ slugSymbol, cardType, basicData, earningsSnapshotData }),
+      nextSteps: displayCopy.keySignals.slice(0, 3).map((signal) => ({
         task: `核查 ${signal}`,
         whyItMatters: '把 mock 研究问题转化为后续可追踪、可复盘的任务。',
         followUpDate: '2026-06-30',
       })),
       disclaimer: '仅供信息整理、研究辅助和教育参考，不构成投资建议。',
       sections,
-      keySignals: copy.keySignals,
-      risks: copy.risks,
-      sourceNote: resolution.status === 'unmatched' ? FALLBACK_SOURCE_NOTE : SOURCE_NOTE,
+      keySignals: displayCopy.keySignals,
+      risks: displayCopy.risks,
+      sourceNote: realDataAvailable
+        ? REAL_DATA_SOURCE_NOTE
+        : resolution.status === 'unmatched' ? FALLBACK_SOURCE_NOTE : SOURCE_NOTE,
       queryInput: rawInput,
       market: security.market,
       numericCode: security.numericCode,
       chineseName: security.chineseNameHK,
       matchStatus: resolution.status,
       matchType: resolution.status === 'matched' ? resolution.matchType : undefined,
-      valuationScenarios: undefined,
+      valuationScenarios: serenityAnalysis,
+      serenityAnalysis,
+      enhancedEarnings: realDataAvailable ? earningsSnapshotData : undefined,
+      guidanceData: realDataAvailable && earningsSnapshotData ? {
+        guidance: earningsSnapshotData.guidance,
+        guidanceEvidence: earningsSnapshotData.guidanceEvidence,
+        source: getGuidanceMeta(earningsSnapshotData)?.guidanceSource,
+        confidence: getGuidanceMeta(earningsSnapshotData)?.guidanceConfidence,
+        warnings: earningsSnapshotData.warnings,
+      } : undefined,
+      advancedScenarios,
+      dataQuality,
     },
   };
+}
+
+export function generateRealDataResearchCard(
+  input: Omit<Parameters<typeof mockGenerateResearchCard>[0], 'useRealData'>
+): MockGenerateResearchCardResult {
+  return mockGenerateResearchCard({
+    ...input,
+    useRealData: true,
+  });
 }
