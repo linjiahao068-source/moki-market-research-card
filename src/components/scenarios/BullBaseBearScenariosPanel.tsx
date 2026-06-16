@@ -7,8 +7,8 @@ interface BullBaseBearScenariosPanelProps {
 export function BullBaseBearScenariosPanel({
   scenarios,
 }: BullBaseBearScenariosPanelProps) {
-  // 空状态：没有数据或数据不可用
-  if (!scenarios || scenarios.scenarios.length === 0 || scenarios.dataStatus === 'minimal') {
+  // 空状态：真正没有数据时
+  if (!scenarios || scenarios.scenarios.length === 0) {
     return (
       <section className="rounded-[8px] border border-border bg-white p-4 sm:p-5">
         <div className="mb-2 text-xs font-semibold text-[var(--brand-ink)]">
