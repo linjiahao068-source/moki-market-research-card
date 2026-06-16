@@ -1,27 +1,69 @@
 import { BullBaseBearScenario, BullBaseBearScenarioSummary, RiskRewardSummary } from '@/types/scenario';
+import { EarningsSnapshotData } from '@/types/earnings';
 
 function isValidNumber(value: number | undefined | null): value is number {
   return typeof value === 'number' && Number.isFinite(value);
 }
 
+// Phase 1-2：从 EarningsSnapshot 提取真实数据
+function extractRealisticInputs(earningsSnapshot?: EarningsSnapshotData | null): {
+  baseEps: number | null;
+  baseMultiple: number | null;
+  currentPrice: number | null;
+} {
+  let baseEps: number | null = null;
+  let baseMultiple: number | null = null;
+  let currentPrice: number | null = null;
+
+  if (earningsSnapshot) {
+    // 优先用 forwardPE 和 forwardEps，如果没有就用 trailing
+    if (isValidNumber(earningsSnapshot.forwardPE)) {
+      baseMultiple = earningsSnapshot.forwardPE;
+    } else if (isValidNumber(earningsSnapshot.trailingPE)) {
+      baseMultiple = earningsSnapshot.trailingPE;
+    }
+
+    // 优先用共识预期 EPS（来自 metrics.estimate），如果没有就用 trailingEps
+    const epsMetric = earningsSnapshot.metrics.find((m) => m.metricKey === 'eps');
+    if (isValidNumber(epsMetric?.estimate)) {
+      baseEps = epsMetric.estimate;
+    } else if (isValidNumber(earningsSnapshot.forwardEps)) {
+      baseEps = earningsSnapshot.forwardEps;
+    } else if (isValidNumber(earningsSnapshot.trailingEps)) {
+      baseEps = earningsSnapshot.trailingEps;
+    } else if (isValidNumber(epsMetric?.actual)) {
+      baseEps = epsMetric.actual;
+    }
+
+    if (isValidNumber(earningsSnapshot.currentPrice)) {
+      currentPrice = earningsSnapshot.currentPrice;
+    }
+  }
+
+  // 如果没有数据，返回 null
+  return { baseEps, baseMultiple, currentPrice };
+}
+
 /**
  * 计算隐含收益率
- * 公式：(targetPrice / currentPrice - 1) * 100
- * 如果 currentPrice 缺失或为 0，返回 undefined
  */
-export function calculateImpliedReturn(targetPrice: number | undefined | null, currentPrice: number | undefined | null): number | undefined {
+export function calculateImpliedReturn(
+  targetPrice: number | undefined | null,
+  currentPrice: number | undefined | null
+): number | null {
   if (!isValidNumber(targetPrice) || !isValidNumber(currentPrice) || currentPrice === 0) {
-    return undefined;
+    return null;
   }
   return ((targetPrice / currentPrice) - 1) * 100;
 }
 
 /**
  * 基于 EPS 和估值倍数计算目标价
- * 公式：targetPrice = epsAssumption * valuationMultiple
- * 如果 EPS 或 multiple 缺失，返回 null
  */
-export function calculatePeTargetPrice(epsAssumption: number | undefined | null, valuationMultiple: number | undefined | null): number | null {
+export function calculatePeTargetPrice(
+  epsAssumption: number | undefined | null,
+  valuationMultiple: number | undefined | null
+): number | null {
   if (!isValidNumber(epsAssumption) || !isValidNumber(valuationMultiple)) {
     return null;
   }
@@ -29,8 +71,7 @@ export function calculatePeTargetPrice(epsAssumption: number | undefined | null,
 }
 
 /**
- * 归一化情景概率，使总和为 1（100%）
- * 如果没有有效概率，平均分配
+ * 归一化概率
  */
 export function normalizeScenarioProbabilities(scenarios: BullBaseBearScenario[]): BullBaseBearScenario[] {
   const validScenarios = scenarios.map(s => ({
@@ -51,13 +92,12 @@ export function normalizeScenarioProbabilities(scenarios: BullBaseBearScenario[]
   const equalProbability = 1 / validScenarios.length;
   return validScenarios.map(s => ({
     ...s,
-    probability: equalProbability
+    probability: equalProbability,
   }));
 }
 
 /**
  * 计算概率加权目标价
- * 只计算 targetPrice 不为空的 scenario
  */
 export function calculateProbabilityWeightedTarget(scenarios: BullBaseBearScenario[]): number | null {
   const normalizedScenarios = normalizeScenarioProbabilities(scenarios);
@@ -82,7 +122,10 @@ export function calculateProbabilityWeightedTarget(scenarios: BullBaseBearScenar
 /**
  * 计算风险收益汇总
  */
-export function calculateRiskRewardSummary(scenarios: BullBaseBearScenario[], currentPrice?: number): RiskRewardSummary | undefined {
+export function calculateRiskRewardSummary(
+  scenarios: BullBaseBearScenario[],
+  currentPrice?: number | null
+): RiskRewardSummary | undefined {
   const normalizedScenarios = normalizeScenarioProbabilities(scenarios);
 
   const bullScenario = normalizedScenarios.find(s => s.case === 'bull');
@@ -90,32 +133,109 @@ export function calculateRiskRewardSummary(scenarios: BullBaseBearScenario[], cu
 
   const bullUpside = bullScenario && isValidNumber(currentPrice) && isValidNumber(bullScenario.targetPrice)
     ? calculateImpliedReturn(bullScenario.targetPrice, currentPrice)
-    : undefined;
+    : null;
 
   const bearDownside = bearScenario && isValidNumber(currentPrice) && isValidNumber(bearScenario.targetPrice)
     ? calculateImpliedReturn(bearScenario.targetPrice, currentPrice)
-    : undefined;
+    : null;
 
   const weightedTarget = calculateProbabilityWeightedTarget(normalizedScenarios);
   const expectedReturn = isValidNumber(currentPrice) && isValidNumber(weightedTarget)
     ? calculateImpliedReturn(weightedTarget, currentPrice)
-    : undefined;
+    : null;
 
-  const upsideDownsideRatio = (bullUpside !== undefined && bearDownside !== undefined && bearDownside < 0)
+  const upsideDownsideRatio = (bullUpside !== null && bearDownside !== null && bearDownside < 0)
     ? Math.abs(bullUpside / bearDownside)
     : 0;
 
   return {
     expectedReturnPct: expectedReturn ?? 0,
     upsideDownsideRatio,
-    bullCaseUpsidePct: bullUpside,
-    bearCaseDownsidePct: bearDownside,
+    bullCaseUpsidePct: bullUpside ?? undefined,
+    bearCaseDownsidePct: bearDownside ?? undefined,
     summaryText: '基于情景假设的风险收益分析，不构成投资建议。'
   };
 }
 
 /**
- * 完整的情景汇总计算器
+ * Phase 3: 优先用真实数据构建完整场景
+ */
+export function buildScenariosFromRealData(
+  ticker: string,
+  companyName: string,
+  earningsSnapshot?: EarningsSnapshotData | null
+): BullBaseBearScenario[] {
+  const { baseEps, baseMultiple, currentPrice } = extractRealisticInputs(earningsSnapshot);
+
+  // 如果有真实数据，用真实数据构建
+  if (baseEps !== null && baseMultiple !== null) {
+    const bullEps = baseEps * 1.15;
+    const bullMultiple = baseMultiple * 1.15;
+    const bullTargetPrice = calculatePeTargetPrice(bullEps, bullMultiple);
+
+    const baseEpsVal = baseEps;
+    const baseMultipleVal = baseMultiple;
+    const baseTargetPrice = calculatePeTargetPrice(baseEpsVal, baseMultipleVal);
+
+    const bearEps = baseEps * 0.8;
+    const bearMultiple = baseMultiple * 0.75;
+    const bearTargetPrice = calculatePeTargetPrice(bearEps, bearMultiple);
+
+    return [
+      {
+        case: 'bull',
+        label: '乐观',
+        probability: 0.25,
+        coreAssumptions: ['业绩超预期 15%', '估值倍数修复 15%'],
+        revenueAssumption: {},
+        epsAssumption: { fullYear: bullEps },
+        valuationMultiple: bullMultiple,
+        valuationMethod: 'pe_multiple',
+        targetPrice: bullTargetPrice,
+        impliedReturnPct: isValidNumber(currentPrice) ? calculateImpliedReturn(bullTargetPrice, currentPrice) : null,
+        triggerConditions: ['业绩超预期', '估值扩张'],
+        source: 'rule_based',
+        derivationNote: `目标价 = 预期 EPS $${bullEps.toFixed(2)} × PE ${bullMultiple.toFixed(1)}x`,
+      },
+      {
+        case: 'base',
+        label: '基准',
+        probability: 0.55,
+        coreAssumptions: ['业绩符合预期', '估值倍数保持稳定'],
+        revenueAssumption: {},
+        epsAssumption: { fullYear: baseEpsVal },
+        valuationMultiple: baseMultipleVal,
+        valuationMethod: 'pe_multiple',
+        targetPrice: baseTargetPrice,
+        impliedReturnPct: isValidNumber(currentPrice) ? calculateImpliedReturn(baseTargetPrice, currentPrice) : null,
+        triggerConditions: ['业绩符合指引'],
+        source: 'rule_based',
+        derivationNote: `目标价 = 预期 EPS $${baseEpsVal.toFixed(2)} × PE ${baseMultipleVal.toFixed(1)}x`,
+      },
+      {
+        case: 'bear',
+        label: '悲观',
+        probability: 0.2,
+        coreAssumptions: ['业绩低于预期 20%', '估值倍数压缩 25%'],
+        revenueAssumption: {},
+        epsAssumption: { fullYear: bearEps },
+        valuationMultiple: bearMultiple,
+        valuationMethod: 'pe_multiple',
+        targetPrice: bearTargetPrice,
+        impliedReturnPct: isValidNumber(currentPrice) ? calculateImpliedReturn(bearTargetPrice, currentPrice) : null,
+        triggerConditions: ['业绩低于预期', '估值收缩'],
+        source: 'rule_based',
+        derivationNote: `目标价 = 预期 EPS $${bearEps.toFixed(2)} × PE ${bearMultiple.toFixed(1)}x`,
+      }
+    ];
+  }
+
+  // 如果没有真实数据，用 manual data 或者返回空
+  return [];
+}
+
+/**
+ * 构建完整场景汇总（统一入口）
  */
 export function buildScenarioSummary({
   ticker,
@@ -131,7 +251,7 @@ export function buildScenarioSummary({
   ticker: string;
   companyName: string;
   currency?: string;
-  currentPrice?: number;
+  currentPrice?: number | null;
   fiscalYear?: string;
   scenarios: BullBaseBearScenario[];
   sourceNote: string;
@@ -146,14 +266,14 @@ export function buildScenarioSummary({
     ticker,
     companyName,
     currency,
-    currentPrice,
+    currentPrice: currentPrice ?? undefined,
     fiscalYear,
     scenarios: normalizedScenarios,
     probabilityWeightedTargetPrice,
     riskRewardSummary,
     sourceNote,
     dataStatus,
-    warnings
+    warnings,
   };
 }
 
@@ -171,15 +291,16 @@ export const TEST_SCENARIOS: BullBaseBearScenario[] = [
       fullYearYoyPercent: 25
     },
     epsAssumption: {
-      fullYear: 5.2,
+      fullYear: 7.0,
       fullYearYoyPercent: 30
     },
-    valuationMultiple: 28,
+    valuationMultiple: 16.0,
     valuationMethod: 'pe_multiple',
-    targetPrice: 145.6,
+    targetPrice: 112.0,
     impliedReturnPct: 45.6,
     triggerConditions: ['产品超预期', '宏观政策利好'],
-    source: 'mock'
+    source: 'mock',
+    derivationNote: '目标价 = 预期 EPS $7.0 × PE 16.0x',
   },
   {
     case: 'base',
@@ -191,15 +312,16 @@ export const TEST_SCENARIOS: BullBaseBearScenario[] = [
       fullYearYoyPercent: 10
     },
     epsAssumption: {
-      fullYear: 4.5,
+      fullYear: 5.0,
       fullYearYoyPercent: 12
     },
-    valuationMultiple: 24,
+    valuationMultiple: 14.0,
     valuationMethod: 'pe_multiple',
-    targetPrice: 108.0,
+    targetPrice: 70.0,
     impliedReturnPct: 8.0,
     triggerConditions: ['业绩符合指引'],
-    source: 'mock'
+    source: 'mock',
+    derivationNote: '目标价 = 预期 EPS $5.0 × PE 14.0x',
   },
   {
     case: 'bear',
@@ -211,63 +333,28 @@ export const TEST_SCENARIOS: BullBaseBearScenario[] = [
       fullYearYoyPercent: -5
     },
     epsAssumption: {
-      fullYear: 3.8,
+      fullYear: 3.0,
       fullYearYoyPercent: -5
     },
-    valuationMultiple: 20,
+    valuationMultiple: 11.0,
     valuationMethod: 'pe_multiple',
-    targetPrice: 76.0,
+    targetPrice: 33.0,
     impliedReturnPct: -24.0,
     triggerConditions: ['宏观经济下行', '行业竞争恶化'],
-    source: 'mock'
+    source: 'mock',
+    derivationNote: '目标价 = 预期 EPS $3.0 × PE 11.0x',
   }
 ];
 
 export function runSelfTests(): void {
   console.log('=== Scenario Calculator 自测 ===');
-  console.log('这些测试仅用于验证逻辑，不构成投资建议。\n');
+  console.log('这些样例仅用于验证逻辑，不构成投资建议。\n');
 
-  // 测试 1: calculateImpliedReturn
-  console.log('1. calculateImpliedReturn:');
-  console.log('   100 -> 110:', calculateImpliedReturn(110, 100));
-  console.log('   100 -> 90:', calculateImpliedReturn(90, 100));
-  console.log('   缺失 currentPrice:', calculateImpliedReturn(100, null));
-  console.log('   currentPrice=0:', calculateImpliedReturn(100, 0));
+  console.log('1. calculateImpliedReturn (100 → 110):', calculateImpliedReturn(110, 100));
+  console.log('2. calculatePeTargetPrice (5.0 × 20):', calculatePeTargetPrice(5.0, 20));
 
-  // 测试 2: calculatePeTargetPrice
-  console.log('\n2. calculatePeTargetPrice:');
-  console.log('   EPS 5.0 * P/E 20:', calculatePeTargetPrice(5.0, 20));
-  console.log('   缺失 EPS:', calculatePeTargetPrice(null, 20));
-
-  // 测试 3: normalizeScenarioProbabilities
-  console.log('\n3. normalizeScenarioProbabilities:');
-  const testProbs = normalizeScenarioProbabilities(TEST_SCENARIOS);
-  testProbs.forEach(s => console.log(`   ${s.case}: ${(s.probability * 100).toFixed(1)}%`));
-
-  // 测试 4: calculateProbabilityWeightedTarget
-  console.log('\n4. calculateProbabilityWeightedTarget:');
-  const weightedTarget = calculateProbabilityWeightedTarget(TEST_SCENARIOS);
-  console.log('   加权目标价:', weightedTarget);
-
-  // 测试 5: buildScenarioSummary
-  console.log('\n5. buildScenarioSummary:');
-  const summary = buildScenarioSummary({
-    ticker: 'TEST',
-    companyName: 'Test Company',
-    currency: 'USD',
-    currentPrice: 100,
-    fiscalYear: '2026',
-    scenarios: TEST_SCENARIOS,
-    sourceNote: '仅供测试，不构成投资建议。',
-    dataStatus: 'minimal'
-  });
-  console.log('   汇总对象:', {
-    ticker: summary.ticker,
-    currentPrice: summary.currentPrice,
-    weightedTarget: summary.probabilityWeightedTargetPrice,
-    expectedReturn: summary.riskRewardSummary?.expectedReturnPct,
-    upsideDownsideRatio: summary.riskRewardSummary?.upsideDownsideRatio
-  });
+  console.log('\n3. 概率加权目标价:', calculateProbabilityWeightedTarget(TEST_SCENARIOS));
+  console.log('\n4. 风险收益汇总:', calculateRiskRewardSummary(TEST_SCENARIOS, 100));
 
   console.log('\n=== 自测完成 ===');
 }

@@ -5,18 +5,18 @@ import {
 } from '@/types/scenario';
 import {
   buildScenarioSummary,
-  calculatePeTargetPrice
+  calculatePeTargetPrice,
+  calculateImpliedReturn
 } from '../scenarioCalculator';
 import { buildScenarioSourceNote } from '../serenityScenarioFramework';
 
 const DEFAULT_PROBABILITIES = {
   bull: 0.25,
   base: 0.55,
-  bear: 0.20
+  bear: 0.2
 } as const;
 
-const SOURCE_NOTE = '样例情景，需人工复核。Scenario assumptions are manual/rule-based and should be reviewed before investment use. ' +
-  'This is not investment advice.';
+const SOURCE_NOTE = '样例情景，需人工复核。Scenario assumptions are manual/rule-based and should be reviewed before investment use. This is not investment advice.';
 
 type ManualScenarioConfig = {
   ticker: string;
@@ -48,162 +48,6 @@ type ManualScenarioConfig = {
 };
 
 const MANUAL_SCENARIO_CONFIGS: Record<string, ManualScenarioConfig> = {
-  NVDA: {
-    ticker: 'NVDA',
-    companyName: 'NVIDIA Corporation',
-    currency: 'USD',
-    fiscalYear: '2026',
-    dataStatus: 'mock',
-    scenarios: {
-      bull: {
-        coreAssumptions: [
-          'Placeholder: 乐观假设示例'
-        ],
-        epsFullYear: 10, // 样例 placeholder - 非真实预测
-        valuationMultiple: 30, // 样例 placeholder
-        triggerConditions: [
-          'Placeholder: 触发条件示例'
-        ]
-      },
-      base: {
-        coreAssumptions: [
-          'Placeholder: 基准假设示例'
-        ],
-        epsFullYear: 8, // 样例 placeholder - 非真实预测
-        valuationMultiple: 25, // 样例 placeholder
-        triggerConditions: [
-          'Placeholder: 触发条件示例'
-        ]
-      },
-      bear: {
-        coreAssumptions: [
-          'Placeholder: 悲观假设示例'
-        ],
-        epsFullYear: 6, // 样例 placeholder - 非真实预测
-        valuationMultiple: 20, // 样例 placeholder
-        triggerConditions: [
-          'Placeholder: 触发条件示例'
-        ]
-      }
-    }
-  },
-  ORCL: {
-    ticker: 'ORCL',
-    companyName: 'Oracle Corporation',
-    currency: 'USD',
-    fiscalYear: '2026',
-    dataStatus: 'mock',
-    scenarios: {
-      bull: {
-        coreAssumptions: [
-          'Placeholder: 乐观假设示例'
-        ],
-        epsFullYear: 7, // 样例 placeholder - 非真实预测
-        valuationMultiple: 20, // 样例 placeholder
-        triggerConditions: [
-          'Placeholder: 触发条件示例'
-        ]
-      },
-      base: {
-        coreAssumptions: [
-          'Placeholder: 基准假设示例'
-        ],
-        epsFullYear: 6, // 样例 placeholder - 非真实预测
-        valuationMultiple: 18, // 样例 placeholder
-        triggerConditions: [
-          'Placeholder: 触发条件示例'
-        ]
-      },
-      bear: {
-        coreAssumptions: [
-          'Placeholder: 悲观假设示例'
-        ],
-        epsFullYear: 5, // 样例 placeholder - 非真实预测
-        valuationMultiple: 15, // 样例 placeholder
-        triggerConditions: [
-          'Placeholder: 触发条件示例'
-        ]
-      }
-    }
-  },
-  SNOW: {
-    ticker: 'SNOW',
-    companyName: 'Snowflake Inc.',
-    currency: 'USD',
-    fiscalYear: '2026',
-    dataStatus: 'mock',
-    scenarios: {
-      bull: {
-        coreAssumptions: [
-          'Placeholder: 乐观假设示例'
-        ],
-        epsFullYear: 3, // 样例 placeholder - 非真实预测
-        valuationMultiple: 40, // 样例 placeholder
-        triggerConditions: [
-          'Placeholder: 触发条件示例'
-        ]
-      },
-      base: {
-        coreAssumptions: [
-          'Placeholder: 基准假设示例'
-        ],
-        epsFullYear: 2, // 样例 placeholder - 非真实预测
-        valuationMultiple: 35, // 样例 placeholder
-        triggerConditions: [
-          'Placeholder: 触发条件示例'
-        ]
-      },
-      bear: {
-        coreAssumptions: [
-          'Placeholder: 悲观假设示例'
-        ],
-        epsFullYear: 1, // 样例 placeholder - 非真实预测
-        valuationMultiple: 28, // 样例 placeholder
-        triggerConditions: [
-          'Placeholder: 触发条件示例'
-        ]
-      }
-    }
-  },
-  DELL: {
-    ticker: 'DELL',
-    companyName: 'Dell Technologies Inc.',
-    currency: 'USD',
-    fiscalYear: '2026',
-    dataStatus: 'mock',
-    scenarios: {
-      bull: {
-        coreAssumptions: [
-          'Placeholder: 乐观假设示例'
-        ],
-        epsFullYear: 8, // 样例 placeholder - 非真实预测
-        valuationMultiple: 14, // 样例 placeholder
-        triggerConditions: [
-          'Placeholder: 触发条件示例'
-        ]
-      },
-      base: {
-        coreAssumptions: [
-          'Placeholder: 基准假设示例'
-        ],
-        epsFullYear: 6, // 样例 placeholder - 非真实预测
-        valuationMultiple: 12, // 样例 placeholder
-        triggerConditions: [
-          'Placeholder: 触发条件示例'
-        ]
-      },
-      bear: {
-        coreAssumptions: [
-          'Placeholder: 悲观假设示例'
-        ],
-        epsFullYear: 5, // 样例 placeholder - 非真实预测
-        valuationMultiple: 10, // 样例 placeholder
-        triggerConditions: [
-          'Placeholder: 触发条件示例'
-        ]
-      }
-    }
-  },
   MU: {
     ticker: 'MU',
     companyName: 'Micron Technology Inc.',
@@ -212,46 +56,68 @@ const MANUAL_SCENARIO_CONFIGS: Record<string, ManualScenarioConfig> = {
     dataStatus: 'mock',
     scenarios: {
       bull: {
-        coreAssumptions: [
-          'Placeholder: 乐观假设示例'
-        ],
-        epsFullYear: 7, // 样例 placeholder - 非真实预测
-        valuationMultiple: 16, // 样例 placeholder
-        triggerConditions: [
-          'Placeholder: 触发条件示例'
-        ]
+        coreAssumptions: ['Placeholder: 乐观假设示例'],
+        epsFullYear: 7.0,
+        valuationMultiple: 16.0,
+        triggerConditions: ['Placeholder: 触发条件示例'],
       },
       base: {
-        coreAssumptions: [
-          'Placeholder: 基准假设示例'
-        ],
-        epsFullYear: 5, // 样例 placeholder - 非真实预测
-        valuationMultiple: 14, // 样例 placeholder
-        triggerConditions: [
-          'Placeholder: 触发条件示例'
-        ]
+        coreAssumptions: ['Placeholder: 基准假设示例'],
+        epsFullYear: 5.0,
+        valuationMultiple: 14.0,
+        triggerConditions: ['Placeholder: 触发条件示例'],
       },
       bear: {
-        coreAssumptions: [
-          'Placeholder: 悲观假设示例'
-        ],
-        epsFullYear: 3, // 样例 placeholder - 非真实预测
-        valuationMultiple: 11, // 样例 placeholder
-        triggerConditions: [
-          'Placeholder: 触发条件示例'
-        ]
-      }
-    }
-  }
+        coreAssumptions: ['Placeholder: 悲观假设示例'],
+        epsFullYear: 3.0,
+        valuationMultiple: 11.0,
+        triggerConditions: ['Placeholder: 触发条件示例'],
+      },
+    },
+  },
+  NVDA: {
+    ticker: 'NVDA',
+    companyName: 'NVIDIA Corporation',
+    currency: 'USD',
+    fiscalYear: '2026',
+    dataStatus: 'mock',
+    scenarios: {
+      bull: {
+        coreAssumptions: ['Placeholder: 乐观假设示例'],
+        epsFullYear: 10.0,
+        valuationMultiple: 30.0,
+        triggerConditions: ['Placeholder: 触发条件示例'],
+      },
+      base: {
+        coreAssumptions: ['Placeholder: 基准假设示例'],
+        epsFullYear: 8.0,
+        valuationMultiple: 25.0,
+        triggerConditions: ['Placeholder: 触发条件示例'],
+      },
+      bear: {
+        coreAssumptions: ['Placeholder: 悲观假设示例'],
+        epsFullYear: 6.0,
+        valuationMultiple: 20.0,
+        triggerConditions: ['Placeholder: 触发条件示例'],
+      },
+    },
+  },
 };
 
 function buildScenarioFromConfig(
   caseType: 'bull' | 'base' | 'bear',
   label: string,
   config: ManualScenarioConfig['scenarios'][keyof ManualScenarioConfig['scenarios']],
-  source: ScenarioSource
+  source: ScenarioSource,
+  currentPrice?: number | null
 ): BullBaseBearScenario {
   const targetPrice = calculatePeTargetPrice(config.epsFullYear, config.valuationMultiple);
+  const impliedReturn = targetPrice !== null ? calculateImpliedReturn(targetPrice, currentPrice) : null;
+
+  let derivationNote = '';
+  if (config.epsFullYear !== undefined && config.valuationMultiple !== undefined) {
+    derivationNote = `目标价 = 预期 EPS $${config.epsFullYear.toFixed(2)} × PE ${config.valuationMultiple.toFixed(1)}x`;
+  }
 
   return {
     case: caseType,
@@ -259,15 +125,14 @@ function buildScenarioFromConfig(
     probability: DEFAULT_PROBABILITIES[caseType],
     coreAssumptions: config.coreAssumptions,
     revenueAssumption: {},
-    epsAssumption: {
-      fullYear: config.epsFullYear
-    },
+    epsAssumption: { fullYear: config.epsFullYear },
     valuationMultiple: config.valuationMultiple,
     valuationMethod: 'pe_multiple',
     targetPrice,
-    impliedReturnPct: null, // Will be calculated by scenarioCalculator
+    impliedReturnPct: impliedReturn,
     triggerConditions: config.triggerConditions,
-    source
+    source,
+    derivationNote,
   };
 }
 
@@ -289,9 +154,9 @@ export function getManualScenario(
   }
 
   const scenarios: BullBaseBearScenario[] = [
-    buildScenarioFromConfig('bull', '乐观情景', config.scenarios.bull, 'manual_override'),
-    buildScenarioFromConfig('base', '基准情景', config.scenarios.base, 'manual_override'),
-    buildScenarioFromConfig('bear', '悲观情景', config.scenarios.bear, 'manual_override')
+    buildScenarioFromConfig('bull', '乐观', config.scenarios.bull, 'manual_override', options.currentPrice),
+    buildScenarioFromConfig('base', '基准', config.scenarios.base, 'manual_override', options.currentPrice),
+    buildScenarioFromConfig('bear', '悲观', config.scenarios.bear, 'manual_override', options.currentPrice),
   ];
 
   const warnings: string[] = [];
@@ -313,7 +178,7 @@ export function getManualScenario(
       hasUnverifiedData: config.dataStatus === 'mock'
     }),
     dataStatus: config.dataStatus === 'manual' ? 'partial' : 'minimal',
-    warnings
+    warnings,
   });
 }
 

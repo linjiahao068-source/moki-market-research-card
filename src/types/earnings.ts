@@ -61,4 +61,14 @@ export interface EarningsSnapshotData {
     url: string;
   }>;
   warnings: string[];
+
+  // 新增：估值相关字段（Phase 1-2）
+  currentPrice?: number;
+  targetPriceMean?: number;
+  targetPriceHigh?: number;
+  targetPriceLow?: number;
+  trailingPE?: number;
+  forwardPE?: number;
+  trailingEps?: number;
+  forwardEps?: number;
 }

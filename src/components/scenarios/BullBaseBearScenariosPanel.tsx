@@ -7,7 +7,7 @@ interface BullBaseBearScenariosPanelProps {
 export function BullBaseBearScenariosPanel({
   scenarios,
 }: BullBaseBearScenariosPanelProps) {
-  // 空状态：真正没有数据时
+  // 空状态：真正没有数据时展示
   if (!scenarios || scenarios.scenarios.length === 0) {
     return (
       <section className="rounded-[8px] border border-border bg-white p-4 sm:p-5">
@@ -18,15 +18,14 @@ export function BullBaseBearScenariosPanel({
         <div className="mt-4 rounded-[8px] border border-[var(--brand-border)] bg-[var(--brand-soft)] p-3 text-sm leading-relaxed text-[var(--brand-ink)]">
           暂未生成该公司的买方情景推演，后续将接入更多估值和预期数据。
         </div>
-        </section>
+      </section>
     );
   }
-
 
   return (
     <section className="rounded-[8px] border border-border bg-white p-4 sm:p-5">
       <div className="mb-2 text-xs font-semibold text-[var(--brand-ink)]">
-        Bull / Base / Bear Scenarios
+        Bull/Base/Bear Scenarios
       </div>
       <h3 className="text-xl font-bold leading-tight text-[oklch(0.16_0.014_160)]">
         买方情景推演
@@ -46,48 +45,66 @@ export function BullBaseBearScenariosPanel({
           </thead>
           <tbody className="divide-y divide-border">
             {scenarios.scenarios.map((s) => (
-            <tr
-              key={s.case}
-              className={
-                s.case === 'bear' ? 'bg-[var(--risk-soft)]/50' : s.case === 'bull' ? 'bg-[var(--brand-soft)]/30' : 'bg-white'
-              }
-            >
-              <td className="whitespace-nowrap px-3 py-3 text-sm font-semibold" style={{ color: s.case === 'bear' ? 'var(--risk-ink)' : 'var(--brand-ink)' }}>
-                {s.label}
-              </td>
-              <td className="whitespace-nowrap px-3 py-3 font-mono text-sm">
-                {(s.probability * 100).toFixed(0)}%
-              </td>
-              <td className="px-3 py-3 text-sm">
-                <div className="max-w-xs">
-                  {s.coreAssumptions.length > 0 && (
-                    <ul className="space-y-1">
-                      {s.coreAssumptions.slice(0, 2).map((a, idx) => (
-                        <li key={idx} className="text-[oklch(0.2_0.016_160)]">
-                          {a}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              </td>
-              <td className="whitespace-nowrap px-3 py-3 font-mono text-sm text-[oklch(0.2_0.016_160)]">
-                {s.targetPrice !== null && s.targetPrice !== undefined ? (
-                  `${scenarios.currency === 'USD' ? '$' : ''}${s.targetPrice}`
-                ) : ''}
-              </td>
-              <td className="whitespace-nowrap px-3 py-3 font-mono text-sm">
-                {s.impliedReturnPct !== null && s.impliedReturnPct !== undefined ? (
-                  <span className={s.impliedReturnPct > 0 ? 'text-green-700' : 'text-red-700'}>
-                    {s.impliedReturnPct > 0 ? '+' : ''}{s.impliedReturnPct.toFixed(1)}%
-                  </span>
-                ) : ''}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+              <tr
+                key={s.case}
+                className={
+                  s.case === 'bear'
+                    ? 'bg-[var(--risk-soft)]/50'
+                    : s.case === 'bull'
+                      ? 'bg-[var(--brand-soft)]/30'
+                      : 'bg-white'
+                }
+              >
+                <td className="whitespace-nowrap px-3 py-3 text-sm font-semibold" style={{ color: s.case === 'bear' ? 'var(--risk-ink)' : 'var(--brand-ink)' }}>
+                  {s.label}
+                </td>
+                <td className="whitespace-nowrap px-3 py-3 font-mono text-sm">
+                  {(s.probability * 100).toFixed(0)}%
+                </td>
+                <td className="px-3 py-3 text-sm">
+                  <div className="max-w-xs">
+                    {s.coreAssumptions.length > 0 && (
+                      <ul className="space-y-1">
+                        {s.coreAssumptions.slice(0, 2).map((a, idx) => (
+                          <li key={idx} className="text-[oklch(0.2_0.016_160)]">
+                            {a}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </td>
+                <td className="whitespace-nowrap px-3 py-3 text-sm">
+                  <div>
+                    {s.targetPrice !== null && s.targetPrice !== undefined && (
+                      <div className="font-mono font-semibold text-[oklch(0.2_0.016_160)]">
+                        {scenarios.currency === 'USD' ? '$' : ''}{s.targetPrice.toFixed(1)}
+                      </div>
+                    )}
+                    {/* Phase 4: 展示推导说明 */}
+                    {s.derivationNote && (
+                      <div className="mt-1 text-[11px] text-[oklch(0.45_0.018_160)] leading-relaxed">
+                        {s.derivationNote}
+                      </div>
+                    )}
+                  </div>
+                </td>
+                <td className="whitespace-nowrap px-3 py-3 text-sm">
+                  {s.impliedReturnPct !== null && s.impliedReturnPct !== undefined ? (
+                    <span
+                      className={`font-mono font-semibold ${
+                        s.impliedReturnPct > 0 ? 'text-green-700' : s.impliedReturnPct < 0 ? 'text-red-700' : 'text-[oklch(0.2_0.016_160)]'
+                      }`}
+                    >
+                      {s.impliedReturnPct > 0 ? '+' : ''}{s.impliedReturnPct.toFixed(1)}%
+                    </span>
+                  ) : ''}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       {/* 底部汇总信息 */}
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -98,16 +115,16 @@ export function BullBaseBearScenariosPanel({
               概率加权目标价
             </div>
             <div className="mt-1 font-mono text-lg font-bold text-[oklch(0.16_0.014_160)]">
-              {scenarios.currency === 'USD' ? '$' : ''}{scenarios.probabilityWeightedTargetPrice}
+              {scenarios.currency === 'USD' ? '$' : ''}{scenarios.probabilityWeightedTargetPrice.toFixed(1)}
             </div>
           </div>
         )}
 
-        {/* 风险回报总结 */}
+        {/* 风险收益汇总 */}
         {scenarios.riskRewardSummary && (
           <div className="rounded-[8px] border border-border bg-white p-3">
             <div className="text-xs font-semibold text-[var(--brand-ink)]">
-              风险回报
+              风险收益
             </div>
             <div className="mt-1 space-y-1 text-xs text-[oklch(0.2_0.016_160)]">
               {scenarios.riskRewardSummary.expectedReturnPct !== null && scenarios.riskRewardSummary.expectedReturnPct !== undefined && (

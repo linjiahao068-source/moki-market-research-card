@@ -32,6 +32,8 @@ export interface BullBaseBearScenario {
   impliedReturnPct?: number | null;
   triggerConditions?: string[];
   source: ScenarioSource;
+  // Phase 4：推导说明（用于 UI 展示）
+  derivationNote?: string;
 }
 
 export interface RiskRewardSummary {

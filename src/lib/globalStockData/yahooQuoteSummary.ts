@@ -17,6 +17,14 @@ interface YahooQuoteSummaryResult {
   quarterlyFinancials: GlobalQuarterFinancial[];
   analystEstimates: GlobalAnalystEstimate[];
   earningsHistory: GlobalAnalystEstimate[];
+  currentPrice?: number;
+  targetPriceMean?: number;
+  targetPriceHigh?: number;
+  targetPriceLow?: number;
+  trailingPE?: number;
+  forwardPE?: number;
+  trailingEps?: number;
+  forwardEps?: number;
   warnings: string[];
   raw: unknown;
 }
@@ -168,6 +176,47 @@ function parseEarningsHistory(symbol: string, result: Record<string, unknown>): 
   }));
 }
 
+function parseValuationMetrics(result: Record<string, unknown>): {
+  currentPrice?: number;
+  targetPriceMean?: number;
+  targetPriceHigh?: number;
+  targetPriceLow?: number;
+  trailingPE?: number;
+  forwardPE?: number;
+  trailingEps?: number;
+  forwardEps?: number;
+} {
+  const metrics: {
+    currentPrice?: number;
+    targetPriceMean?: number;
+    targetPriceHigh?: number;
+    targetPriceLow?: number;
+    trailingPE?: number;
+    forwardPE?: number;
+    trailingEps?: number;
+    forwardEps?: number;
+  } = {};
+
+  const financialData = isRecord(result.financialData) ? result.financialData : undefined;
+  const defaultKeyStats = isRecord(result.defaultKeyStatistics) ? result.defaultKeyStatistics : undefined;
+
+  if (financialData) {
+    metrics.currentPrice = getRawValue(financialData.currentPrice);
+    metrics.targetPriceMean = getRawValue(financialData.targetMeanPrice);
+    metrics.targetPriceHigh = getRawValue(financialData.targetHighPrice);
+    metrics.targetPriceLow = getRawValue(financialData.targetLowPrice);
+  }
+
+  if (defaultKeyStats) {
+    metrics.trailingPE = getRawValue(defaultKeyStats.trailingPE);
+    metrics.forwardPE = getRawValue(defaultKeyStats.forwardPE);
+    metrics.trailingEps = getRawValue(defaultKeyStats.trailingEps);
+    metrics.forwardEps = getRawValue(defaultKeyStats.forwardEps);
+  }
+
+  return metrics;
+}
+
 // Server-side only: Yahoo quoteSummary requires cookie/crumb handling and must not be imported into client components.
 export async function fetchYahooQuoteSummary(
   symbol: string,
@@ -208,9 +257,9 @@ export async function fetchYahooQuoteSummary(
   }
 
   const root = isRecord(response.data) ? response.data.quoteSummary : undefined;
-  const quoteSummary = isRecord(root) && Array.isArray(root.result) ? root.result.find(isRecord) : undefined;
+  const quoteSummaryResult = isRecord(root) && Array.isArray(root.result) ? root.result.find(isRecord) : undefined;
 
-  if (!quoteSummary) {
+  if (!quoteSummaryResult) {
     return {
       ok: false,
       error: 'Yahoo quoteSummary returned no result.',
@@ -218,9 +267,10 @@ export async function fetchYahooQuoteSummary(
   }
 
   const warnings: string[] = [];
-  const quarterlyFinancials = parseQuarterlyFinancials(normalizedSymbol, quoteSummary);
-  const analystEstimates = parseAnalystEstimates(normalizedSymbol, quoteSummary);
-  const earningsHistory = parseEarningsHistory(normalizedSymbol, quoteSummary);
+  const quarterlyFinancials = parseQuarterlyFinancials(normalizedSymbol, quoteSummaryResult);
+  const analystEstimates = parseAnalystEstimates(normalizedSymbol, quoteSummaryResult);
+  const earningsHistory = parseEarningsHistory(normalizedSymbol, quoteSummaryResult);
+  const valuationMetrics = parseValuationMetrics(quoteSummaryResult);
 
   if (quarterlyFinancials.length === 0) {
     warnings.push('Yahoo quarterly financials were not available.');
@@ -234,12 +284,21 @@ export async function fetchYahooQuoteSummary(
     warnings.push('Yahoo earnings history was not available.');
   }
 
+  if (valuationMetrics.currentPrice === undefined) {
+    warnings.push('Yahoo current price was not available.');
+  }
+
+  if (valuationMetrics.targetPriceMean === undefined) {
+    warnings.push('Yahoo analyst target price mean was not available.');
+  }
+
   return {
     ok: true,
     quarterlyFinancials,
     analystEstimates,
     earningsHistory,
+    ...valuationMetrics,
     warnings,
-    raw: quoteSummary,
+    raw: quoteSummaryResult,
   };
 }

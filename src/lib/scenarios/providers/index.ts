@@ -1,7 +1,10 @@
 import { BullBaseBearScenarioSummary } from '@/types/scenario';
 import { EarningsSnapshotData } from '@/types/earnings';
 import { BasicCompanyData } from '@/types/basic-data';
-import { buildScenarioSummary, calculateImpliedReturn } from '../scenarioCalculator';
+import {
+  buildScenarioSummary,
+  buildScenariosFromRealData
+} from '../scenarioCalculator';
 import { buildScenarioSourceNote } from '../serenityScenarioFramework';
 import { getManualScenario, supportsManualScenario } from './manualScenarioProvider';
 import { getRuleBasedScenario, canGenerateRuleBasedScenario } from './ruleBasedScenarioProvider';
@@ -9,7 +12,7 @@ import { getRuleBasedScenario, canGenerateRuleBasedScenario } from './ruleBasedS
 type GetScenariosParams = {
   ticker: string;
   companyName?: string;
-  currentPrice?: number;
+  currentPrice?: number | null;
   currency?: string;
   earningsSnapshot?: EarningsSnapshotData | null;
   basicData?: BasicCompanyData | null;
@@ -17,7 +20,7 @@ type GetScenariosParams = {
 
 /**
  * 获取 Bull/Base/Bear 情景分析
- * 优先级：manual -> rule-based -> unavailable
+ * 优先级：真实数据 → manual → rule-based → unavailable
  */
 export function getBullBaseBearScenarios(
   params: GetScenariosParams
@@ -31,26 +34,53 @@ export function getBullBaseBearScenarios(
     basicData,
   } = params;
 
-  // 从 basicData 补充缺失的信息
-  const currentPrice = inputCurrentPrice ?? (basicData?.quote?.price ? parseFloat(basicData.quote.price) : undefined);
+  // 从 basicData/earningsSnapshot 补充缺失信息
+  let currentPrice: number | null = null;
+  if (inputCurrentPrice !== null && inputCurrentPrice !== undefined) {
+    currentPrice = inputCurrentPrice;
+  } else if (basicData?.quote?.price) {
+    currentPrice = parseFloat(basicData.quote.price);
+  } else if (earningsSnapshot?.currentPrice !== null && earningsSnapshot?.currentPrice !== undefined) {
+    currentPrice = earningsSnapshot.currentPrice;
+  }
+
   const currency = inputCurrency ?? basicData?.profile?.currency ?? 'USD';
   const companyName = inputCompanyName ?? basicData?.profile?.companyName ?? earningsSnapshot?.companyName ?? ticker.toUpperCase();
 
-  // 1. 优先尝试 manual scenario
+  // Phase 3: 优先用真实数据构建
+  const realDataScenarios = buildScenariosFromRealData(ticker, companyName, earningsSnapshot);
+  if (realDataScenarios.length > 0) {
+    return buildScenarioSummary({
+      ticker,
+      companyName,
+      currency,
+      currentPrice,
+      fiscalYear: earningsSnapshot?.fiscalYear,
+      scenarios: realDataScenarios,
+      sourceNote: buildScenarioSourceNote({
+        customNote: '基于分析师共识预期和市场估值倍数的情景分析，仅供参考，不构成投资建议。',
+        hasUnverifiedData: true
+      }),
+      dataStatus: 'partial',
+      warnings: ['数据来源：Yahoo Finance', '仅供研究框架验证，不构成投资建议。'],
+    });
+  }
+
+  // 备选：Manual scenario（仅针对特定 ticker）
   if (supportsManualScenario(ticker)) {
-    const manualScenario = getManualScenario(ticker, { currentPrice });
+    const manualScenario = getManualScenario(ticker, { currentPrice: currentPrice ?? undefined });
     if (manualScenario) {
       return manualScenario;
     }
   }
 
-  // 2. 尝试 rule-based scenario
+  // 备选：Rule-based
   if (canGenerateRuleBasedScenario(earningsSnapshot)) {
     const ruleBasedScenario = getRuleBasedScenario({
       ticker,
       companyName,
       currency,
-      currentPrice,
+      currentPrice: currentPrice ?? undefined,
       earningsSnapshot,
     });
     if (ruleBasedScenario) {
@@ -58,12 +88,12 @@ export function getBullBaseBearScenarios(
     }
   }
 
-  // 3. 返回 unavailable
+  // 兜底：Unavailable
   return buildUnavailableScenario({
     ticker,
     companyName,
     currency,
-    currentPrice,
+    currentPrice: currentPrice ?? undefined,
   });
 }
 
@@ -88,13 +118,13 @@ function buildUnavailableScenario({
     probabilityWeightedTargetPrice: null,
     riskRewardSummary: undefined,
     sourceNote: buildScenarioSourceNote({
-      customNote: '无足够数据生成情景分析。This is not investment advice.',
-      hasUnverifiedData: false,
+      customNote: '暂未生成该公司的买方情景推演，后续将接入更多估值和预期数据。',
+      hasUnverifiedData: false
     }),
     dataStatus: 'minimal',
     warnings: [
-      '无足够数据生成情景分析。',
-      '需要补充 EPS/consensus 数据。',
+      '暂未生成该公司的买方情景推演，后续将接入更多估值和预期数据。',
+      '需要补充 EPS/consensus 数据。'
     ],
   };
 }

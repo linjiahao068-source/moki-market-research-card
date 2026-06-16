@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useMemo } from 'react';
 import { AlertTriangle, CheckCircle2, FileText, Search } from 'lucide-react';
 import { StockSymbolBadge } from '@/components/common/StockSymbolBadge';
 import { EarningsSnapshotPanel } from '@/components/earnings/EarningsSnapshotPanel';
@@ -11,7 +11,6 @@ import { EarningsSnapshotData } from '@/types/earnings';
 import { ResearchCard } from '@/types/research-card';
 import { SecurityInputKind, SecurityMarket, SecurityRecord, SecurityResolution } from '@/types/security';
 import { getBullBaseBearScenarios } from '@/lib/scenarios/providers';
-import { BullBaseBearScenarioSummary } from '@/types/scenario';
 
 interface GeneratedCardPreviewProps {
   card: ResearchCard | null;
@@ -92,22 +91,27 @@ export function GeneratedCardPreview({
   basicData = null,
   earningsSnapshot = null,
 }: GeneratedCardPreviewProps) {
-  // 新增：scenarios 状态
-  const [scenarios, setScenarios] = useState<BullBaseBearScenarioSummary | null>(null);
-
-  // 新增：获取 scenarios
-  useEffect(() => {
-    if (card) {
-      const result = getBullBaseBearScenarios({
-        ticker: card.ticker,
-        companyName: card.companyName,
-        currency: 'USD',
-        currentPrice: basicData?.quote?.price ? parseFloat(basicData.quote.price) : undefined,
-        earningsSnapshot,
-        basicData,
-      });
-      setScenarios(result);
+  // 获取 scenarios（用 useMemo 避免重新计算）
+  const scenarios = useMemo(() => {
+    if (!card) {
+      return null;
     }
+
+    let currentPrice: number | null = null;
+    if (earningsSnapshot?.currentPrice !== null && earningsSnapshot?.currentPrice !== undefined) {
+      currentPrice = earningsSnapshot.currentPrice;
+    } else if (basicData?.quote?.price) {
+      currentPrice = parseFloat(basicData.quote.price);
+    }
+
+    return getBullBaseBearScenarios({
+      ticker: card.ticker,
+      companyName: card.companyName,
+      currency: 'USD',
+      currentPrice,
+      earningsSnapshot,
+      basicData,
+    });
   }, [card, basicData, earningsSnapshot]);
 
   if (!card && candidates.length > 0) {
@@ -120,7 +124,7 @@ export function GeneratedCardPreview({
           找到多个候选证券
         </h2>
         <p className="mb-4 text-sm leading-relaxed text-[oklch(0.43_0.018_160)]">
-          用户输入：{rawInput || '—'}。请从下面候选项中选择更精确的股票代码、Ticker 或中文名后再次生成。
+          用户输入：{rawInput || '—'}。请从下面候选项中选择更精确的股票代码、Ticker或中文名后再次生成。
         </p>
         <div className="space-y-2">
           {candidates.map((candidate) => (
@@ -136,7 +140,7 @@ export function GeneratedCardPreview({
   if (!card) {
     return (
       <div className="rounded-[8px] border border-dashed border-border bg-white p-5 text-sm leading-relaxed text-[oklch(0.48_0.018_160)]">
-        输入股票代码、Ticker 或中文名并点击生成后，这里会显示 mock 研究卡预览。
+        输入股票代码、Ticker或中文名并点击生成后，这里会显示 mock 研究卡预览。
       </div>
     );
   }
@@ -207,7 +211,7 @@ export function GeneratedCardPreview({
           </div>
         )}
 
-        {/* Scenarios Panel - 始终展示，空状态由组件内部处理 */}
+        {/* Scenarios Panel */}
         <div className="mb-4">
           <BullBaseBearScenariosPanel scenarios={scenarios} />
         </div>
@@ -234,7 +238,7 @@ export function GeneratedCardPreview({
         <section className="rounded-[8px] border border-border bg-white p-4">
           <div className="mb-3 flex items-center gap-2 text-xs font-semibold text-[var(--brand-ink)]">
             <FileText className="h-4 w-4" aria-hidden="true" />
-            Bull / Bear
+            Bull/Bear
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
             {card.summary.bullCase && (

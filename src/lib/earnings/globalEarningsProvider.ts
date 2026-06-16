@@ -173,6 +173,8 @@ export async function getGlobalEarningsSnapshotData({
       'earningsTrend',
       'earningsHistory',
       'incomeStatementHistoryQuarterly',
+      'financialData',        // 新增
+      'defaultKeyStatistics', // 新增
     ])),
     settle(resolvedSecurity ? fetchEastmoneyKeyIndicators(resolvedSecurity) : Promise.resolve([])),
     settle(basicData ? Promise.resolve(basicData) : resolvedSecurity ? getBasicCompanyData(resolvedSecurity) : Promise.resolve(undefined)),
@@ -283,6 +285,14 @@ export async function getGlobalEarningsSnapshotData({
       ...(eastmoneyIndicators ?? []).flatMap((item) => item.warnings ?? []),
       'Guidance extraction is not part of global earnings provider yet; guidance remains empty unless another provider supplies structured data.',
     ],
+    currentPrice: yahooSummary?.ok ? yahooSummary.currentPrice : undefined,
+    targetPriceMean: yahooSummary?.ok ? yahooSummary.targetPriceMean : undefined,
+    targetPriceHigh: yahooSummary?.ok ? yahooSummary.targetPriceHigh : undefined,
+    targetPriceLow: yahooSummary?.ok ? yahooSummary.targetPriceLow : undefined,
+    trailingPE: yahooSummary?.ok ? yahooSummary.trailingPE : undefined,
+    forwardPE: yahooSummary?.ok ? yahooSummary.forwardPE : undefined,
+    trailingEps: yahooSummary?.ok ? yahooSummary.trailingEps : undefined,
+    forwardEps: yahooSummary?.ok ? yahooSummary.forwardEps : undefined,
   };
 }
 
