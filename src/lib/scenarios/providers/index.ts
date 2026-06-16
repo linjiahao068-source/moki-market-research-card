@@ -19,9 +19,9 @@ type GetScenariosParams = {
  * 获取 Bull/Base/Bear 情景分析
  * 优先级：manual -> rule-based -> unavailable
  */
-export async function getBullBaseBearScenarios(
+export function getBullBaseBearScenarios(
   params: GetScenariosParams
-): Promise<BullBaseBearScenarioSummary> {
+): BullBaseBearScenarioSummary {
   const {
     ticker,
     companyName: inputCompanyName,
@@ -38,7 +38,7 @@ export async function getBullBaseBearScenarios(
 
   // 1. 优先尝试 manual scenario
   if (supportsManualScenario(ticker)) {
-    const manualScenario = await getManualScenario(ticker, { currentPrice });
+    const manualScenario = getManualScenario(ticker, { currentPrice });
     if (manualScenario) {
       return manualScenario;
     }
@@ -46,7 +46,7 @@ export async function getBullBaseBearScenarios(
 
   // 2. 尝试 rule-based scenario
   if (canGenerateRuleBasedScenario(earningsSnapshot)) {
-    const ruleBasedScenario = await getRuleBasedScenario({
+    const ruleBasedScenario = getRuleBasedScenario({
       ticker,
       companyName,
       currency,

@@ -98,16 +98,15 @@ export function GeneratedCardPreview({
   // 新增：获取 scenarios
   useEffect(() => {
     if (card) {
-      getBullBaseBearScenarios({
+      const result = getBullBaseBearScenarios({
         ticker: card.ticker,
         companyName: card.companyName,
         currency: 'USD',
         currentPrice: basicData?.quote?.price ? parseFloat(basicData.quote.price) : undefined,
         earningsSnapshot,
         basicData,
-      })
-        .then(setScenarios)
-        .catch(() => setScenarios(null));
+      });
+      setScenarios(result);
     }
   }, [card, basicData, earningsSnapshot]);
 

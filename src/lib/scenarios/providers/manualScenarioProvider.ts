@@ -275,12 +275,12 @@ function buildScenarioFromConfig(
  * 获取手动维护的情景分析
  * 仅支持配置中定义的 ticker
  */
-export async function getManualScenario(
+export function getManualScenario(
   ticker: string,
   options: {
     currentPrice?: number;
   } = {}
-): Promise<BullBaseBearScenarioSummary | null> {
+): BullBaseBearScenarioSummary | null {
   const tickerUpper = ticker.toUpperCase();
   const config = MANUAL_SCENARIO_CONFIGS[tickerUpper];
 

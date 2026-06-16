@@ -101,9 +101,9 @@ function buildRuleScenario(
  * 使用 earningsSnapshot 生成规则情景
  * 仅在有可用 EPS 数据时返回情景
  */
-export async function getRuleBasedScenario(
+export function getRuleBasedScenario(
   input: RuleBasedScenarioInput
-): Promise<BullBaseBearScenarioSummary | null> {
+): BullBaseBearScenarioSummary | null {
   const {
     ticker,
     companyName: inputCompanyName,
