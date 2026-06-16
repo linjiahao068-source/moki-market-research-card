@@ -92,4 +92,6 @@ export interface ResearchCard {
   chineseName?: string;
   matchStatus?: 'matched' | 'unmatched';
   matchType?: 'symbol' | 'numericCode' | 'chineseName';
+  // Optional: 新增估值情景字段，侵入最小
+  valuationScenarios?: unknown;
 }

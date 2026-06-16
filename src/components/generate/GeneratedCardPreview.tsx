@@ -1,14 +1,17 @@
+import { useEffect, useState } from 'react';
 import { AlertTriangle, CheckCircle2, FileText, Search } from 'lucide-react';
 import { StockSymbolBadge } from '@/components/common/StockSymbolBadge';
-import { BasicDataPanel } from '@/components/data/BasicDataPanel';
 import { EarningsSnapshotPanel } from '@/components/earnings/EarningsSnapshotPanel';
 import { GuidanceComparePanel } from '@/components/earnings/GuidanceComparePanel';
+import { BullBaseBearScenariosPanel } from '@/components/scenarios/BullBaseBearScenariosPanel';
 import { SecurityMatchBadge } from '@/components/security/SecurityMatchBadge';
 import { SecurityMetadataRow } from '@/components/security/SecurityMetadataRow';
 import { BasicCompanyData } from '@/types/basic-data';
 import { EarningsSnapshotData } from '@/types/earnings';
 import { ResearchCard } from '@/types/research-card';
 import { SecurityInputKind, SecurityMarket, SecurityRecord, SecurityResolution } from '@/types/security';
+import { getBullBaseBearScenarios } from '@/lib/scenarios/providers';
+import { BullBaseBearScenarioSummary } from '@/types/scenario';
 
 interface GeneratedCardPreviewProps {
   card: ResearchCard | null;
@@ -89,6 +92,25 @@ export function GeneratedCardPreview({
   basicData = null,
   earningsSnapshot = null,
 }: GeneratedCardPreviewProps) {
+  // 新增：scenarios 状态
+  const [scenarios, setScenarios] = useState<BullBaseBearScenarioSummary | null>(null);
+
+  // 新增：获取 scenarios
+  useEffect(() => {
+    if (card) {
+      getBullBaseBearScenarios({
+        ticker: card.ticker,
+        companyName: card.companyName,
+        currency: 'USD',
+        currentPrice: basicData?.quote?.price ? parseFloat(basicData.quote.price) : undefined,
+        earningsSnapshot,
+        basicData,
+      })
+        .then(setScenarios)
+        .catch(() => setScenarios(null));
+    }
+  }, [card, basicData, earningsSnapshot]);
+
   if (!card && candidates.length > 0) {
     return (
       <div className="rounded-[8px] border border-[var(--brand-border)] bg-[var(--brand-soft)] p-5">
@@ -186,11 +208,10 @@ export function GeneratedCardPreview({
           </div>
         )}
 
-        {basicData && (
-          <div className="mb-4">
-            <BasicDataPanel data={basicData} />
-          </div>
-        )}
+        {/* Scenarios Panel - 始终展示，空状态由组件内部处理 */}
+        <div className="mb-4">
+          <BullBaseBearScenariosPanel scenarios={scenarios} />
+        </div>
 
         <div className="rounded-[8px] border-l-2 border-[var(--brand-dot)] bg-white p-4">
           <div className="mb-1 text-xs font-semibold text-[var(--brand-ink)]">一句话摘要</div>
