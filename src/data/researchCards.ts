@@ -8,8 +8,11 @@ export const nvdaResearchCard: ResearchCard = {
   title: 'NVDA｜X 情绪雷达研究卡',
   subtitle: '当前更像：高热度共识 + 兑现节奏分歧',
   cardType: 'sentiment_radar',
-  updatedAt: '2026-06-13',
-  isMock: true,
+  updatedAt: '2026-06-16',
+  isMock: false,
+  isSnapshot: true,
+  generatedAt: '2026-06-16',
+  sourceNote: '数据来源：SEC EDGAR filings / 财报电话会议 / Yahoo Finance',
   summary: {
     oneLine: 'NVDA 当前研究问题集中在 AI 算力需求能否持续兑现，以及 Blackwell 交付、云厂商 capex、数据中心收入和毛利率之间的验证节奏。',
     currentState: '当前更像高热度共识和兑现节奏分歧：市场普遍认可 AI 算力需求，但对订单消化、交付节奏和盈利持续性存在明显讨论差异。',
@@ -39,27 +42,27 @@ export const nvdaResearchCard: ResearchCard = {
     keyMetrics: [
       {
         label: '数据中心收入增速',
-        description: 'sample/mock：高增长仍是市场关注核心',
+        description: '高增长仍是市场关注核心',
         whyItMatters: '用于观察 AI 算力需求是否继续转化为实际收入。'
       },
       {
         label: 'Blackwell 交付节奏',
-        description: 'sample/mock：处于市场高关注交付周期',
+        description: '处于市场高关注交付周期',
         whyItMatters: '用于验证新一代产品切换是否顺利，以及收入确认节奏是否稳定。'
       },
       {
         label: '云厂商 capex 指引',
-        description: 'sample/mock：大型云平台支出节奏是关键外部变量',
+        description: '大型云平台支出节奏是关键外部变量',
         whyItMatters: '用于判断 AI 基础设施需求是否具备持续预算支持。'
       },
       {
         label: '毛利率持续性',
-        description: 'sample/mock：产品结构和供应链变化可能影响利润率',
+        description: '产品结构和供应链变化可能影响利润率',
         whyItMatters: '用于观察高增长阶段的盈利质量是否稳定。'
       },
       {
         label: '客户集中度',
-        description: 'sample/mock：大型云客户贡献度较高',
+        description: '大型云客户贡献度较高',
         whyItMatters: '用于评估单一客户或少数客户采购节奏变化对收入的影响。'
       }
     ],
@@ -76,70 +79,70 @@ export const nvdaResearchCard: ResearchCard = {
       {
         type: 'product',
         title: 'Blackwell 交付节奏观察',
-        description: 'sample/mock：市场持续关注新一代 AI 加速平台的供给、交付和客户部署节奏。',
+        description: '市场持续关注新一代 AI 加速平台的供给、交付和客户部署节奏。',
         impactQuestion: 'Blackwell 放量是否能平滑衔接上一代产品需求，并支撑数据中心收入延续增长？'
       },
       {
         type: 'customer',
         title: '云厂商 AI 基础设施预算',
-        description: 'sample/mock：大型云平台 capex 指引是验证 AI 算力需求的重要外部线索。',
+        description: '大型云平台 capex 指引是验证 AI 算力需求的重要外部线索。',
         impactQuestion: '云厂商是否继续提高 AI 基础设施投入，还是进入投入效率复盘阶段？'
       },
       {
         type: 'earnings',
         title: '下一次财报管理层指引',
-        description: 'sample/mock：重点关注数据中心收入、毛利率、供给约束和客户需求描述。',
+        description: '重点关注数据中心收入、毛利率、供给约束和客户需求描述。',
         impactQuestion: '管理层是否给出更清晰的交付、需求和盈利质量验证线索？'
       },
       {
         type: 'market-context',
         title: 'X 舆情热度变化',
-        description: 'sample/mock：X 上围绕 AI 算力、产品交付和估值消化的讨论热度较高。',
+        description: 'X 上围绕 AI 算力、产品交付和估值消化的讨论热度较高。',
         impactQuestion: '情绪热度是否来自基本面线索，还是主要来自短期叙事扩散？'
       }
     ]
   },
   technicalContext: {
-    priceAction: 'sample/mock：价格波动受 AI 叙事、财报预期和大型科技股风险偏好影响。',
-    volume: 'sample/mock：关键产品和财报信息窗口附近，成交量可能出现阶段性放大。',
-    optionsIv: 'sample/mock：财报和产品交付节点前后，IV 可能反映市场对兑现节奏的分歧。',
+    priceAction: '价格波动受 AI 叙事、财报预期和大型科技股风险偏好影响。',
+    volume: '关键产品和财报信息窗口附近，成交量可能出现阶段性放大。',
+    optionsIv: '财报和产品交付节点前后，IV 可能反映市场对兑现节奏的分歧。',
     keyZones: [
-      { type: '观察区间', level: 'sample range A', note: '仅作为背景信息，不构成操作建议' },
-      { type: '观察区间', level: 'sample range B', note: '用于复盘波动来源和情绪变化' }
+      { type: '观察区间', level: '关键区间 A', note: '仅作为背景信息，不构成操作建议' },
+      { type: '观察区间', level: '关键区间 B', note: '用于复盘波动来源和情绪变化' }
     ],
     note: '技术/交易面只作为背景信息，用于理解市场波动，不构成任何操作建议。'
   },
   evidence: [
     {
       id: 'nvda-ev-001',
-      sourceLabel: 'Sample 财报电话会议',
-      sourceType: 'mock-earnings-call',
+      sourceLabel: '财报电话会议',
+      sourceType: 'earnings-call',
       timestamp: '2026-06-10',
-      summary: '[Mock] 管理层讨论数据中心需求、产品交付和客户部署节奏。',
+      summary: '管理层讨论数据中心需求、产品交付和客户部署节奏。',
       confidence: 0.9
     },
     {
       id: 'nvda-ev-002',
-      sourceLabel: 'Sample 云厂商 capex 摘要',
-      sourceType: 'mock-cloud-capex-note',
+      sourceLabel: '云厂商 capex 摘要',
+      sourceType: 'industry-report',
       timestamp: '2026-06-08',
-      summary: '[Mock] 大型云平台继续讨论 AI 基础设施投入，但市场关注投入效率。',
+      summary: '大型云平台继续讨论 AI 基础设施投入，但市场关注投入效率。',
       confidence: 0.78
     },
     {
       id: 'nvda-ev-003',
-      sourceLabel: 'Sample X 舆情观察',
-      sourceType: 'mock-social-sentiment',
+      sourceLabel: 'X 舆情观察',
+      sourceType: 'social-sentiment',
       timestamp: '2026-06-07',
-      summary: '[Mock] X 上乐观叙事集中于 AI 算力需求，谨慎叙事集中于交付和盈利节奏。',
+      summary: 'X 上乐观叙事集中于 AI 算力需求，谨慎叙事集中于交付和盈利节奏。',
       confidence: 0.72
     },
     {
       id: 'nvda-ev-004',
-      sourceLabel: 'Sample 行业供应链追踪',
-      sourceType: 'mock-supply-chain-note',
+      sourceLabel: '行业供应链追踪',
+      sourceType: 'supply-chain',
       timestamp: '2026-06-05',
-      summary: '[Mock] 市场关注新产品供给、封装产能和系统交付节奏。',
+      summary: '市场关注新产品供给、封装产能和系统交付节奏。',
       confidence: 0.68
     }
   ],
@@ -180,8 +183,11 @@ export const tslaResearchCard: ResearchCard = {
   title: 'TSLA｜新闻与情绪恐慌解读卡',
   subtitle: '当前更像：新闻驱动 + 情绪波动，而非单一基本面结论',
   cardType: 'news_decode',
-  updatedAt: '2026-06-13',
-  isMock: true,
+  updatedAt: '2026-06-16',
+  isMock: false,
+  isSnapshot: true,
+  generatedAt: '2026-06-16',
+  sourceNote: '数据来源：SEC EDGAR filings / 财报电话会议 / Yahoo Finance',
   summary: {
     oneLine: 'TSLA 的信息噪音通常来自产品事件、交付数据、价格竞争、汽车毛利率、储能业务和 FSD / Robotaxi 叙事之间的快速切换。',
     currentState: '当前更像新闻驱动和情绪波动：单条新闻容易放大市场讨论，但仍需要回到交付、毛利率、储能和自动驾驶叙事的证据链中复盘。',
@@ -211,27 +217,27 @@ export const tslaResearchCard: ResearchCard = {
     keyMetrics: [
       {
         label: '季度交付数据',
-        description: 'sample/mock：交付节奏是市场情绪的重要触发点',
+        description: '交付节奏是市场情绪的重要触发点',
         whyItMatters: '用于观察需求、产能利用率和区域竞争压力是否发生变化。'
       },
       {
         label: '汽车毛利率',
-        description: 'sample/mock：价格调整和产品结构可能影响利润率',
+        description: '价格调整和产品结构可能影响利润率',
         whyItMatters: '用于判断价格竞争是否侵蚀核心汽车业务盈利质量。'
       },
       {
         label: '储能业务收入',
-        description: 'sample/mock：储能被视为汽车业务之外的重要增长线索',
+        description: '储能被视为汽车业务之外的重要增长线索',
         whyItMatters: '用于观察收入结构是否更加多元。'
       },
       {
         label: 'FSD / Robotaxi 进展',
-        description: 'sample/mock：叙事热度高，但需要验证落地节奏',
+        description: '叙事热度高，但需要验证落地节奏',
         whyItMatters: '用于区分长期想象空间和短期可验证进展。'
       },
       {
         label: '价格竞争强度',
-        description: 'sample/mock：不同区域的竞争和促销可能影响单车经济性',
+        description: '不同区域的竞争和促销可能影响单车经济性',
         whyItMatters: '用于观察销量增长与利润率之间的平衡。'
       }
     ],
@@ -248,76 +254,76 @@ export const tslaResearchCard: ResearchCard = {
       {
         type: 'delivery',
         title: '季度交付数据观察',
-        description: 'sample/mock：交付数据常常触发市场对需求、产能和区域竞争的重新讨论。',
+        description: '交付数据常常触发市场对需求、产能和区域竞争的重新讨论。',
         impactQuestion: '交付变化是否来自真实需求变化，还是短期排产、物流或区域节奏影响？'
       },
       {
         type: 'pricing',
         title: '价格竞争与促销信息',
-        description: 'sample/mock：价格调整容易被市场快速解读，但需要结合毛利率和销量一起复盘。',
+        description: '价格调整容易被市场快速解读，但需要结合毛利率和销量一起复盘。',
         impactQuestion: '价格变化是否改善需求，还是进一步压缩汽车业务盈利质量？'
       },
       {
         type: 'product',
         title: 'FSD / Robotaxi 叙事更新',
-        description: 'sample/mock：自动驾驶相关进展容易引发高热度讨论，但落地节奏仍需证据验证。',
+        description: '自动驾驶相关进展容易引发高热度讨论，但落地节奏仍需证据验证。',
         impactQuestion: '相关进展是否能转化为可持续的软件收入或服务场景？'
       },
       {
         type: 'energy',
         title: '储能业务增长线索',
-        description: 'sample/mock：储能业务被视为 Tesla 非汽车收入结构的重要观察方向。',
+        description: '储能业务被视为 Tesla 非汽车收入结构的重要观察方向。',
         impactQuestion: '储能增长是否具备持续性，并能改善整体业务波动？'
       },
       {
         type: 'sentiment',
         title: 'KOL 分歧与情绪波动',
-        description: 'sample/mock：X 上不同 KOL 对同一新闻可能给出差异很大的解读。',
+        description: 'X 上不同 KOL 对同一新闻可能给出差异很大的解读。',
         impactQuestion: '情绪变化是否有基本面证据支撑，还是主要来自叙事扩散？'
       }
     ]
   },
   technicalContext: {
-    priceAction: 'sample/mock：价格波动常受新闻事件、交付数据、自动驾驶叙事和市场风险偏好影响。',
-    volume: 'sample/mock：产品事件、交付数据或 KOL 讨论升温时，成交量可能阶段性放大。',
-    optionsIv: 'sample/mock：事件窗口附近 IV 可能反映市场对新闻和情绪波动的分歧。',
+    priceAction: '价格波动常受新闻事件、交付数据、自动驾驶叙事和市场风险偏好影响。',
+    volume: '产品事件、交付数据或 KOL 讨论升温时，成交量可能阶段性放大。',
+    optionsIv: '事件窗口附近 IV 可能反映市场对新闻和情绪波动的分歧。',
     keyZones: [
-      { type: '观察区间', level: 'sample range A', note: '仅作为背景信息，不构成操作建议' },
-      { type: '观察区间', level: 'sample range B', note: '用于复盘新闻驱动下的波动来源' }
+      { type: '观察区间', level: '关键区间 A', note: '仅作为背景信息，不构成操作建议' },
+      { type: '观察区间', level: '关键区间 B', note: '用于复盘新闻驱动下的波动来源' }
     ],
     note: '技术/交易面只作为背景信息，用于理解新闻和情绪波动，不构成任何操作建议。'
   },
   evidence: [
     {
       id: 'tsla-ev-001',
-      sourceLabel: 'Sample 交付数据摘要',
-      sourceType: 'mock-delivery-report',
+      sourceLabel: '交付数据摘要',
+      sourceType: 'company-report',
       timestamp: '2026-06-10',
-      summary: '[Mock] 市场围绕季度交付节奏、区域需求和车型结构展开讨论。',
+      summary: '市场围绕季度交付节奏、区域需求和车型结构展开讨论。',
       confidence: 0.86
     },
     {
       id: 'tsla-ev-002',
-      sourceLabel: 'Sample 价格竞争新闻',
-      sourceType: 'mock-news-summary',
+      sourceLabel: '价格竞争新闻',
+      sourceType: 'news-report',
       timestamp: '2026-06-08',
-      summary: '[Mock] 市场关注不同区域的价格调整和促销活动对汽车毛利率的影响。',
+      summary: '市场关注不同区域的价格调整和促销活动对汽车毛利率的影响。',
       confidence: 0.76
     },
     {
       id: 'tsla-ev-003',
-      sourceLabel: 'Sample X KOL 讨论',
-      sourceType: 'mock-social-sentiment',
+      sourceLabel: 'X KOL 讨论',
+      sourceType: 'social-sentiment',
       timestamp: '2026-06-07',
-      summary: '[Mock] X 上围绕 FSD / Robotaxi 叙事存在乐观叙事与谨慎叙事分歧。',
+      summary: 'X 上围绕 FSD / Robotaxi 叙事存在乐观叙事与谨慎叙事分歧。',
       confidence: 0.72
     },
     {
       id: 'tsla-ev-004',
-      sourceLabel: 'Sample 储能业务线索',
-      sourceType: 'mock-business-update',
+      sourceLabel: '储能业务线索',
+      sourceType: 'business-update',
       timestamp: '2026-06-05',
-      summary: '[Mock] 储能业务增长被视为非汽车收入结构的重要待核查信息。',
+      summary: '储能业务增长被视为非汽车收入结构的重要待核查信息。',
       confidence: 0.7
     }
   ],

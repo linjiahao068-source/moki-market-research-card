@@ -372,7 +372,7 @@ export function mockGenerateResearchCard({
       chineseName: security.chineseNameHK,
       matchStatus: resolution.status,
       matchType: resolution.status === 'matched' ? resolution.matchType : undefined,
-      valuationScenarios: null,
+      valuationScenarios: undefined,
     },
   };
 }

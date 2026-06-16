@@ -1,9 +1,17 @@
-import { useMemo } from 'react';
-import { AlertTriangle, CheckCircle2, FileText, Search } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { AlertTriangle, CheckCircle2, FileText, Search, ChevronDown, ChevronUp } from 'lucide-react';
 import { StockSymbolBadge } from '@/components/common/StockSymbolBadge';
 import { EarningsSnapshotPanel } from '@/components/earnings/EarningsSnapshotPanel';
 import { GuidanceComparePanel } from '@/components/earnings/GuidanceComparePanel';
 import { BullBaseBearScenariosPanel } from '@/components/scenarios/BullBaseBearScenariosPanel';
+import {
+  SerenityAlphaPanel,
+  BayesianValuationPanel,
+  GfDmaHealthIndexPanel,
+  TamAdjPegPanel,
+  BuySideMemoPanel,
+  SerenityDataNotice,
+} from '@/components/serenity';
 import { SecurityMatchBadge } from '@/components/security/SecurityMatchBadge';
 import { SecurityMetadataRow } from '@/components/security/SecurityMetadataRow';
 import { BasicCompanyData } from '@/types/basic-data';
@@ -11,6 +19,7 @@ import { EarningsSnapshotData } from '@/types/earnings';
 import { ResearchCard } from '@/types/research-card';
 import { SecurityInputKind, SecurityMarket, SecurityRecord, SecurityResolution } from '@/types/security';
 import { getBullBaseBearScenarios } from '@/lib/scenarios/providers';
+import { generateSerenityBundle } from '@/lib/serenity';
 
 interface GeneratedCardPreviewProps {
   card: ResearchCard | null;
@@ -114,6 +123,18 @@ export function GeneratedCardPreview({
     });
   }, [card, basicData, earningsSnapshot]);
 
+  // 获取 Serenity 分析包
+  const serenityBundle = useMemo(() => {
+    if (!card) {
+      return null;
+    }
+    return generateSerenityBundle(card.ticker, card.companyName);
+  }, [card]);
+
+  // Serenity 面板展开状态
+  const [showSerenity, setShowSerenity] = useState(false);
+  const [activeSerenityTab, setActiveSerenityTab] = useState<'alpha' | 'bayesian' | 'gf-dma' | 'tam-adj-peg' | 'memo'>('memo');
+
   if (!card && candidates.length > 0) {
     return (
       <div className="rounded-[8px] border border-[var(--brand-border)] bg-[var(--brand-soft)] p-5">
@@ -215,6 +236,111 @@ export function GeneratedCardPreview({
         <div className="mb-4">
           <BullBaseBearScenariosPanel scenarios={scenarios} />
         </div>
+
+        {/* Serenity Skills Analysis (可折叠) */}
+        {serenityBundle && (
+          <div className="mb-4">
+            <button
+              onClick={() => setShowSerenity(!showSerenity)}
+              className="flex w-full items-center justify-between rounded-[8px] border border-[var(--brand-border)] bg-[var(--brand-soft)] p-3 text-left"
+            >
+              <div>
+                <div className="text-xs font-semibold text-[var(--brand-ink)]">
+                  Serenity Skills
+                </div>
+                <div className="text-sm text-[oklch(0.2_0.016_160)]">
+                  买方研究框架分析（Alpha、Bayesian、GF-DMA、TAM-Adj-PEG）
+                </div>
+              </div>
+              {showSerenity ? (
+                <ChevronUp className="h-4 w-4 text-[var(--brand-ink)]" />
+              ) : (
+                <ChevronDown className="h-4 w-4 text-[var(--brand-ink)]" />
+              )}
+            </button>
+
+            {showSerenity && (
+              <div className="mt-2 space-y-2">
+                {/* 数据状态提示 */}
+                {serenityBundle?.dataNotice && (
+                  <SerenityDataNotice customNotice={serenityBundle.dataNotice} />
+                )}
+                {/* 标签切换 */}
+                <div className="flex flex-wrap gap-1">
+                  <button
+                    onClick={() => setActiveSerenityTab('memo')}
+                    className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                      activeSerenityTab === 'memo'
+                        ? 'bg-[var(--brand-ink)] text-white'
+                        : 'bg-white border border-border text-[oklch(0.2_0.016_160)]'
+                    }`}
+                  >
+                    买方备忘录
+                  </button>
+                  <button
+                    onClick={() => setActiveSerenityTab('alpha')}
+                    className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                      activeSerenityTab === 'alpha'
+                        ? 'bg-[var(--brand-ink)] text-white'
+                        : 'bg-white border border-border text-[oklch(0.2_0.016_160)]'
+                    }`}
+                  >
+                    Serenity Alpha
+                  </button>
+                  <button
+                    onClick={() => setActiveSerenityTab('bayesian')}
+                    className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                      activeSerenityTab === 'bayesian'
+                        ? 'bg-[var(--brand-ink)] text-white'
+                        : 'bg-white border border-border text-[oklch(0.2_0.016_160)]'
+                    }`}
+                  >
+                    贝叶斯估值
+                  </button>
+                  <button
+                    onClick={() => setActiveSerenityTab('gf-dma')}
+                    className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                      activeSerenityTab === 'gf-dma'
+                        ? 'bg-[var(--brand-ink)] text-white'
+                        : 'bg-white border border-border text-[oklch(0.2_0.016_160)]'
+                    }`}
+                  >
+                    GF-DMA 健康指数
+                  </button>
+                  <button
+                    onClick={() => setActiveSerenityTab('tam-adj-peg')}
+                    className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                      activeSerenityTab === 'tam-adj-peg'
+                        ? 'bg-[var(--brand-ink)] text-white'
+                        : 'bg-white border border-border text-[oklch(0.2_0.016_160)]'
+                    }`}
+                  >
+                    TAM-Adj-PEG
+                  </button>
+                </div>
+
+                {/* 内容区域 */}
+                <div className="space-y-4">
+                  {activeSerenityTab === 'alpha' && (
+                    <SerenityAlphaPanel analysis={serenityBundle.alphaAnalysis} />
+                  )}
+                  {activeSerenityTab === 'bayesian' && (
+                    <BayesianValuationPanel analysis={serenityBundle.bayesianValuation} />
+                  )}
+                  {activeSerenityTab === 'gf-dma' && (
+                    <GfDmaHealthIndexPanel analysis={serenityBundle.gfDmaHealthIndex} />
+                  )}
+                  {activeSerenityTab === 'tam-adj-peg' && (
+                    <TamAdjPegPanel analysis={serenityBundle.tamAdjPeg} />
+                  )}
+                  {activeSerenityTab === 'memo' && (
+                    <BuySideMemoPanel analysis={serenityBundle.buySideMemo} />
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="rounded-[8px] border-l-2 border-[var(--brand-dot)] bg-white p-4">
           <div className="mb-1 text-xs font-semibold text-[var(--brand-ink)]">一句话摘要</div>

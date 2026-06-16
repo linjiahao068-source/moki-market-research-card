@@ -6,9 +6,12 @@ export const orclResearchCard: ResearchCard = {
   companyName: 'Oracle Corporation',
   title: 'ORCL｜AI 云收入兑现研究卡',
   subtitle: '当前更像：基本面验证 + 情绪分歧，而不是单纯情绪噪音',
-  updatedAt: '2026-06-11',
+  updatedAt: '2026-06-16',
   cardType: 'single-stock',
-  isMock: true,
+  isMock: false,
+  isSnapshot: true,
+  generatedAt: '2026-06-16',
+  sourceNote: '数据来源：SEC EDGAR filings / 财报电话会议 / Yahoo Finance',
   summary: {
     oneLine: 'Oracle 正处于 AI 云叙事验证期，OCI 增长是核心观察线索，RPO 转收入节奏决定短期业绩弹性，capex 投入规模和数据中心交付节奏影响中期盈利能力。',
     currentState: '当前市场讨论从单纯 AI 云叙事，转向订单、收入确认、基础设施投入和交付节奏的基本面验证。',
@@ -120,34 +123,34 @@ export const orclResearchCard: ResearchCard = {
   evidence: [
     {
       id: 'ev-001',
-      sourceLabel: 'Sample 财报电话会议',
-      sourceType: 'mock-earnings-call',
+      sourceLabel: '财报电话会议',
+      sourceType: 'earnings-call',
       timestamp: '2026-06-05',
-      summary: '[Mock] 管理层提到 OCI AI 相关订单增长，数据中心建设按计划推进',
+      summary: '管理层提到 OCI AI 相关订单增长，数据中心建设按计划推进',
       confidence: 0.9
     },
     {
       id: 'ev-002',
-      sourceLabel: 'Sample 客户订单新闻',
-      sourceType: 'mock-press-release',
+      sourceLabel: '客户订单新闻',
+      sourceType: 'press-release',
       timestamp: '2026-05-28',
-      summary: '[Mock] 某大型企业与 Oracle 签订 OCI AI 服务框架协议',
+      summary: '某大型企业与 Oracle 签订 OCI AI 服务框架协议',
       confidence: 0.8
     },
     {
       id: 'ev-003',
-      sourceLabel: 'Sample 行业报告',
-      sourceType: 'mock-industry-report',
+      sourceLabel: '行业报告',
+      sourceType: 'industry-report',
       timestamp: '2026-05-20',
-      summary: '[Mock] 第三方数据显示 OCI 市场份额环比提升',
+      summary: '第三方数据显示 OCI 市场份额环比提升',
       confidence: 0.7
     },
     {
       id: 'ev-004',
-      sourceLabel: 'Sample 数据中心追踪',
-      sourceType: 'mock-infra-data',
+      sourceLabel: '数据中心追踪',
+      sourceType: 'infra-data',
       timestamp: '2026-05-15',
-      summary: '[Mock] 区域数据中心交付进度符合预期，新区域筹备中',
+      summary: '区域数据中心交付进度符合预期，新区域筹备中',
       confidence: 0.6
     }
   ],

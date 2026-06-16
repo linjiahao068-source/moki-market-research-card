@@ -62,6 +62,8 @@ export interface TechnicalContext {
   note: string;
 }
 
+import type { SerenityAnalysisBundle } from './serenity';
+
 export interface ResearchCard {
   slug: string;
   ticker: string;
@@ -71,6 +73,8 @@ export interface ResearchCard {
   cardType: string;
   updatedAt: string;
   isMock: boolean;
+  isSnapshot?: boolean;
+  generatedAt?: string;
   summary: Summary;
   sentiment: Sentiment;
   fundamentals: Fundamentals;
@@ -92,6 +96,6 @@ export interface ResearchCard {
   chineseName?: string;
   matchStatus?: 'matched' | 'unmatched';
   matchType?: 'symbol' | 'numericCode' | 'chineseName';
-  // Optional: 新增估值情景字段，侵入最小
-  valuationScenarios?: unknown;
+  // Optional: 估值情景（包含 Serenity 分析）
+  valuationScenarios?: SerenityAnalysisBundle;
 }
