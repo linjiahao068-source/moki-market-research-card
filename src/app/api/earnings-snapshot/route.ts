@@ -1,35 +1,64 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
+import {
+  createRouteCacheKey,
+  getRouteCacheTtlSeconds,
+  jsonResponse,
+  readRouteCache,
+  writeRouteCache,
+} from '@/lib/api/routeCache';
 import { getBasicCompanyData } from '@/lib/dataProviders/getBasicCompanyData';
 import { getEnhancedEarningsSnapshot } from '@/lib/earnings/enhancedEarningsProvider';
 import { getGuidanceData } from '@/lib/earnings/guidanceDataProvider';
 import { buildResearchDataLayer } from '@/lib/research/factBuilder';
 import { resolveSecurityInput } from '@/lib/security/resolveSecurityInput';
 
+export const runtime = 'nodejs';
+export const maxDuration = 60;
+
 export async function GET(request: NextRequest) {
   const query = request.nextUrl.searchParams.get('query')?.trim() ?? '';
+  const ttlSeconds = getRouteCacheTtlSeconds('earnings-snapshot');
 
   if (!query) {
-    return NextResponse.json(
+    return jsonResponse(
       {
         ok: false,
         message: 'Missing query parameter.',
       },
-      { status: 400 }
+      { status: 400, cacheStatus: 'SKIP' }
     );
   }
 
   try {
+    const cacheKey = createRouteCacheKey('earnings-snapshot', { query: query.toLowerCase() });
+    const cached = readRouteCache<{
+      ok: true;
+      resolution: ReturnType<typeof resolveSecurityInput>;
+      data: unknown;
+    }>(cacheKey);
+
+    if (cached) {
+      return jsonResponse(cached.value, {
+        cacheStatus: 'HIT',
+        ttlSeconds,
+        visibility: 'cdn',
+        headers: {
+          'x-moki-cache-age': String(cached.ageSeconds),
+        },
+      });
+    }
+
     const resolution = resolveSecurityInput(query);
 
     if (resolution.status === 'ambiguous') {
-      return NextResponse.json(
+      return jsonResponse(
         {
           ok: false,
           message: 'Ambiguous security input.',
           resolution,
           candidates: resolution.candidates,
         },
-        { status: 409 }
+        { status: 409, cacheStatus: 'SKIP' }
       );
     }
 
@@ -64,19 +93,27 @@ export async function GET(request: NextRequest) {
       llmResearchInput: researchDataLayer.llmInput,
     };
 
-    return NextResponse.json({
+    const payload = {
       ok: true,
       resolution,
       data,
+    } as const;
+
+    writeRouteCache(cacheKey, payload, ttlSeconds);
+
+    return jsonResponse(payload, {
+      cacheStatus: 'MISS',
+      ttlSeconds,
+      visibility: 'cdn',
     });
   } catch (error) {
     console.error('Failed to load earnings snapshot data:', error);
-    return NextResponse.json(
+    return jsonResponse(
       {
         ok: false,
         message: 'Failed to load earnings snapshot data.',
       },
-      { status: 500 }
+      { status: 500, cacheStatus: 'SKIP' }
     );
   }
 }

@@ -48,7 +48,7 @@ function buildCandidateInput(candidate: SecurityRecord) {
 
 async function fetchBasicData(query: string): Promise<{ data: BasicCompanyData | null; error: string }> {
   const controller = new AbortController();
-  const timeout = window.setTimeout(() => controller.abort(), 5000);
+  const timeout = window.setTimeout(() => controller.abort(), 8000);
 
   try {
     const response = await fetch(`/api/basic-data?query=${encodeURIComponent(query)}`, {
@@ -80,7 +80,7 @@ async function fetchBasicData(query: string): Promise<{ data: BasicCompanyData |
 
 async function fetchEarningsSnapshot(query: string): Promise<{ data: EarningsSnapshotData | null; error: string }> {
   const controller = new AbortController();
-  const timeout = window.setTimeout(() => controller.abort(), 5000);
+  const timeout = window.setTimeout(() => controller.abort(), 25000);
 
   try {
     const response = await fetch(`/api/earnings-snapshot?query=${encodeURIComponent(query)}`, {
