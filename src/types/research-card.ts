@@ -1,6 +1,7 @@
 import type { EarningsSnapshotData, GuidanceMetricComparison } from './earnings';
 import type { DataQualityReport, EvidenceRecord, FactRecord, LLMResearchInput } from './evidence';
 import type { GlobalGuidanceEvidence } from './global-stock-data';
+import type { ResearchBrief } from './research-brief';
 import type { BullBaseBearScenarioSummary } from './scenario';
 import type { SerenityAnalysisBundle } from './serenity';
 
@@ -89,6 +90,7 @@ export interface ResearchCard {
   facts?: FactRecord[];
   factQuality?: DataQualityReport;
   llmResearchInput?: LLMResearchInput;
+  researchBrief?: ResearchBrief;
   nextSteps: NextStep[];
   disclaimer: string;
   sections?: Array<{

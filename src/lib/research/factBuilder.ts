@@ -155,6 +155,24 @@ function buildGuidanceEvidence(collector: EvidenceCollector, ticker?: string, it
   }
 }
 
+function buildScenarioEvidence(collector: EvidenceCollector, ticker?: string, scenarios?: BullBaseBearScenarioSummary) {
+  if (!scenarios) {
+    return;
+  }
+
+  collector.add('scenario-model', {
+    ticker,
+    source: 'scenario-provider',
+    sourceType: 'scenario-model',
+    sourceLabel: `${ticker ?? scenarios.ticker} bull/base/bear scenario model`,
+    fetchedAt: new Date().toISOString(),
+    snippet: compactText(scenarios.sourceNote),
+    confidence: scenarios.dataStatus === 'placeholder' ? 0.35 : 0.62,
+    extracted: false,
+    warnings: scenarios.warnings ?? [],
+  });
+}
+
 function buildBasicFacts(ticker?: string, basicData?: BasicCompanyData, evidenceIds: string[] = []): FactRecord[] {
   if (!basicData) {
     return [
@@ -399,7 +417,7 @@ function buildGuidanceFacts(
   return facts;
 }
 
-function buildScenarioFacts(ticker?: string, scenarios?: BullBaseBearScenarioSummary): FactRecord[] {
+function buildScenarioFacts(ticker?: string, scenarios?: BullBaseBearScenarioSummary, evidenceIds: string[] = []): FactRecord[] {
   if (!scenarios) {
     return [];
   }
@@ -418,7 +436,7 @@ function buildScenarioFacts(ticker?: string, scenarios?: BullBaseBearScenarioSum
       source: 'scenario-provider',
       quality: scenarios.dataStatus === 'placeholder' ? 'fallback' : 'derived',
       confidence: scenarios.dataStatus === 'placeholder' ? 0.35 : 0.62,
-      evidenceIds: [],
+      evidenceIds,
       warnings: [],
     });
   }
@@ -435,7 +453,7 @@ function buildScenarioFacts(ticker?: string, scenarios?: BullBaseBearScenarioSum
       source: scenario.source,
       quality: scenario.source === 'mock' ? 'fallback' : 'derived',
       confidence: scenario.source === 'mock' ? 0.35 : 0.58,
-      evidenceIds: [],
+      evidenceIds,
       warnings: [],
       metadata: {
         case: scenario.case,
@@ -545,6 +563,7 @@ export function buildResearchDataLayer({
   buildBasicEvidence(collector, resolvedTicker, basicData);
   buildEarningsEvidence(collector, resolvedTicker, earningsSnapshot);
   buildGuidanceEvidence(collector, resolvedTicker, earningsSnapshot?.guidanceEvidence ?? []);
+  buildScenarioEvidence(collector, resolvedTicker, scenarios);
 
   const evidence = collector.list();
   const basicEvidenceIds = evidence
@@ -553,11 +572,14 @@ export function buildResearchDataLayer({
   const earningsEvidenceIds = evidence
     .filter((record) => record.sourceType === 'earnings-snapshot' || record.id.includes('earnings-link'))
     .map((record) => record.id);
+  const scenarioEvidenceIds = evidence
+    .filter((record) => record.sourceType === 'scenario-model')
+    .map((record) => record.id);
   const facts = uniqueById([
     ...buildBasicFacts(resolvedTicker, basicData, basicEvidenceIds),
     ...buildEarningsMetricFacts(resolvedTicker, earningsSnapshot, earningsEvidenceIds),
     ...buildGuidanceFacts(resolvedTicker, earningsSnapshot, evidence),
-    ...buildScenarioFacts(resolvedTicker, scenarios),
+    ...buildScenarioFacts(resolvedTicker, scenarios, scenarioEvidenceIds),
   ]);
   const dataQuality = buildDataQualityReport({
     evidence,

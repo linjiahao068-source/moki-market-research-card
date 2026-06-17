@@ -1,4 +1,5 @@
 import type { DataQualityReport, EvidenceRecord, FactRecord, LLMResearchInput } from './evidence';
+import type { ResearchBrief } from './research-brief';
 
 export type EarningsMetricKey = 'revenue' | 'netIncome' | 'eps';
 
@@ -62,6 +63,7 @@ export interface EarningsSnapshotData {
   facts?: FactRecord[];
   factQuality?: DataQualityReport;
   llmResearchInput?: LLMResearchInput;
+  researchBrief?: ResearchBrief;
   sourceLinks: Array<{
     label: string;
     url: string;

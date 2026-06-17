@@ -3,6 +3,7 @@ import { AlertTriangle, CheckCircle2, FileText, Search, ChevronDown, ChevronUp }
 import { StockSymbolBadge } from '@/components/common/StockSymbolBadge';
 import { EnhancedEarningsSnapshotPanel } from '@/components/earnings/EnhancedEarningsSnapshotPanel';
 import { EnhancedGuidanceComparePanel } from '@/components/earnings/EnhancedGuidanceComparePanel';
+import { ResearchBriefPanel } from '@/components/research/ResearchBriefPanel';
 import { EnhancedBullBaseBearScenariosPanel } from '@/components/scenarios/EnhancedBullBaseBearScenariosPanel';
 import {
   SerenityAlphaPanel,
@@ -28,6 +29,8 @@ interface GeneratedCardPreviewProps {
   rawInput?: string;
   basicData?: BasicCompanyData | null;
   earningsSnapshot?: EarningsSnapshotData | null;
+  researchBriefLoading?: boolean;
+  researchBriefError?: string;
 }
 
 function buildCandidateLabel(candidate: SecurityRecord) {
@@ -113,6 +116,8 @@ export function GeneratedCardPreview({
   rawInput = '',
   basicData = null,
   earningsSnapshot = null,
+  researchBriefLoading = false,
+  researchBriefError = '',
 }: GeneratedCardPreviewProps) {
   // 获取 scenarios（用 useMemo 避免重新计算）
   const scenarios = useMemo(() => {
@@ -297,6 +302,14 @@ export function GeneratedCardPreview({
         {/* Scenarios Panel */}
         <div className="mb-4">
           <EnhancedBullBaseBearScenariosPanel scenarios={scenarios} />
+        </div>
+
+        <div className="mb-4">
+          <ResearchBriefPanel
+            brief={card.researchBrief}
+            isLoading={researchBriefLoading}
+            error={researchBriefError}
+          />
         </div>
 
         {/* Serenity Skills Analysis (可折叠) */}

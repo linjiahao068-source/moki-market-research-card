@@ -12,6 +12,8 @@ import {
 import { resolveSecurityInput } from '@/lib/security/resolveSecurityInput';
 import { BasicCompanyData } from '@/types/basic-data';
 import { EarningsSnapshotData } from '@/types/earnings';
+import { LLMResearchInput } from '@/types/evidence';
+import { ResearchBrief } from '@/types/research-brief';
 import { ResearchCard } from '@/types/research-card';
 import { SecurityRecord } from '@/types/security';
 import { CardTypeSelector } from './CardTypeSelector';
@@ -107,6 +109,50 @@ async function fetchEarningsSnapshot(query: string): Promise<{ data: EarningsSna
   }
 }
 
+async function fetchResearchBrief(input?: LLMResearchInput): Promise<{ brief: ResearchBrief | null; error: string }> {
+  if (!input) {
+    return {
+      brief: null,
+      error: 'LLM Research Brief 缺少 facts/evidence 输入。',
+    };
+  }
+
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 135000);
+
+  try {
+    const response = await fetch('/api/research-brief', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ llmResearchInput: input }),
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      return {
+        brief: null,
+        error: 'LLM Research Brief 生成失败，已保留基础研究卡。',
+      };
+    }
+
+    const payload = await response.json() as { brief?: ResearchBrief };
+
+    return {
+      brief: payload.brief ?? null,
+      error: payload.brief ? '' : 'LLM Research Brief 暂无可展示结果。',
+    };
+  } catch {
+    return {
+      brief: null,
+      error: 'LLM Research Brief 请求超时或失败，已保留基础研究卡。',
+    };
+  } finally {
+    window.clearTimeout(timeout);
+  }
+}
+
 export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
   const defaultCardType = cardTypeOptions[0].value;
   const [query, setQuery] = useState(initialQuery);
@@ -121,6 +167,37 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
   const [isPending, startTransition] = useTransition();
   const [isBasicDataLoading, setIsBasicDataLoading] = useState(false);
   const [isEarningsSnapshotLoading, setIsEarningsSnapshotLoading] = useState(false);
+  const [isResearchBriefLoading, setIsResearchBriefLoading] = useState(false);
+  const [researchBriefError, setResearchBriefError] = useState('');
+
+  async function attachResearchBrief(card: ResearchCard) {
+    setResearchBriefError('');
+    setIsResearchBriefLoading(true);
+    const result = await fetchResearchBrief(card.llmResearchInput);
+    setIsResearchBriefLoading(false);
+
+    if (result.error) {
+      setResearchBriefError(result.error);
+    }
+
+    if (!result.brief) {
+      return;
+    }
+
+    setGenerated((current) => {
+      if (!current || current.card.slug !== card.slug) {
+        return current;
+      }
+
+      return {
+        ...current,
+        card: {
+          ...current.card,
+          researchBrief: result.brief ?? undefined,
+        },
+      };
+    });
+  }
 
   async function handleCandidateSelect(candidate: SecurityRecord) {
     const candidateInput = buildCandidateInput(candidate);
@@ -128,6 +205,7 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
     setError('');
     setBasicDataError('');
     setEarningsSnapshotError('');
+    setResearchBriefError('');
     setCandidates([]);
     setBasicData(null);
     setEarningsSnapshot(null);
@@ -163,6 +241,7 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
         isFallback: result.resolution.status === 'unmatched',
       });
     });
+    void attachResearchBrief(result.card);
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -194,6 +273,7 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
     setError('');
     setBasicDataError('');
     setEarningsSnapshotError('');
+    setResearchBriefError('');
     setCandidates([]);
     setBasicData(null);
     setEarningsSnapshot(null);
@@ -228,6 +308,7 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
         isFallback: result.resolution.status === 'unmatched',
       });
     });
+    void attachResearchBrief(result.card);
   }
 
   return (
@@ -302,6 +383,7 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
               setError('');
               setBasicDataError('');
               setEarningsSnapshotError('');
+              setResearchBriefError('');
               setCandidates([]);
               setBasicData(null);
               setEarningsSnapshot(null);
@@ -344,6 +426,8 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
           rawInput={query}
           basicData={basicData}
           earningsSnapshot={earningsSnapshot}
+          researchBriefLoading={isResearchBriefLoading}
+          researchBriefError={researchBriefError}
         />
       </div>
     </div>
