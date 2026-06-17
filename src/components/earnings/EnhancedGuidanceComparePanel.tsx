@@ -20,7 +20,6 @@ interface EnhancedGuidanceComparePanelProps {
   guidanceEvidence?: GlobalGuidanceEvidence[];
   warnings?: string[];
   source?: string;
-  confidence?: number;
 }
 
 type GuidancePanelStatus = 'structured' | 'evidence-only' | 'source-issue' | 'empty';
@@ -76,14 +75,6 @@ function formatMetricRange(metric: GuidanceMetricComparison) {
     metric.guidanceMid,
     isEpsMetric(metric.metricKey) ? 'eps' : 'money'
   );
-}
-
-function formatConfidence(confidence?: number) {
-  if (confidence === undefined) {
-    return '--';
-  }
-
-  return `${Math.round(confidence * 100)}%`;
 }
 
 function sourceLabel(source?: string) {
@@ -213,13 +204,11 @@ function QualityBadge({ quality }: { quality?: string }) {
 function GuidanceHeader({
   status,
   source,
-  confidence,
   warningCount,
   evidenceCount,
 }: {
   status: GuidancePanelStatus;
   source?: string;
-  confidence?: number;
   warningCount: number;
   evidenceCount: number;
 }) {
@@ -239,14 +228,10 @@ function GuidanceHeader({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 text-xs sm:w-[260px]">
+        <div className="grid grid-cols-3 gap-2 text-xs sm:w-[320px]">
           <div className="rounded-[8px] border border-border bg-[oklch(0.992_0.005_85)] p-2">
             <div className="text-[oklch(0.48_0.018_160)]">来源</div>
             <div className="mt-1 font-semibold text-[oklch(0.22_0.018_160)]">{source || '待确认'}</div>
-          </div>
-          <div className="rounded-[8px] border border-border bg-[oklch(0.992_0.005_85)] p-2">
-            <div className="text-[oklch(0.48_0.018_160)]">置信度</div>
-            <div className="mt-1 font-semibold text-[oklch(0.22_0.018_160)]">{formatConfidence(confidence)}</div>
           </div>
           <div className="rounded-[8px] border border-border bg-[oklch(0.992_0.005_85)] p-2">
             <div className="text-[oklch(0.48_0.018_160)]">证据</div>
@@ -376,11 +361,6 @@ function EvidenceCard({ item }: { item: GlobalGuidanceEvidence }) {
             {item.documentType && (
               <span className="rounded-full border border-border bg-[oklch(0.992_0.005_85)] px-2 py-0.5">
                 {item.documentType}
-              </span>
-            )}
-            {item.confidence !== undefined && (
-              <span className="rounded-full border border-border bg-[oklch(0.992_0.005_85)] px-2 py-0.5">
-                证据置信度 {formatConfidence(item.confidence)}
               </span>
             )}
           </div>
@@ -546,7 +526,6 @@ export function EnhancedGuidanceComparePanel({
   guidanceEvidence,
   warnings,
   source,
-  confidence,
 }: EnhancedGuidanceComparePanelProps) {
   const evidence = guidanceEvidence ?? [];
   const uniqueWarnings = useMemo(() => uniqueList(warnings), [warnings]);
@@ -557,7 +536,6 @@ export function EnhancedGuidanceComparePanel({
       <GuidanceHeader
         status={status}
         source={source}
-        confidence={confidence}
         warningCount={uniqueWarnings.length}
         evidenceCount={evidence.length}
       />

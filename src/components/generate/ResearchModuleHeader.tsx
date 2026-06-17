@@ -10,18 +10,7 @@ interface ResearchModuleHeaderProps {
   source?: string;
   generatedBy?: string;
   updatedAt?: string;
-  confidence?: number;
   diagnostics?: string[];
-}
-
-function formatConfidence(confidence?: number) {
-  if (confidence === undefined || confidence === null || Number.isNaN(confidence)) {
-    return undefined;
-  }
-
-  const normalized = confidence <= 1 ? confidence * 100 : confidence;
-
-  return `${Math.round(normalized)}%`;
 }
 
 export function ResearchModuleHeader({
@@ -31,10 +20,8 @@ export function ResearchModuleHeader({
   source,
   generatedBy,
   updatedAt,
-  confidence,
   diagnostics = [],
 }: ResearchModuleHeaderProps) {
-  const confidenceLabel = formatConfidence(confidence);
   const visibleDiagnostics = diagnostics.filter(Boolean).slice(0, 8);
 
   return (
@@ -72,11 +59,6 @@ export function ResearchModuleHeader({
             <span className="inline-flex items-center gap-1 rounded-full border border-border bg-white px-2.5 py-1 text-xs font-medium text-[oklch(0.42_0.018_160)]">
               <Clock3 className="h-3.5 w-3.5" aria-hidden="true" />
               {updatedAt}
-            </span>
-          )}
-          {confidenceLabel && (
-            <span className="rounded-full border border-border bg-white px-2.5 py-1 text-xs font-medium text-[oklch(0.42_0.018_160)]">
-              置信度 {confidenceLabel}
             </span>
           )}
         </div>

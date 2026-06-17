@@ -3,21 +3,21 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "Moki Market｜AI 时代中文美股用户的信息焦虑解读器",
+    default: "Moki Market｜Executive Investment View",
     template: "%s｜Moki Market",
   },
-  description: "把 X 舆情、英文新闻、财报线索、AI 产业链变化和市场波动，整理成可读、可追踪、可复盘的研究卡。",
+  description: "把财报、公司指引、产业链线索、市场叙事和证据来源整理成可追踪、可复盘的研究报告视图。",
   openGraph: {
-    title: "Moki Market｜AI 时代中文美股用户的信息焦虑解读器",
-    description: "把 X 舆情、英文新闻、财报线索、AI 产业链变化和市场波动，整理成可读、可追踪、可复盘的研究卡。",
+    title: "Moki Market｜Executive Investment View",
+    description: "把财报、公司指引、产业链线索、市场叙事和证据来源整理成可追踪、可复盘的研究报告视图。",
     type: "website",
     locale: "zh_CN",
     siteName: "Moki Market",
   },
   twitter: {
     card: "summary",
-    title: "Moki Market｜AI 时代中文美股用户的信息焦虑解读器",
-    description: "把 X 舆情、英文新闻、财报线索、AI 产业链变化和市场波动，整理成可读、可追踪、可复盘的研究卡。",
+    title: "Moki Market｜Executive Investment View",
+    description: "把财报、公司指引、产业链线索、市场叙事和证据来源整理成可追踪、可复盘的研究报告视图。",
   },
 };
 

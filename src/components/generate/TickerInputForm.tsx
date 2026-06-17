@@ -4,8 +4,7 @@ import { FormEvent, useState, useTransition } from 'react';
 import { ArrowRight, Loader2, RotateCcw } from 'lucide-react';
 import { SecurityCandidateList } from '@/components/security/SecurityCandidateList';
 import {
-  cardTypeOptions,
-  GenerateCardType,
+  DEFAULT_GENERATE_CARD_TYPE,
   generateRealDataResearchCard,
   mockGenerateResearchCard,
 } from '@/lib/generateResearchCard/mockGenerateResearchCard';
@@ -17,7 +16,6 @@ import { ResearchBrief } from '@/types/research-brief';
 import { ResearchCard } from '@/types/research-card';
 import { SecurityRecord } from '@/types/security';
 import { SerenityMemo } from '@/types/serenity-memo';
-import { CardTypeSelector } from './CardTypeSelector';
 import { GeneratedCardPreview } from './GeneratedCardPreview';
 
 interface TickerInputFormProps {
@@ -29,8 +27,8 @@ interface GeneratedState {
   isFallback: boolean;
 }
 
-function resolveInitialCard(initialQuery: string, cardType: GenerateCardType): GeneratedState | null {
-  const result = mockGenerateResearchCard({ rawInput: initialQuery, cardType });
+function resolveInitialCard(initialQuery: string): GeneratedState | null {
+  const result = mockGenerateResearchCard({ rawInput: initialQuery, cardType: DEFAULT_GENERATE_CARD_TYPE });
 
   if (!result.ok) {
     return null;
@@ -199,16 +197,14 @@ async function fetchSerenityMemo(input?: LLMResearchInput): Promise<{ memo: Sere
 }
 
 export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
-  const defaultCardType = cardTypeOptions[0].value;
   const [query, setQuery] = useState(initialQuery);
-  const [cardType, setCardType] = useState<GenerateCardType>(defaultCardType);
   const [error, setError] = useState('');
   const [basicDataError, setBasicDataError] = useState('');
   const [earningsSnapshotError, setEarningsSnapshotError] = useState('');
   const [candidates, setCandidates] = useState<SecurityRecord[]>([]);
   const [basicData, setBasicData] = useState<BasicCompanyData | null>(null);
   const [earningsSnapshot, setEarningsSnapshot] = useState<EarningsSnapshotData | null>(null);
-  const [generated, setGenerated] = useState<GeneratedState | null>(() => resolveInitialCard(initialQuery, defaultCardType));
+  const [generated, setGenerated] = useState<GeneratedState | null>(() => resolveInitialCard(initialQuery));
   const [isPending, startTransition] = useTransition();
   const [isBasicDataLoading, setIsBasicDataLoading] = useState(false);
   const [isEarningsSnapshotLoading, setIsEarningsSnapshotLoading] = useState(false);
@@ -304,7 +300,7 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
 
     const result = generateRealDataResearchCard({
       rawInput: candidateInput,
-      cardType,
+      cardType: DEFAULT_GENERATE_CARD_TYPE,
       selectedSecurity: candidate,
       basicData: basicDataResult.data ?? undefined,
       earningsSnapshotData: earningsSnapshotResult.data ?? undefined,
@@ -379,7 +375,7 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
 
     const result = generateRealDataResearchCard({
       rawInput: query,
-      cardType,
+      cardType: DEFAULT_GENERATE_CARD_TYPE,
       basicData: basicDataResult.data ?? undefined,
       earningsSnapshotData: earningsSnapshotResult.data ?? undefined,
     });
@@ -440,11 +436,14 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
           )}
         </div>
 
-        <div className="mb-5">
-          <div className="mb-3 text-sm font-semibold text-[oklch(0.18_0.014_160)]">
-            卡片类型
+        <div className="mb-5 rounded-[8px] border border-[var(--brand-border)] bg-[var(--brand-soft)] p-3">
+          <div className="text-xs font-semibold text-[var(--brand-ink)]">输出结构</div>
+          <div className="mt-1 text-sm font-semibold text-[oklch(0.18_0.014_160)]">
+            Executive Investment View
           </div>
-          <CardTypeSelector value={cardType} onChange={setCardType} />
+          <p className="mt-1 text-xs leading-relaxed text-[oklch(0.43_0.018_160)]">
+            固定输出执行摘要、财报与指引、买方情景和证据引用，后续将迁移到 ResearchReport schema。
+          </p>
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
@@ -460,7 +459,7 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
               </>
             ) : (
               <>
-                生成研究卡
+                生成执行视图
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </>
             )}
@@ -478,7 +477,6 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
               setBasicData(null);
               setEarningsSnapshot(null);
               setGenerated(null);
-              setCardType(defaultCardType);
             }}
             className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-[8px] border border-border bg-white px-5 text-sm font-semibold text-[oklch(0.22_0.018_160)] transition-colors hover:bg-muted"
           >

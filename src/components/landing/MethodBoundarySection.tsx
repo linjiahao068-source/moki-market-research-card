@@ -19,7 +19,7 @@ const methods = [
   },
 ];
 
-const boundaries = ['不提供投资建议', '不提供实时行情或券商交易', '不输出操作型结论', 'mock 内容不代表真实研究结论'];
+const boundaries = ['不提供投资建议', '不提供实时行情或券商交易', '不输出操作型结论', 'fallback 内容需要来源复核'];
 
 export function MethodBoundarySection() {
   return (

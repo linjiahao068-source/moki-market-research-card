@@ -12,7 +12,7 @@ export function Footer() {
             <span className="font-semibold text-[oklch(0.18_0.014_160)]">Moki Market</span>
           </div>
           <p className="text-xs leading-relaxed">
-            仅供信息整理、研究辅助和教育参考，不构成投资建议。V0.2.3 mock prototype.
+            仅供信息整理、研究辅助和教育参考，不构成投资建议。
           </p>
         </div>
         <div className="flex flex-wrap gap-3 text-xs font-medium">

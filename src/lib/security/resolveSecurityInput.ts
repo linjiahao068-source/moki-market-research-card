@@ -2,7 +2,7 @@ import { mockSecurities } from '@/data/mockSecurities';
 import { SecurityInputKind, SecurityRecord, SecurityResolution } from '@/types/security';
 import { normalizeSecurityQuery } from './normalizeSecurityQuery';
 
-// V0.2.4 mock security resolver: resolves user input against local mock securities.
+// Resolves user input against the local securities master fallback.
 // Later this pure resolver can be replaced by a real securities master data resolver.
 export function resolveSecurityInput(rawInput: string): SecurityResolution {
   const { normalizedInput, inputKind } = normalizeSecurityQuery(rawInput);

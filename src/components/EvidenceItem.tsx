@@ -27,23 +27,6 @@ export function EvidenceItem({ evidence }: EvidenceItemProps) {
           <span className="font-mono text-xs text-[oklch(0.5_0.018_160)] sm:ml-auto">
             {evidence.timestamp}
           </span>
-          <span className="flex items-center gap-1 sm:ml-1">
-            <div className="flex gap-0.5">
-              {[...Array(5)].map((_, i) => (
-                <div
-                  key={i}
-                  className={`h-1.5 w-1.5 rounded-full ${
-                    i < Math.round(evidence.confidence * 5)
-                      ? 'bg-[var(--brand-dot)]'
-                      : 'bg-border'
-                  }`}
-                />
-              ))}
-            </div>
-            <span className="font-mono text-[10px] text-[oklch(0.45_0.02_160)]">
-              {(evidence.confidence * 100).toFixed(0)}%
-            </span>
-          </span>
         </div>
         <div className="text-sm leading-relaxed text-[oklch(0.2_0.016_160)]">
           {evidence.summary}

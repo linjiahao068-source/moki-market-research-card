@@ -29,7 +29,7 @@ export function ResearchCardPreview({ card }: ResearchCardPreviewProps) {
         <div className="flex flex-wrap items-center gap-2 sm:justify-end">
           <div className="inline-flex items-center gap-2 rounded-full border border-[var(--brand-border)] bg-[var(--brand-soft)] px-2.5 py-1 text-xs text-[var(--brand-ink)]">
             <span className="h-1.5 w-1.5 rounded-full bg-[var(--brand-dot)]"></span>
-            {card.isMock ? 'Sample / Mock' : 'Research Card'}
+            {card.isMock ? 'Fallback View' : 'Executive View'}
           </div>
           <div className="rounded-full border border-border bg-muted px-2.5 py-1 font-mono text-xs text-[oklch(0.47_0.018_160)]">
             {card.updatedAt}
@@ -53,10 +53,10 @@ export function ResearchCardPreview({ card }: ResearchCardPreviewProps) {
       <div className="flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap gap-2">
           <span className="rounded-full bg-muted px-2.5 py-1 text-xs text-[oklch(0.45_0.018_160)]">
-            {card.cardType}
+            证据 {card.evidence.length} 条
           </span>
           <span className="rounded-full bg-muted px-2.5 py-1 text-xs text-[oklch(0.45_0.018_160)]">
-            热度 {card.sentiment.heatLevel}/10
+            追踪 {card.nextSteps.length} 项
           </span>
         </div>
 

@@ -22,11 +22,11 @@ interface ResearchCardProps {
 }
 
 const sections = [
-  { id: 'summary', title: '1. 一句话摘要' },
-  { id: 'sentiment', title: '2. X 舆情面' },
-  { id: 'fundamentals', title: '3. 基本面' },
-  { id: 'events', title: '4. 政策/事件' },
-  { id: 'technical', title: '5. 技术/交易面' },
+  { id: 'summary', title: '1. Executive Summary' },
+  { id: 'sentiment', title: '2. Market Narrative' },
+  { id: 'fundamentals', title: '3. Business Fundamentals' },
+  { id: 'events', title: '4. Catalysts & Events' },
+  { id: 'technical', title: '5. Technical Context' },
   { id: 'evidence', title: '6. 证据链' },
   { id: 'nextsteps', title: '7. 下一步研究' },
   { id: 'disclaimer', title: '8. 免责声明' },
@@ -68,7 +68,7 @@ export function ResearchCard({ card }: ResearchCardProps) {
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="inline-flex items-center gap-2 rounded-full border border-[var(--brand-border)] bg-[var(--brand-soft)] px-2.5 py-1 text-xs font-medium text-[var(--brand-ink)]">
                     <span className="h-1.5 w-1.5 rounded-full bg-[var(--brand-dot)]"></span>
-                    {card.isMock ? 'Sample / Mock' : 'Research Card'}
+                    {card.isMock ? 'Fallback View' : 'Executive View'}
                   </span>
                   <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-2.5 py-1 font-mono text-xs text-[oklch(0.47_0.018_160)]">
                     <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" />
@@ -98,9 +98,6 @@ export function ResearchCard({ card }: ResearchCardProps) {
                     </div>
                   </div>
 
-                  <div className="w-fit rounded-full border border-border bg-muted px-3 py-1 font-mono text-xs text-[oklch(0.47_0.018_160)]">
-                    {card.cardType}
-                  </div>
                 </div>
 
                 <div className="mb-5 border-l-2 border-[var(--brand-dot)] pl-3 sm:pl-4">
@@ -174,7 +171,7 @@ export function ResearchCard({ card }: ResearchCardProps) {
               </div>
             </section>
 
-            <ResearchCardSection id="summary" title="1. 一句话摘要" variant="elevated">
+            <ResearchCardSection id="summary" title="1. Executive Summary" variant="elevated">
               <div className="rounded-[8px] border border-[var(--brand-border)] bg-[var(--brand-soft)] p-4">
                 <p className="text-sm leading-relaxed text-[oklch(0.2_0.018_160)] sm:text-base">
                   {card.summary.oneLine}
@@ -182,13 +179,13 @@ export function ResearchCard({ card }: ResearchCardProps) {
               </div>
             </ResearchCardSection>
 
-            <ResearchCardSection id="sentiment" title="2. X 舆情面">
+            <ResearchCardSection id="sentiment" title="2. Market Narrative">
               <div className="space-y-5">
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                   <div className="rounded-[8px] border border-border bg-[oklch(0.992_0.005_85)] p-4">
                     <div className="mb-2 flex items-center gap-2 text-[11px] font-semibold text-[oklch(0.48_0.018_160)]">
                       <Activity className="h-3.5 w-3.5" aria-hidden="true" />
-                      热度
+                      关注度
                     </div>
                     <div className="text-2xl font-bold tracking-tight text-[var(--brand-ink)]">
                       {card.sentiment.heatLevel}

@@ -251,7 +251,7 @@ export function GeneratedCardPreview({
   if (!card) {
     return (
       <div className="rounded-[8px] border border-dashed border-border bg-white p-5 text-sm leading-relaxed text-[oklch(0.48_0.018_160)]">
-        输入股票代码、Ticker或中文名并点击生成后，这里会显示研究卡预览。
+        输入股票代码、Ticker 或中文名并点击生成后，这里会显示 Executive Investment View。
       </div>
     );
   }
@@ -264,7 +264,6 @@ export function GeneratedCardPreview({
   const activeEarningsSnapshot = earningsSnapshot ?? card.enhancedEarnings ?? null;
   const activeGuidanceMeta = activeEarningsSnapshot as (EarningsSnapshotData & {
     guidanceSource?: string;
-    guidanceConfidence?: number;
     dataQualityScore?: number;
   }) | null;
   const realDataAvailable = Boolean(
@@ -283,7 +282,6 @@ export function GeneratedCardPreview({
     guidanceEvidence.length > 0 ? 'guidance evidence' : undefined,
   ]).join(' + ') || dataModeLabel);
   const updatedAt = shortDate(activeEarningsSnapshot?.fetchedAt ?? basicData?.fetchedAt ?? card.generatedAt ?? card.updatedAt);
-  const guidanceConfidence = card.guidanceData?.confidence ?? activeGuidanceMeta?.guidanceConfidence;
   const hasResearchBrief = Boolean(card.researchBrief || researchBriefLoading || researchBriefError);
   const hasSerenityMemo = Boolean(card.serenityMemo || serenityMemoLoading || serenityMemoError);
   const scenarioDiagnostics = scenarios?.warnings ?? [];
@@ -303,10 +301,7 @@ export function GeneratedCardPreview({
               <div className="mb-2 flex flex-wrap items-center gap-2">
                 <span className="inline-flex items-center gap-2 rounded-full border border-[var(--brand-border)] bg-[var(--brand-soft)] px-3 py-1 text-xs font-semibold text-[var(--brand-ink)]">
                   <span className="h-1.5 w-1.5 rounded-full bg-[var(--brand-dot)]" />
-                  {isFallback ? 'Fallback Preview' : card.isMock ? 'Fallback Preview' : 'Research Card'}
-                </span>
-                <span className="rounded-full border border-border bg-white px-2.5 py-1 font-mono text-xs text-[oklch(0.45_0.018_160)]">
-                  {card.cardType}
+                  {isFallback ? 'Fallback View' : card.isMock ? 'Fallback View' : 'Executive Investment View'}
                 </span>
                 <span className="rounded-full border border-border bg-white px-2.5 py-1 text-xs font-medium text-[oklch(0.45_0.018_160)]">
                   数据：{dataModeLabel}
@@ -341,7 +336,7 @@ export function GeneratedCardPreview({
 
         {isFallback && (
           <p className="mb-4 rounded-[8px] border border-[var(--brand-border)] bg-[var(--brand-soft)] p-3 text-xs leading-relaxed text-[var(--brand-ink)]">
-            当前输入未匹配到证券主数据，已生成通用研究卡雏形。
+            当前输入未匹配到证券主数据，已生成待补齐的通用研究视图。
           </p>
         )}
 
@@ -418,7 +413,6 @@ export function GeneratedCardPreview({
               source={activeEarningsSnapshot?.provider ?? primarySource}
               generatedBy="数据层"
               updatedAt={updatedAt}
-              confidence={dataQualityScore}
               diagnostics={activeEarningsSnapshot?.warnings ?? []}
             />
             {activeEarningsSnapshot ? (
@@ -439,7 +433,6 @@ export function GeneratedCardPreview({
               source={card.guidanceData?.source ?? activeGuidanceMeta?.guidanceSource ?? activeEarningsSnapshot?.provider ?? primarySource}
               generatedBy={guidanceEvidence.length > 0 ? '文本抽取' : '数据层'}
               updatedAt={updatedAt}
-              confidence={guidanceConfidence}
               diagnostics={guidanceWarnings}
             />
             {activeEarningsSnapshot ? (
@@ -448,7 +441,6 @@ export function GeneratedCardPreview({
                 guidanceEvidence={guidanceEvidence}
                 warnings={guidanceWarnings}
                 source={card.guidanceData?.source ?? activeGuidanceMeta?.guidanceSource}
-                confidence={guidanceConfidence}
               />
             ) : (
               <EmptyModuleState

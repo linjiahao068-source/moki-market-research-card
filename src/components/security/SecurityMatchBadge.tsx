@@ -12,7 +12,7 @@ const badgeStyles = {
 
 const badgeLabels = {
   matched: '已匹配主数据',
-  unmatched: '未匹配，使用通用 mock 卡',
+  unmatched: '未匹配，使用通用视图',
   ambiguous: '多个候选，请选择',
 };
 

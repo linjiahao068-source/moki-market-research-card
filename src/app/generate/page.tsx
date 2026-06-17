@@ -4,15 +4,15 @@ import { ChevronLeft } from 'lucide-react';
 import { TickerInputForm } from '@/components/generate/TickerInputForm';
 
 export const metadata: Metadata = {
-  title: '生成 Moki Market 研究卡｜Moki Market',
-  description: 'V0.2.4 mock security resolver，用于验证股票识别和研究卡生成流程，不构成投资建议。',
+  title: 'Executive Investment View｜Moki Market',
+  description: '输入股票代码、Ticker 或中文名，生成面向买方研究流程的执行视图。',
   openGraph: {
-    title: '生成 Moki Market 研究卡｜Moki Market',
-    description: '输入股票代码、Ticker 或中文名，选择卡片类型，生成本地 mock 研究卡预览。',
+    title: 'Executive Investment View｜Moki Market',
+    description: '输入股票代码、Ticker 或中文名，生成面向买方研究流程的执行视图。',
   },
   twitter: {
-    title: '生成 Moki Market 研究卡｜Moki Market',
-    description: '输入股票代码、Ticker 或中文名，选择卡片类型，生成本地 mock 研究卡预览。',
+    title: 'Executive Investment View｜Moki Market',
+    description: '输入股票代码、Ticker 或中文名，生成面向买方研究流程的执行视图。',
   },
 };
 
@@ -39,15 +39,27 @@ export default async function GeneratePage({ searchParams }: GeneratePageProps) 
         </Link>
 
         <section className="mb-5 rounded-[8px] border border-border bg-white p-5 shadow-[0_12px_40px_-32px_rgba(0,0,0,0.28)] sm:p-6">
-          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[var(--brand-border)] bg-[var(--brand-soft)] px-3 py-1 text-xs font-semibold text-[var(--brand-ink)]">
-            V0.2.4 mock security resolver
+          <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(300px,0.78fr)] lg:items-end">
+            <div className="min-w-0">
+              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[var(--brand-border)] bg-[var(--brand-soft)] px-3 py-1 text-xs font-semibold text-[var(--brand-ink)]">
+                v0.3.7 Report Pivot
+              </div>
+              <h1 className="mb-3 text-3xl font-bold leading-tight text-[oklch(0.16_0.014_160)] sm:text-4xl">
+                Executive Investment View
+              </h1>
+              <p className="max-w-3xl text-sm leading-relaxed text-[oklch(0.43_0.018_160)] sm:text-base">
+                输入股票代码 / Ticker / 中文名，生成围绕财报、公司指引、买方情景和证据引用组织的研究报告占位结构。
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              {['Executive Summary', 'Earnings & Guidance', 'Scenario Map', 'Evidence References'].map((item) => (
+                <div key={item} className="rounded-[8px] border border-border bg-[oklch(0.992_0.005_85)] px-3 py-2 font-semibold text-[oklch(0.24_0.016_160)]">
+                  {item}
+                </div>
+              ))}
+            </div>
           </div>
-          <h1 className="mb-3 text-3xl font-bold leading-tight text-[oklch(0.16_0.014_160)] sm:text-4xl">
-            生成 Moki Market 研究卡
-          </h1>
-          <p className="max-w-3xl text-sm leading-relaxed text-[oklch(0.43_0.018_160)] sm:text-base">
-            输入股票代码 / Ticker / 中文名。当前为 V0.2.4 mock security resolver，用于验证股票识别和研究卡生成流程，不构成投资建议。
-          </p>
         </section>
 
         <TickerInputForm initialQuery={initialQuery} />
