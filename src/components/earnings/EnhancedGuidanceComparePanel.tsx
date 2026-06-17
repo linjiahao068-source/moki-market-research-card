@@ -1,10 +1,19 @@
 'use client';
 
-import { useState } from 'react';
-import { CheckCircle, AlertTriangle, FileText, ExternalLink } from 'lucide-react';
-import { GuidanceMetricComparison } from '@/types/earnings';
+import { useMemo, useState } from 'react';
+import {
+  AlertTriangle,
+  CheckCircle2,
+  ChevronDown,
+  ExternalLink,
+  FileSearch,
+  FileText,
+  Info,
+  ShieldCheck,
+} from 'lucide-react';
+import { GuidanceMetricComparison, GuidanceMetricKey } from '@/types/earnings';
 import { GlobalGuidanceEvidence } from '@/types/global-stock-data';
-import { formatMoneyCompact } from '@/lib/earnings/formatEarningsValue';
+import { formatEps, formatGuidanceRange, formatMoneyCompact } from '@/lib/earnings/formatEarningsValue';
 
 interface EnhancedGuidanceComparePanelProps {
   guidance: GuidanceMetricComparison[];
@@ -14,292 +23,555 @@ interface EnhancedGuidanceComparePanelProps {
   confidence?: number;
 }
 
-/**
- * 质量徽章组件
- */
+type GuidancePanelStatus = 'structured' | 'evidence-only' | 'source-issue' | 'empty';
+
+const metricLabels: Record<GuidanceMetricKey, string> = {
+  nextQuarterRevenue: '下一季度收入',
+  nextQuarterEps: '下一季度 EPS',
+  fullYearRevenue: '全年收入',
+  fullYearEps: '全年 EPS',
+};
+
+const metricOrder: GuidanceMetricKey[] = [
+  'nextQuarterRevenue',
+  'nextQuarterEps',
+  'fullYearRevenue',
+  'fullYearEps',
+];
+
+const qualityLabels: Record<string, string> = {
+  verified: '已验证',
+  estimated: '估算',
+  extracted: '文本抽取',
+  fallback: '回退',
+  missing: '缺失',
+};
+
+const sourceLabels: Record<string, string> = {
+  'sec-edgar': 'SEC EDGAR',
+  yahoo: 'Yahoo',
+  fmp: 'FMP',
+  eastmoney: '东方财富',
+  mock: 'Fallback',
+  manual: 'Manual',
+  extracted: 'Extracted',
+};
+
+function uniqueList(items: string[] = []) {
+  return Array.from(new Set(items.filter(Boolean)));
+}
+
+function isEpsMetric(metricKey: GuidanceMetricKey) {
+  return metricKey.toLowerCase().includes('eps');
+}
+
+function formatMetricValue(value: number | undefined, metricKey: GuidanceMetricKey) {
+  return isEpsMetric(metricKey) ? formatEps(value) : formatMoneyCompact(value, 'USD');
+}
+
+function formatMetricRange(metric: GuidanceMetricComparison) {
+  return formatGuidanceRange(
+    metric.guidanceLow,
+    metric.guidanceHigh,
+    metric.guidanceMid,
+    isEpsMetric(metric.metricKey) ? 'eps' : 'money'
+  );
+}
+
+function formatConfidence(confidence?: number) {
+  if (confidence === undefined) {
+    return '--';
+  }
+
+  return `${Math.round(confidence * 100)}%`;
+}
+
+function sourceLabel(source?: string) {
+  if (!source) {
+    return '来源待确认';
+  }
+
+  return sourceLabels[source] ?? source;
+}
+
+function evidenceTypeLabel(type?: GlobalGuidanceEvidence['evidenceType']) {
+  if (type === 'sec-filing') {
+    return 'SEC 文件';
+  }
+
+  if (type === 'news') {
+    return '新闻线索';
+  }
+
+  if (type === 'analyst-estimate') {
+    return '外部预期';
+  }
+
+  if (type === 'transcript') {
+    return '会议纪要';
+  }
+
+  return '线索';
+}
+
+function isSourceIssue(warning: string) {
+  return /(failed|unavailable|not configured|request|fetch|skipped|timeout|不可用|失败|未配置)/i.test(warning);
+}
+
+function getPanelStatus({
+  guidance,
+  evidence,
+  warnings,
+}: {
+  guidance: GuidanceMetricComparison[];
+  evidence: GlobalGuidanceEvidence[];
+  warnings: string[];
+}): GuidancePanelStatus {
+  if (guidance.length > 0) {
+    return 'structured';
+  }
+
+  if (evidence.length > 0) {
+    return 'evidence-only';
+  }
+
+  if (warnings.some(isSourceIssue)) {
+    return 'source-issue';
+  }
+
+  return 'empty';
+}
+
+function statusCopy(status: GuidancePanelStatus) {
+  if (status === 'structured') {
+    return {
+      eyebrow: '已结构化',
+      title: '公司指引',
+      description: '已从公开来源抽取可展示的结构化指引，并保留原始证据链接。',
+    };
+  }
+
+  if (status === 'evidence-only') {
+    return {
+      eyebrow: '发现证据',
+      title: '公司指引',
+      description: '已找到指引相关原文或来源，但当前只适合先展示证据，暂不强行生成指标。',
+    };
+  }
+
+  if (status === 'source-issue') {
+    return {
+      eyebrow: '数据源诊断',
+      title: '公司指引',
+      description: '本次查询有数据源未成功返回，可查看诊断信息判断是否需要稍后重试。',
+    };
+  }
+
+  return {
+    eyebrow: '已检查',
+    title: '公司指引',
+    description: '本次查询未找到可展示的公开指引数据或证据。',
+  };
+}
+
+function StatusIcon({ status }: { status: GuidancePanelStatus }) {
+  if (status === 'structured') {
+    return <CheckCircle2 className="h-5 w-5 text-[oklch(0.52_0.13_145)]" aria-hidden="true" />;
+  }
+
+  if (status === 'evidence-only') {
+    return <FileSearch className="h-5 w-5 text-[var(--brand-ink)]" aria-hidden="true" />;
+  }
+
+  if (status === 'source-issue') {
+    return <AlertTriangle className="h-5 w-5 text-[var(--risk-ink)]" aria-hidden="true" />;
+  }
+
+  return <FileText className="h-5 w-5 text-[oklch(0.55_0.018_160)]" aria-hidden="true" />;
+}
+
 function QualityBadge({ quality }: { quality?: string }) {
-  const colors = {
-    verified: 'bg-green-100 text-green-700 border-green-200',
-    estimated: 'bg-blue-100 text-blue-700 border-blue-200',
-    extracted: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-    fallback: 'bg-gray-100 text-gray-700 border-gray-200',
-    missing: 'bg-red-100 text-red-700 border-red-200'
-  };
-
-  const labels = {
-    verified: '已验证',
-    estimated: '预估',
-    extracted: '文本提取',
-    fallback: '回退',
-    missing: '缺失'
-  };
-
-  const qualityKey = (quality || 'missing') as keyof typeof colors;
+  const qualityKey = quality ?? 'missing';
+  const className =
+    qualityKey === 'verified'
+      ? 'border-[oklch(0.82_0.08_145)] bg-[oklch(0.96_0.035_145)] text-[oklch(0.34_0.09_145)]'
+      : qualityKey === 'extracted'
+        ? 'border-[var(--brand-border)] bg-[var(--brand-soft)] text-[var(--brand-ink)]'
+        : qualityKey === 'estimated'
+          ? 'border-[oklch(0.82_0.055_230)] bg-[oklch(0.97_0.025_230)] text-[oklch(0.38_0.07_230)]'
+          : qualityKey === 'fallback'
+            ? 'border-border bg-muted text-muted-foreground'
+            : 'border-[var(--risk-border)] bg-[var(--risk-soft)] text-[var(--risk-ink)]';
 
   return (
-    <span className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${colors[qualityKey]}`}>
-      {labels[qualityKey]}
+    <span className={`inline-flex w-fit items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold ${className}`}>
+      {qualityLabels[qualityKey] ?? qualityKey}
     </span>
   );
 }
 
-/**
- * 指引数据头部组件
- */
 function GuidanceHeader({
+  status,
   source,
   confidence,
-  warningCount
+  warningCount,
+  evidenceCount,
 }: {
+  status: GuidancePanelStatus;
   source?: string;
   confidence?: number;
   warningCount: number;
+  evidenceCount: number;
 }) {
+  const copy = statusCopy(status);
+
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-white p-4">
-      <div className="flex items-center gap-3">
-        {confidence !== undefined && confidence >= 0.7 ? (
-          <CheckCircle className="h-5 w-5 text-green-500" />
-        ) : confidence !== undefined && confidence >= 0.4 ? (
-          <AlertTriangle className="h-5 w-5 text-yellow-500" />
-        ) : (
-          <FileText className="h-5 w-5 text-gray-400" />
-        )}
-        <div>
-          <h3 className="text-sm font-semibold text-gray-800">公司指引</h3>
-          <p className="text-xs text-gray-500">
-            {source || '数据来源未知'}
-            {confidence !== undefined && ` · 置信度 ${(confidence * 100).toFixed(0)}%`}
-          </p>
+    <div className="rounded-[8px] border border-border bg-white p-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex min-w-0 items-start gap-3">
+          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[8px] border border-[var(--brand-border)] bg-[var(--brand-soft)]">
+            <StatusIcon status={status} />
+          </div>
+          <div className="min-w-0">
+            <div className="mb-1 text-xs font-semibold text-[var(--brand-ink)]">{copy.eyebrow}</div>
+            <h3 className="text-lg font-bold leading-tight text-[oklch(0.16_0.014_160)]">{copy.title}</h3>
+            <p className="mt-1 text-sm leading-relaxed text-[oklch(0.43_0.018_160)]">{copy.description}</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 text-xs sm:w-[260px]">
+          <div className="rounded-[8px] border border-border bg-[oklch(0.992_0.005_85)] p-2">
+            <div className="text-[oklch(0.48_0.018_160)]">来源</div>
+            <div className="mt-1 font-semibold text-[oklch(0.22_0.018_160)]">{source || '待确认'}</div>
+          </div>
+          <div className="rounded-[8px] border border-border bg-[oklch(0.992_0.005_85)] p-2">
+            <div className="text-[oklch(0.48_0.018_160)]">置信度</div>
+            <div className="mt-1 font-semibold text-[oklch(0.22_0.018_160)]">{formatConfidence(confidence)}</div>
+          </div>
+          <div className="rounded-[8px] border border-border bg-[oklch(0.992_0.005_85)] p-2">
+            <div className="text-[oklch(0.48_0.018_160)]">证据</div>
+            <div className="mt-1 font-semibold text-[oklch(0.22_0.018_160)]">{evidenceCount} 条</div>
+          </div>
+          <div className="rounded-[8px] border border-border bg-[oklch(0.992_0.005_85)] p-2">
+            <div className="text-[oklch(0.48_0.018_160)]">诊断</div>
+            <div className="mt-1 font-semibold text-[oklch(0.22_0.018_160)]">{warningCount} 条</div>
+          </div>
         </div>
       </div>
-      {warningCount > 0 && (
-        <div className="flex items-center gap-1 rounded-full bg-yellow-50 px-3 py-1 text-xs text-yellow-700">
-          <AlertTriangle className="h-3 w-3" />
-          <span>{warningCount}个提醒</span>
+    </div>
+  );
+}
+
+function GuidanceMetricCard({ metric }: { metric: GuidanceMetricComparison }) {
+  return (
+    <div className="rounded-[8px] border border-border bg-white p-3">
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div>
+          <div className="text-sm font-bold text-[oklch(0.18_0.014_160)]">
+            {metric.label || metricLabels[metric.metricKey]}
+          </div>
+          {metric.periodLabel && (
+            <div className="mt-1 text-xs text-[oklch(0.48_0.018_160)]">{metric.periodLabel}</div>
+          )}
+        </div>
+        <QualityBadge quality={metric.quality} />
+      </div>
+
+      <div className="grid gap-2 text-sm sm:grid-cols-3">
+        <div className="rounded-[8px] bg-[oklch(0.992_0.005_85)] p-2">
+          <div className="text-xs text-[oklch(0.48_0.018_160)]">公司指引</div>
+          <div className="mt-1 font-mono font-semibold text-[oklch(0.18_0.014_160)]">
+            {formatMetricRange(metric)}
+          </div>
+        </div>
+        <div className="rounded-[8px] bg-[oklch(0.992_0.005_85)] p-2">
+          <div className="text-xs text-[oklch(0.48_0.018_160)]">中点</div>
+          <div className="mt-1 font-mono font-semibold text-[oklch(0.18_0.014_160)]">
+            {formatMetricValue(metric.guidanceMid, metric.metricKey)}
+          </div>
+        </div>
+        <div className="rounded-[8px] bg-[oklch(0.992_0.005_85)] p-2">
+          <div className="text-xs text-[oklch(0.48_0.018_160)]">共识</div>
+          <div className="mt-1 font-mono font-semibold text-[oklch(0.18_0.014_160)]">
+            {formatMetricValue(metric.consensus, metric.metricKey)}
+          </div>
+        </div>
+      </div>
+
+      {metric.evidenceText && (
+        <div className="mt-3 rounded-[8px] border border-[var(--brand-border)] bg-[var(--brand-soft)] p-3 text-xs leading-relaxed text-[var(--brand-ink)]">
+          {metric.evidenceText}
+          {metric.sourceUrl && (
+            <a
+              href={metric.sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="ml-2 inline-flex items-center gap-1 font-semibold hover:underline"
+            >
+              来源
+              <ExternalLink className="h-3 w-3" aria-hidden="true" />
+            </a>
+          )}
         </div>
       )}
     </div>
   );
 }
 
-/**
- * 指引指标表格组件
- */
 function GuidanceMetricsTable({ guidance }: { guidance: GuidanceMetricComparison[] }) {
   if (guidance.length === 0) {
     return null;
   }
 
+  const orderedGuidance = [...guidance].sort(
+    (a, b) => metricOrder.indexOf(a.metricKey) - metricOrder.indexOf(b.metricKey)
+  );
+
   return (
-    <div className="overflow-x-auto rounded-lg border border-border bg-white">
-      <table className="min-w-[500px] w-full border-collapse text-left">
-        <thead className="bg-[oklch(0.992_0.005_85)] text-xs font-semibold text-[oklch(0.45_0.018_160)]">
-          <tr>
-            <th className="px-3 py-2">指标</th>
-            <th className="px-3 py-2 text-right">指引下限</th>
-            <th className="px-3 py-2 text-right">指引中点</th>
-            <th className="px-3 py-2 text-right">指引上限</th>
-            <th className="px-3 py-2 text-right">市场共识</th>
-            <th className="px-3 py-2">质量</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border">
-          {guidance.map((metric) => (
-            <tr key={metric.metricKey} className="text-[oklch(0.2_0.016_160)]">
-              <td className="whitespace-nowrap px-3 py-3 text-sm font-semibold">
-                {metric.label}
-              </td>
-              <td className="whitespace-nowrap px-3 py-3 text-right font-mono text-sm text-gray-600">
-                {metric.guidanceLow !== undefined ? (
-                  metric.label.toLowerCase().includes('eps') ?
-                    `${metric.guidanceLow.toFixed(2)}` :
-                    formatMoneyCompact(metric.guidanceLow, 'USD')
-                ) : '—'}
-              </td>
-              <td className="whitespace-nowrap px-3 py-3 text-right font-mono text-sm font-semibold">
-                {metric.guidanceMid !== undefined ? (
-                  metric.label.toLowerCase().includes('eps') ?
-                    `${metric.guidanceMid.toFixed(2)}` :
-                    formatMoneyCompact(metric.guidanceMid, 'USD')
-                ) : '—'}
-              </td>
-              <td className="whitespace-nowrap px-3 py-3 text-right font-mono text-sm text-gray-600">
-                {metric.guidanceHigh !== undefined ? (
-                  metric.label.toLowerCase().includes('eps') ?
-                    `${metric.guidanceHigh.toFixed(2)}` :
-                    formatMoneyCompact(metric.guidanceHigh, 'USD')
-                ) : '—'}
-              </td>
-              <td className="whitespace-nowrap px-3 py-3 text-right font-mono text-sm text-blue-600">
-                {metric.consensus !== undefined ? (
-                  metric.label.toLowerCase().includes('eps') ?
-                    `${metric.consensus.toFixed(2)}` :
-                    formatMoneyCompact(metric.consensus, 'USD')
-                ) : '—'}
-              </td>
-              <td className="whitespace-nowrap px-3 py-3 text-xs">
-                <QualityBadge quality={metric.quality} />
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <section className="space-y-3">
+      <div className="flex items-center justify-between gap-3">
+        <h4 className="text-sm font-bold text-[oklch(0.18_0.014_160)]">结构化指引</h4>
+        <span className="rounded-full border border-[var(--brand-border)] bg-[var(--brand-soft)] px-2.5 py-1 text-xs font-semibold text-[var(--brand-ink)]">
+          {orderedGuidance.length} 项
+        </span>
+      </div>
+
+      <div className="grid gap-3 lg:grid-cols-2">
+        {orderedGuidance.map((metric) => (
+          <GuidanceMetricCard key={`${metric.metricKey}-${metric.periodLabel ?? 'period'}`} metric={metric} />
+        ))}
+      </div>
+    </section>
   );
 }
 
-/**
- * 指引证据展示组件
- */
-function GuidanceEvidenceSection({ evidence }: { evidence?: GlobalGuidanceEvidence[] }) {
-  if (!evidence || evidence.length === 0) {
-    return null;
-  }
-
+function EvidenceCard({ item }: { item: GlobalGuidanceEvidence }) {
   return (
-    <div className="rounded-lg border border-border bg-white p-4">
-      <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-gray-700">
-        <FileText className="h-4 w-4" />
-        指引证据来源
-      </h4>
-      <div className="space-y-2">
-        {evidence.slice(0, 3).map((item, index) => (
-          <div key={index} className="flex items-start gap-3 rounded-md border border-gray-100 bg-gray-50 p-3">
-            <div className="flex-1">
-              {item.snippet && (
-                <p className="text-sm text-gray-700">{item.snippet}</p>
-              )}
-              <div className="mt-1 flex items-center gap-2 text-xs text-gray-500">
-                {item.source && <span className="rounded-full bg-white px-2 py-0.5">{item.source}</span>}
-                {item.publishedAt && <span>{item.publishedAt}</span>}
-                {item.url && (
-                  <a
-                    href={item.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-blue-600 hover:underline"
-                  >
-                    <ExternalLink className="h-3 w-3" />
-                    查看原文
-                  </a>
-                )}
-              </div>
-            </div>
+    <div className="rounded-[8px] border border-border bg-white p-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h5 className="text-sm font-bold leading-tight text-[oklch(0.18_0.014_160)]">
+              {item.title || 'Guidance evidence'}
+            </h5>
+            {item.extracted && (
+              <span className="inline-flex w-fit items-center gap-1 rounded-full border border-[var(--brand-border)] bg-[var(--brand-soft)] px-2 py-0.5 text-[11px] font-semibold text-[var(--brand-ink)]">
+                <ShieldCheck className="h-3 w-3" aria-hidden="true" />
+                已抽取
+              </span>
+            )}
           </div>
-        ))}
-        {evidence.length > 3 && (
-          <p className="text-xs text-gray-500">还有 {evidence.length - 3} 条来源...</p>
+          <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-[oklch(0.48_0.018_160)]">
+            <span className="rounded-full border border-border bg-[oklch(0.992_0.005_85)] px-2 py-0.5">
+              {sourceLabel(item.source)}
+            </span>
+            <span className="rounded-full border border-border bg-[oklch(0.992_0.005_85)] px-2 py-0.5">
+              {evidenceTypeLabel(item.evidenceType)}
+            </span>
+            {item.publishedAt && (
+              <span className="rounded-full border border-border bg-[oklch(0.992_0.005_85)] px-2 py-0.5">
+                {item.publishedAt}
+              </span>
+            )}
+            {item.documentType && (
+              <span className="rounded-full border border-border bg-[oklch(0.992_0.005_85)] px-2 py-0.5">
+                {item.documentType}
+              </span>
+            )}
+            {item.confidence !== undefined && (
+              <span className="rounded-full border border-border bg-[oklch(0.992_0.005_85)] px-2 py-0.5">
+                证据置信度 {formatConfidence(item.confidence)}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {item.url && (
+          <a
+            href={item.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex w-fit flex-shrink-0 items-center gap-1 rounded-full border border-[var(--brand-border)] bg-[var(--brand-soft)] px-3 py-1 text-xs font-semibold text-[var(--brand-ink)] hover:bg-[var(--brand-soft-strong)]"
+          >
+            原文
+            <ExternalLink className="h-3 w-3" aria-hidden="true" />
+          </a>
         )}
       </div>
-    </div>
-  );
-}
 
-/**
- * 警告信息组件
- */
-function WarningsSection({ warnings }: { warnings?: string[] }) {
-  const [showAll, setShowAll] = useState(false);
-
-  if (!warnings || warnings.length === 0) {
-    return null;
-  }
-
-  const displayWarnings = showAll ? warnings : warnings.slice(0, 3);
-
-  return (
-    <div className="rounded-lg border border-[var(--brand-border)] bg-[var(--brand-soft)] p-3">
-      <h4 className="text-xs font-semibold text-[var(--brand-ink)]">数据提示</h4>
-      <ul className="mt-2 space-y-1">
-        {displayWarnings.map((warning, index) => (
-          <li key={index} className="text-xs leading-relaxed text-[var(--brand-ink)]">
-            • {warning}
-          </li>
-        ))}
-      </ul>
-      {warnings.length > 3 && (
-        <button
-          type="button"
-          onClick={() => setShowAll(!showAll)}
-          className="mt-2 text-xs font-semibold text-[var(--brand-ink)] hover:underline"
-        >
-          {showAll ? '收起' : `显示全部 ${warnings.length} 条提示`}
-        </button>
+      {item.snippet && (
+        <p className="mt-3 max-h-28 overflow-y-auto rounded-[8px] border border-border bg-[oklch(0.992_0.005_85)] p-3 text-xs leading-relaxed text-[oklch(0.28_0.016_160)]">
+          {item.snippet}
+        </p>
       )}
     </div>
   );
 }
 
-/**
- * 无指引数据提示组件
- */
-function NoGuidanceNotice() {
+function GuidanceEvidenceSection({ evidence }: { evidence: GlobalGuidanceEvidence[] }) {
+  const [showAll, setShowAll] = useState(false);
+
+  if (evidence.length === 0) {
+    return null;
+  }
+
+  const displayEvidence = showAll ? evidence : evidence.slice(0, 4);
+
   return (
-    <div className="rounded-lg border border-border bg-white p-6 text-center">
-      <AlertTriangle className="mx-auto mb-3 h-10 w-10 text-gray-400" />
-      <h3 className="mb-2 text-sm font-semibold text-gray-700">暂无公司指引数据</h3>
-      <p className="text-sm text-gray-500">
-        当前股票暂未找到公开的业绩指引信息
-      </p>
-      <ul className="mx-auto mt-3 max-w-md text-left text-xs text-gray-500">
-        <li>• 可以尝试查看公司最新的财报文件（8-K、10-Q）</li>
-        <li>• 关注公司业绩电话会议纪要</li>
-        <li>• 查阅公司 IR 网站公告</li>
-      </ul>
+    <section className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h4 className="flex items-center gap-2 text-sm font-bold text-[oklch(0.18_0.014_160)]">
+          <FileText className="h-4 w-4 text-[var(--brand-ink)]" aria-hidden="true" />
+          证据来源
+        </h4>
+        <span className="text-xs text-[oklch(0.48_0.018_160)]">
+          {evidence.filter((item) => item.extracted).length} 条已抽取 / {evidence.length} 条总证据
+        </span>
+      </div>
+
+      <div className="grid gap-3">
+        {displayEvidence.map((item, index) => (
+          <EvidenceCard key={item.textBlockId ?? item.url ?? `${item.title}-${index}`} item={item} />
+        ))}
+      </div>
+
+      {evidence.length > 4 && (
+        <button
+          type="button"
+          onClick={() => setShowAll((value) => !value)}
+          className="inline-flex items-center gap-1 rounded-full border border-border bg-white px-3 py-1.5 text-xs font-semibold text-[oklch(0.32_0.018_160)] hover:border-[var(--brand-border)] hover:text-[var(--brand-ink)]"
+        >
+          {showAll ? '收起证据' : `展开全部 ${evidence.length} 条证据`}
+          <ChevronDown className={`h-3 w-3 transition-transform ${showAll ? 'rotate-180' : ''}`} aria-hidden="true" />
+        </button>
+      )}
+    </section>
+  );
+}
+
+function GuidanceEmptyState({
+  status,
+  evidenceCount,
+}: {
+  status: GuidancePanelStatus;
+  evidenceCount: number;
+}) {
+  if (status === 'structured') {
+    return null;
+  }
+
+  const copy =
+    status === 'evidence-only'
+      ? {
+          icon: <FileSearch className="h-5 w-5 text-[var(--brand-ink)]" aria-hidden="true" />,
+          title: '已有指引证据，等待进一步结构化',
+          body: `本次找到 ${evidenceCount} 条来源证据。页面会先展示原文片段和链接，避免把尚未确认的文本误写成指标。`,
+        }
+      : status === 'source-issue'
+        ? {
+            icon: <AlertTriangle className="h-5 w-5 text-[var(--risk-ink)]" aria-hidden="true" />,
+            title: '部分数据源暂未返回',
+            body: '本次查询未形成可展示指标。请查看下方诊断，确认是密钥、网络还是数据源本身缺失。',
+          }
+        : {
+            icon: <Info className="h-5 w-5 text-[oklch(0.48_0.018_160)]" aria-hidden="true" />,
+            title: '暂无公开指引数据',
+            body: '已检查当前可用来源，暂未发现可展示的公司指引或证据。',
+          };
+
+  return (
+    <div className="rounded-[8px] border border-border bg-white p-4">
+      <div className="flex items-start gap-3">
+        <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[8px] border border-border bg-[oklch(0.992_0.005_85)]">
+          {copy.icon}
+        </div>
+        <div>
+          <h4 className="text-sm font-bold text-[oklch(0.18_0.014_160)]">{copy.title}</h4>
+          <p className="mt-1 text-sm leading-relaxed text-[oklch(0.43_0.018_160)]">{copy.body}</p>
+        </div>
+      </div>
     </div>
   );
 }
 
-/**
- * 增强版指引对比面板
- */
+function SourceDiagnostics({ warnings }: { warnings: string[] }) {
+  if (warnings.length === 0) {
+    return null;
+  }
+
+  const sourceIssues = warnings.filter(isSourceIssue);
+  const otherNotes = warnings.filter((warning) => !isSourceIssue(warning));
+
+  return (
+    <details className="group rounded-[8px] border border-[var(--brand-border)] bg-[var(--brand-soft)] p-3">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-xs font-semibold text-[var(--brand-ink)]">
+        <span className="flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4" aria-hidden="true" />
+          数据源诊断
+          <span className="rounded-full border border-[var(--brand-border)] bg-white px-2 py-0.5">
+            {warnings.length}
+          </span>
+        </span>
+        <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" aria-hidden="true" />
+      </summary>
+
+      <div className="mt-3 space-y-3">
+        {sourceIssues.length > 0 && (
+          <div>
+            <div className="mb-1 text-xs font-bold text-[var(--risk-ink)]">需要关注</div>
+            <ul className="space-y-1 text-xs leading-relaxed text-[var(--risk-ink)]">
+              {sourceIssues.map((warning) => (
+                <li key={warning}>- {warning}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {otherNotes.length > 0 && (
+          <div>
+            <div className="mb-1 text-xs font-bold text-[var(--brand-ink)]">其他说明</div>
+            <ul className="space-y-1 text-xs leading-relaxed text-[var(--brand-ink)]">
+              {otherNotes.map((warning) => (
+                <li key={warning}>- {warning}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    </details>
+  );
+}
+
 export function EnhancedGuidanceComparePanel({
   guidance,
   guidanceEvidence,
   warnings,
   source,
-  confidence
+  confidence,
 }: EnhancedGuidanceComparePanelProps) {
-  // 如果完全没有指引数据，显示提示
-  if (!guidance || guidance.length === 0) {
-    return (
-      <div className="space-y-4">
-        <GuidanceHeader
-          source={source}
-          confidence={confidence}
-          warningCount={warnings?.length || 0}
-        />
-        <NoGuidanceNotice />
-        {warnings && warnings.length > 0 && <WarningsSection warnings={warnings} />}
-      </div>
-    );
-  }
+  const evidence = guidanceEvidence ?? [];
+  const uniqueWarnings = useMemo(() => uniqueList(warnings), [warnings]);
+  const status = getPanelStatus({ guidance: guidance ?? [], evidence, warnings: uniqueWarnings });
 
-  // 有指引数据，正常显示
   return (
     <div className="space-y-4">
-      {/* 头部 */}
       <GuidanceHeader
+        status={status}
         source={source}
         confidence={confidence}
-        warningCount={warnings?.length || 0}
+        warningCount={uniqueWarnings.length}
+        evidenceCount={evidence.length}
       />
 
-      {/* 指标表格 */}
-      <GuidanceMetricsTable guidance={guidance} />
+      <GuidanceMetricsTable guidance={guidance ?? []} />
 
-      {/* 证据部分 */}
-      <GuidanceEvidenceSection evidence={guidanceEvidence} />
+      <GuidanceEmptyState status={status} evidenceCount={evidence.length} />
 
-      {/* 警告部分 */}
-      {warnings && warnings.length > 0 && <WarningsSection warnings={warnings} />}
+      <GuidanceEvidenceSection evidence={evidence} />
 
-      {/* 来源和免责 */}
-      <div className="rounded-lg border border-border bg-gray-50 p-3">
-        <p className="text-xs text-gray-600">
-          指引数据仅供研究参考，不构成投资建议。请结合公司公告验证。
-        </p>
+      <SourceDiagnostics warnings={uniqueWarnings} />
+
+      <div className="rounded-[8px] border border-border bg-[oklch(0.992_0.005_85)] p-3 text-xs leading-relaxed text-[oklch(0.45_0.018_160)]">
+        公司指引内容仅用于研究资料整理，请以公司公告原文和后续披露为准。
       </div>
     </div>
   );
