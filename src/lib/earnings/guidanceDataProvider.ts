@@ -59,7 +59,7 @@ export async function getGuidanceData({
 
   for (const result of results) {
     for (const item of result.data.guidanceEvidence) {
-      const key = item.url ?? `${item.source}-${item.title ?? item.snippet ?? evidenceByKey.size}`;
+      const key = item.textBlockId ?? item.url ?? `${item.source}-${item.title ?? item.snippet ?? evidenceByKey.size}`;
       evidenceByKey.set(key, item);
     }
     allWarnings.push(...result.data.warnings);

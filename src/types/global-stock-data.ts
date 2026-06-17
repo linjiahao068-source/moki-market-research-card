@@ -52,5 +52,9 @@ export interface GlobalGuidanceEvidence {
   snippet?: string;
   evidenceType?: 'news' | 'sec-filing' | 'transcript' | 'analyst-estimate' | 'unknown';
   extracted?: boolean;
+  filingAccession?: string;
+  documentType?: string;
+  confidence?: number;
+  textBlockId?: string;
   warnings?: string[];
 }
