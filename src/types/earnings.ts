@@ -1,3 +1,5 @@
+import type { DataQualityReport, EvidenceRecord, FactRecord, LLMResearchInput } from './evidence';
+
 export type EarningsMetricKey = 'revenue' | 'netIncome' | 'eps';
 
 export type MetricSource = 'sec-edgar' | 'fmp' | 'eastmoney' | 'yahoo' | 'mock' | 'manual' | 'extracted';
@@ -56,6 +58,10 @@ export interface EarningsSnapshotData {
   metrics: EarningsMetricComparison[];
   guidance: GuidanceMetricComparison[];
   guidanceEvidence?: GlobalGuidanceEvidence[];
+  researchEvidence?: EvidenceRecord[];
+  facts?: FactRecord[];
+  factQuality?: DataQualityReport;
+  llmResearchInput?: LLMResearchInput;
   sourceLinks: Array<{
     label: string;
     url: string;

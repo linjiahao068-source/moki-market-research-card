@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getBasicCompanyData } from '@/lib/dataProviders/getBasicCompanyData';
 import { getEnhancedEarningsSnapshot } from '@/lib/earnings/enhancedEarningsProvider';
 import { getGuidanceData } from '@/lib/earnings/guidanceDataProvider';
+import { buildResearchDataLayer } from '@/lib/research/factBuilder';
 import { resolveSecurityInput } from '@/lib/security/resolveSecurityInput';
 
 export async function GET(request: NextRequest) {
@@ -40,7 +41,7 @@ export async function GET(request: NextRequest) {
       security,
       basicData,
     });
-    const data = {
+    const mergedSnapshot = {
       ...snapshot,
       guidance: guidanceData.guidance.length > 0 ? guidanceData.guidance : snapshot.guidance,
       guidanceEvidence: guidanceData.guidanceEvidence.length > 0
@@ -49,6 +50,18 @@ export async function GET(request: NextRequest) {
       guidanceSource: guidanceData.source,
       guidanceConfidence: guidanceData.confidence,
       warnings: [...new Set([...snapshot.warnings, ...guidanceData.warnings])],
+    };
+    const researchDataLayer = buildResearchDataLayer({
+      ticker: security.symbol ?? mergedSnapshot.symbol ?? query,
+      basicData,
+      earningsSnapshot: mergedSnapshot,
+    });
+    const data = {
+      ...mergedSnapshot,
+      researchEvidence: researchDataLayer.evidence,
+      facts: researchDataLayer.facts,
+      factQuality: researchDataLayer.dataQuality,
+      llmResearchInput: researchDataLayer.llmInput,
     };
 
     return NextResponse.json({

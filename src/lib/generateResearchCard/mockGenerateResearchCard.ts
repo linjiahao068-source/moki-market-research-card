@@ -3,6 +3,7 @@ import type { EarningsSnapshotData, GuidanceMetricComparison } from '@/types/ear
 import type { Evidence, ResearchCard, ResearchEvent } from '@/types/research-card';
 import type { SecurityRecord, SecurityResolution } from '@/types/security';
 import { formatEps, formatMoneyCompact, formatPercent } from '@/lib/earnings/formatEarningsValue';
+import { buildResearchDataLayer } from '@/lib/research/factBuilder';
 import { getBullBaseBearScenarios } from '@/lib/scenarios/providers';
 import { resolveSecurityInput } from '@/lib/security/resolveSecurityInput';
 import { generateSerenityBundleFromRealData } from '@/lib/serenity';
@@ -577,6 +578,12 @@ export function mockGenerateResearchCard({
         earningsSnapshot: earningsSnapshotData,
       })
     : undefined;
+  const researchDataLayer = buildResearchDataLayer({
+    ticker: displaySymbol,
+    basicData,
+    earningsSnapshot: earningsSnapshotData,
+    scenarios: advancedScenarios,
+  });
   const serenityAnalysis = realDataAvailable
     ? generateSerenityBundleFromRealData({
         ticker: displaySymbol,
@@ -641,6 +648,10 @@ export function mockGenerateResearchCard({
         note: '技术/交易面仅用于理解市场背景，不构成操作建议。',
       },
       evidence: buildEvidenceChain({ slugSymbol, cardType, basicData, earningsSnapshotData }),
+      researchEvidence: researchDataLayer.evidence,
+      facts: researchDataLayer.facts,
+      factQuality: researchDataLayer.dataQuality,
+      llmResearchInput: researchDataLayer.llmInput,
       nextSteps: displayCopy.keySignals.slice(0, 3).map((signal) => ({
         task: `核查 ${signal}`,
         whyItMatters: '把 mock 研究问题转化为后续可追踪、可复盘的任务。',
