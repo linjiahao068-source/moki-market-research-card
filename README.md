@@ -1,6 +1,6 @@
 # Moki Market Research Card
 
-面向中文美股用户的静态研究卡原型。项目将舆情、新闻、财报线索、产业链变化和市场波动整理为可读、可追踪、可复盘的研究卡。
+面向中文美股用户的静态研究卡原型。项目将行情、新闻、财报线索、产业链变化和市场波动整理为可读、可追踪、可复盘的研究报告视图。
 
 本项目只提供研究辅助和教育参考，不构成投资建议。
 
@@ -10,7 +10,9 @@
 - 研究卡样例库
 - 动态研究卡详情页
 - ORCL、NVDA、TSLA 三张静态样例卡
-- 统一 `ResearchCard` 类型和模板
+- 统一 `Executive Investment View` 用户入口
+- `ResearchCard` legacy 兼容类型和模板
+- `ResearchReport` schema foundation、兼容 adapter 和静态报告数据入口
 - 桌面端和移动端响应式布局
 - 黑白灰、哑光金与红棕风险色设计系统
 
@@ -50,6 +52,7 @@ npm.cmd run build
 | 路由 | 用途 |
 | --- | --- |
 | `/` | 首页 |
+| `/generate` | Executive Investment View 生成入口 |
 | `/research-cards` | 研究卡样例库 |
 | `/research-card` | 兼容入口 |
 | `/research-card/[slug]` | 动态研究卡详情 |
@@ -58,15 +61,17 @@ npm.cmd run build
 
 ```text
 src/
-  app/                 路由、页面、metadata 和全局样式
-  components/          研究卡业务组件
-  components/ui/       通用基础组件
-  data/                静态研究卡数据
-  types/               ResearchCard 领域类型
+  app/                  路由、页面、metadata 和全局样式
+  components/           研究卡业务组件
+  components/ui/        通用基础组件
+  data/                 静态研究卡与 ResearchReport 数据入口
+  lib/research-report/  ResearchCard -> ResearchReport 兼容 adapter
+  types/                ResearchCard、ResearchReport 与证据领域类型
 docs/
   product.md
   research-card-spec.md
   style-guide.md
+  v0.4.0-research-report-schema-foundation.md
   claude-code-handoff.md
   Moki-Market-Design-UI-Spec-v1.0.pdf
 ```
@@ -79,7 +84,7 @@ docs/
 4. 不创建专属页面或专属组件。
 5. 运行 lint 和 build。
 
-新增数据后，样例库和 `research-card/[slug]` 静态路由会自动包含该研究卡。
+新增数据后，样例库和 `research-card/[slug]` 静态路由会自动包含该研究卡。`src/data/researchReports.ts` 会通过兼容 adapter 生成对应的 `ResearchReport` 入口。
 
 ## 设计系统
 
@@ -92,7 +97,7 @@ docs/
 
 ## Claude Code
 
-项目级指令位于 [`CLAUDE.md`](CLAUDE.md)。Claude Code 接手步骤和首次提示词见：
+项目级指令位于 [`CLAUDE.md`](CLAUDE.md)，Claude Code 接手步骤和首次提示词见：
 
 - [`docs/claude-code-handoff.md`](docs/claude-code-handoff.md)
 
