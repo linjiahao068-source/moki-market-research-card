@@ -16,6 +16,7 @@ import { LLMResearchInput } from '@/types/evidence';
 import { ResearchBrief } from '@/types/research-brief';
 import { ResearchCard } from '@/types/research-card';
 import { SecurityRecord } from '@/types/security';
+import { SerenityMemo } from '@/types/serenity-memo';
 import { CardTypeSelector } from './CardTypeSelector';
 import { GeneratedCardPreview } from './GeneratedCardPreview';
 
@@ -153,6 +154,50 @@ async function fetchResearchBrief(input?: LLMResearchInput): Promise<{ brief: Re
   }
 }
 
+async function fetchSerenityMemo(input?: LLMResearchInput): Promise<{ memo: SerenityMemo | null; error: string }> {
+  if (!input) {
+    return {
+      memo: null,
+      error: 'Serenity Skill Memo 缺少 facts/evidence 输入。',
+    };
+  }
+
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 135000);
+
+  try {
+    const response = await fetch('/api/serenity-memo', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ llmResearchInput: input }),
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      return {
+        memo: null,
+        error: 'Serenity Skill Memo 生成失败，已保留基础研究卡。',
+      };
+    }
+
+    const payload = await response.json() as { memo?: SerenityMemo };
+
+    return {
+      memo: payload.memo ?? null,
+      error: payload.memo ? '' : 'Serenity Skill Memo 暂无可展示结果。',
+    };
+  } catch {
+    return {
+      memo: null,
+      error: 'Serenity Skill Memo 请求超时或失败，已保留基础研究卡。',
+    };
+  } finally {
+    window.clearTimeout(timeout);
+  }
+}
+
 export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
   const defaultCardType = cardTypeOptions[0].value;
   const [query, setQuery] = useState(initialQuery);
@@ -169,6 +214,8 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
   const [isEarningsSnapshotLoading, setIsEarningsSnapshotLoading] = useState(false);
   const [isResearchBriefLoading, setIsResearchBriefLoading] = useState(false);
   const [researchBriefError, setResearchBriefError] = useState('');
+  const [isSerenityMemoLoading, setIsSerenityMemoLoading] = useState(false);
+  const [serenityMemoError, setSerenityMemoError] = useState('');
 
   async function attachResearchBrief(card: ResearchCard) {
     setResearchBriefError('');
@@ -199,6 +246,40 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
     });
   }
 
+  async function attachSerenityMemo(card: ResearchCard) {
+    setSerenityMemoError('');
+    setIsSerenityMemoLoading(true);
+    const result = await fetchSerenityMemo(card.llmResearchInput);
+    setIsSerenityMemoLoading(false);
+
+    if (result.error) {
+      setSerenityMemoError(result.error);
+    }
+
+    if (!result.memo) {
+      return;
+    }
+
+    setGenerated((current) => {
+      if (!current || current.card.slug !== card.slug) {
+        return current;
+      }
+
+      return {
+        ...current,
+        card: {
+          ...current.card,
+          serenityMemo: result.memo ?? undefined,
+        },
+      };
+    });
+  }
+
+  function attachGeneratedAnalysis(card: ResearchCard) {
+    void attachResearchBrief(card);
+    void attachSerenityMemo(card);
+  }
+
   async function handleCandidateSelect(candidate: SecurityRecord) {
     const candidateInput = buildCandidateInput(candidate);
     setQuery(candidateInput);
@@ -206,6 +287,7 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
     setBasicDataError('');
     setEarningsSnapshotError('');
     setResearchBriefError('');
+    setSerenityMemoError('');
     setCandidates([]);
     setBasicData(null);
     setEarningsSnapshot(null);
@@ -241,7 +323,7 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
         isFallback: result.resolution.status === 'unmatched',
       });
     });
-    void attachResearchBrief(result.card);
+    attachGeneratedAnalysis(result.card);
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -253,6 +335,8 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
       setError('请输入股票代码、Ticker 或中文名。');
       setCandidates([]);
       setGenerated(null);
+      setResearchBriefError('');
+      setSerenityMemoError('');
       return;
     }
 
@@ -260,6 +344,8 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
       setError('暂不支持该输入格式。');
       setCandidates([]);
       setGenerated(null);
+      setResearchBriefError('');
+      setSerenityMemoError('');
       return;
     }
 
@@ -267,6 +353,8 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
       setError('匹配到多个证券，请选择候选项，或输入更精确的股票代码、Ticker 或中文名。');
       setCandidates(resolution.candidates);
       setGenerated(null);
+      setResearchBriefError('');
+      setSerenityMemoError('');
       return;
     }
 
@@ -274,6 +362,7 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
     setBasicDataError('');
     setEarningsSnapshotError('');
     setResearchBriefError('');
+    setSerenityMemoError('');
     setCandidates([]);
     setBasicData(null);
     setEarningsSnapshot(null);
@@ -308,7 +397,7 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
         isFallback: result.resolution.status === 'unmatched',
       });
     });
-    void attachResearchBrief(result.card);
+    attachGeneratedAnalysis(result.card);
   }
 
   return (
@@ -384,6 +473,7 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
               setBasicDataError('');
               setEarningsSnapshotError('');
               setResearchBriefError('');
+              setSerenityMemoError('');
               setCandidates([]);
               setBasicData(null);
               setEarningsSnapshot(null);
@@ -428,6 +518,8 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
           earningsSnapshot={earningsSnapshot}
           researchBriefLoading={isResearchBriefLoading}
           researchBriefError={researchBriefError}
+          serenityMemoLoading={isSerenityMemoLoading}
+          serenityMemoError={serenityMemoError}
         />
       </div>
     </div>

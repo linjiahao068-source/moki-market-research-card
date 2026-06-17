@@ -4,6 +4,7 @@ import type { GlobalGuidanceEvidence } from './global-stock-data';
 import type { ResearchBrief } from './research-brief';
 import type { BullBaseBearScenarioSummary } from './scenario';
 import type { SerenityAnalysisBundle } from './serenity';
+import type { SerenityMemo } from './serenity-memo';
 
 export interface Evidence {
   id: string;
@@ -91,6 +92,7 @@ export interface ResearchCard {
   factQuality?: DataQualityReport;
   llmResearchInput?: LLMResearchInput;
   researchBrief?: ResearchBrief;
+  serenityMemo?: SerenityMemo;
   nextSteps: NextStep[];
   disclaimer: string;
   sections?: Array<{

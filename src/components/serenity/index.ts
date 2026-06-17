@@ -4,3 +4,4 @@ export * from './GfDmaHealthIndexPanel';
 export * from './TamAdjPegPanel';
 export * from './BuySideMemoPanel';
 export * from './SerenityDataNotice';
+export * from './SerenitySkillMemoPanel';

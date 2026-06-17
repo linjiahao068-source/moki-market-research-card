@@ -12,6 +12,7 @@ import {
   TamAdjPegPanel,
   BuySideMemoPanel,
   SerenityDataNotice,
+  SerenitySkillMemoPanel,
 } from '@/components/serenity';
 import { SecurityMatchBadge } from '@/components/security/SecurityMatchBadge';
 import { SecurityMetadataRow } from '@/components/security/SecurityMetadataRow';
@@ -19,6 +20,7 @@ import { BasicCompanyData } from '@/types/basic-data';
 import { EarningsSnapshotData } from '@/types/earnings';
 import { ResearchCard } from '@/types/research-card';
 import { SecurityInputKind, SecurityMarket, SecurityRecord, SecurityResolution } from '@/types/security';
+import type { SerenitySkillId } from '@/types/serenity-memo';
 import { getBullBaseBearScenarios } from '@/lib/scenarios/providers';
 import { generateSerenityBundle, generateSerenityBundleFromRealData } from '@/lib/serenity';
 
@@ -31,6 +33,8 @@ interface GeneratedCardPreviewProps {
   earningsSnapshot?: EarningsSnapshotData | null;
   researchBriefLoading?: boolean;
   researchBriefError?: string;
+  serenityMemoLoading?: boolean;
+  serenityMemoError?: string;
 }
 
 function buildCandidateLabel(candidate: SecurityRecord) {
@@ -109,6 +113,26 @@ function hasUsableSerenityData(
   return hasBasicData || hasEarningsData;
 }
 
+function tabToSerenitySkill(tab: 'alpha' | 'bayesian' | 'gf-dma' | 'tam-adj-peg' | 'memo'): SerenitySkillId {
+  if (tab === 'alpha') {
+    return 'serenity_alpha';
+  }
+
+  if (tab === 'bayesian') {
+    return 'bayesian';
+  }
+
+  if (tab === 'gf-dma') {
+    return 'gf_dma';
+  }
+
+  if (tab === 'tam-adj-peg') {
+    return 'tam_adj_peg';
+  }
+
+  return 'buy_side_memo';
+}
+
 export function GeneratedCardPreview({
   card,
   isFallback = false,
@@ -118,6 +142,8 @@ export function GeneratedCardPreview({
   earningsSnapshot = null,
   researchBriefLoading = false,
   researchBriefError = '',
+  serenityMemoLoading = false,
+  serenityMemoError = '',
 }: GeneratedCardPreviewProps) {
   // 获取 scenarios（用 useMemo 避免重新计算）
   const scenarios = useMemo(() => {
@@ -396,20 +422,32 @@ export function GeneratedCardPreview({
 
                 {/* 内容区域 */}
                 <div className="space-y-4">
-                  {activeSerenityTab === 'alpha' && (
-                    <SerenityAlphaPanel analysis={serenityBundle.alphaAnalysis} />
-                  )}
-                  {activeSerenityTab === 'bayesian' && (
-                    <BayesianValuationPanel analysis={serenityBundle.bayesianValuation} />
-                  )}
-                  {activeSerenityTab === 'gf-dma' && (
-                    <GfDmaHealthIndexPanel analysis={serenityBundle.gfDmaHealthIndex} />
-                  )}
-                  {activeSerenityTab === 'tam-adj-peg' && (
-                    <TamAdjPegPanel analysis={serenityBundle.tamAdjPeg} />
-                  )}
-                  {activeSerenityTab === 'memo' && (
-                    <BuySideMemoPanel analysis={serenityBundle.buySideMemo} />
+                  {(card.serenityMemo || serenityMemoLoading || serenityMemoError) ? (
+                    <SerenitySkillMemoPanel
+                      memo={card.serenityMemo}
+                      isLoading={serenityMemoLoading}
+                      error={serenityMemoError}
+                      mode={activeSerenityTab === 'memo' ? 'overview' : 'skill'}
+                      skillId={tabToSerenitySkill(activeSerenityTab)}
+                    />
+                  ) : (
+                    <>
+                      {activeSerenityTab === 'alpha' && (
+                        <SerenityAlphaPanel analysis={serenityBundle.alphaAnalysis} />
+                      )}
+                      {activeSerenityTab === 'bayesian' && (
+                        <BayesianValuationPanel analysis={serenityBundle.bayesianValuation} />
+                      )}
+                      {activeSerenityTab === 'gf-dma' && (
+                        <GfDmaHealthIndexPanel analysis={serenityBundle.gfDmaHealthIndex} />
+                      )}
+                      {activeSerenityTab === 'tam-adj-peg' && (
+                        <TamAdjPegPanel analysis={serenityBundle.tamAdjPeg} />
+                      )}
+                      {activeSerenityTab === 'memo' && (
+                        <BuySideMemoPanel analysis={serenityBundle.buySideMemo} />
+                      )}
+                    </>
                   )}
                 </div>
               </div>
