@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { AlertTriangle, CheckCircle2, FileText, Search, ChevronDown, ChevronUp } from 'lucide-react';
+import { AlertTriangle, BarChart3, BrainCircuit, CheckCircle2, FileText, Gauge, Search, ShieldCheck } from 'lucide-react';
 import { StockSymbolBadge } from '@/components/common/StockSymbolBadge';
 import { EnhancedEarningsSnapshotPanel } from '@/components/earnings/EnhancedEarningsSnapshotPanel';
 import { EnhancedGuidanceComparePanel } from '@/components/earnings/EnhancedGuidanceComparePanel';
@@ -23,6 +23,7 @@ import { SecurityInputKind, SecurityMarket, SecurityRecord, SecurityResolution }
 import type { SerenitySkillId } from '@/types/serenity-memo';
 import { getBullBaseBearScenarios } from '@/lib/scenarios/providers';
 import { generateSerenityBundle, generateSerenityBundleFromRealData } from '@/lib/serenity';
+import { ResearchModuleHeader } from './ResearchModuleHeader';
 
 interface GeneratedCardPreviewProps {
   card: ResearchCard | null;
@@ -133,6 +134,27 @@ function tabToSerenitySkill(tab: 'alpha' | 'bayesian' | 'gf-dma' | 'tam-adj-peg'
   return 'buy_side_memo';
 }
 
+function shortDate(value?: string) {
+  if (!value) {
+    return undefined;
+  }
+
+  return value.slice(0, 10);
+}
+
+function uniqueStrings(values: Array<string | undefined>) {
+  return Array.from(new Set(values.filter((item): item is string => Boolean(item))));
+}
+
+function EmptyModuleState({ title, body }: { title: string; body: string }) {
+  return (
+    <div className="rounded-[8px] border border-dashed border-border bg-white p-4 text-sm leading-relaxed text-[oklch(0.46_0.018_160)]">
+      <div className="mb-1 font-semibold text-[oklch(0.22_0.018_160)]">{title}</div>
+      {body}
+    </div>
+  );
+}
+
 export function GeneratedCardPreview({
   card,
   isFallback = false,
@@ -201,8 +223,6 @@ export function GeneratedCardPreview({
     return generateSerenityBundle(card.ticker, card.companyName);
   }, [card, basicData, earningsSnapshot]);
 
-  // Serenity 面板展开状态
-  const [showSerenity, setShowSerenity] = useState(false);
   const [activeSerenityTab, setActiveSerenityTab] = useState<'alpha' | 'bayesian' | 'gf-dma' | 'tam-adj-peg' | 'memo'>('memo');
 
   if (!card && candidates.length > 0) {
@@ -254,6 +274,24 @@ export function GeneratedCardPreview({
   const dataQualityScore = card.dataQuality?.score ?? activeGuidanceMeta?.dataQualityScore;
   const dataModeLabel = realDataAvailable ? '真实数据' : 'fallback';
   const sourceNote = `${card.sourceNote ?? card.disclaimer} 财报快照中的预测值和指引对比依赖第三方数据或文本抽取，需结合来源复核。`;
+  const guidance = card.guidanceData?.guidance ?? activeEarningsSnapshot?.guidance ?? [];
+  const guidanceEvidence = card.guidanceData?.guidanceEvidence ?? activeEarningsSnapshot?.guidanceEvidence ?? [];
+  const guidanceWarnings = card.guidanceData?.warnings ?? activeEarningsSnapshot?.warnings ?? [];
+  const primarySource = card.dataQuality?.sourceSummary ?? (uniqueStrings([
+    basicData?.provider,
+    activeEarningsSnapshot?.provider,
+    guidanceEvidence.length > 0 ? 'guidance evidence' : undefined,
+  ]).join(' + ') || dataModeLabel);
+  const updatedAt = shortDate(activeEarningsSnapshot?.fetchedAt ?? basicData?.fetchedAt ?? card.generatedAt ?? card.updatedAt);
+  const guidanceConfidence = card.guidanceData?.confidence ?? activeGuidanceMeta?.guidanceConfidence;
+  const hasResearchBrief = Boolean(card.researchBrief || researchBriefLoading || researchBriefError);
+  const hasSerenityMemo = Boolean(card.serenityMemo || serenityMemoLoading || serenityMemoError);
+  const scenarioDiagnostics = scenarios?.warnings ?? [];
+  const serenityDiagnostics = uniqueStrings([
+    ...(card.serenityMemo?.dataLimitations ?? []),
+    ...(card.serenityMemo?.warnings ?? []),
+    serenityBundle?.dataNotice,
+  ]);
 
   return (
     <article className="overflow-hidden rounded-[8px] border border-border bg-white shadow-[0_12px_40px_-32px_rgba(0,0,0,0.28)]">
@@ -271,13 +309,8 @@ export function GeneratedCardPreview({
                   {card.cardType}
                 </span>
                 <span className="rounded-full border border-border bg-white px-2.5 py-1 text-xs font-medium text-[oklch(0.45_0.018_160)]">
-                  数据模式：{dataModeLabel}
+                  数据：{dataModeLabel}
                 </span>
-                {realDataAvailable && (
-                  <span className="rounded-full border border-[var(--brand-border)] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--brand-ink)]">
-                    真实数据
-                  </span>
-                )}
                 {dataQualityScore !== undefined && (
                   <span className="rounded-full border border-border bg-white px-2.5 py-1 text-xs font-medium text-[oklch(0.45_0.018_160)]">
                     数据质量 {dataQualityScore.toFixed(1)}/10
@@ -312,225 +345,233 @@ export function GeneratedCardPreview({
           </p>
         )}
 
-        {activeEarningsSnapshot && (
-          <div className="mb-4 space-y-4">
-            <EnhancedEarningsSnapshotPanel data={activeEarningsSnapshot} />
-            <EnhancedGuidanceComparePanel
-              guidance={card.guidanceData?.guidance ?? activeEarningsSnapshot.guidance}
-              guidanceEvidence={card.guidanceData?.guidanceEvidence ?? activeEarningsSnapshot.guidanceEvidence}
-              warnings={card.guidanceData?.warnings ?? activeEarningsSnapshot.warnings}
-              source={card.guidanceData?.source ?? activeGuidanceMeta?.guidanceSource}
-              confidence={card.guidanceData?.confidence ?? activeGuidanceMeta?.guidanceConfidence}
-            />
-          </div>
-        )}
-
-        {/* Scenarios Panel */}
-        <div className="mb-4">
-          <EnhancedBullBaseBearScenariosPanel scenarios={scenarios} />
-        </div>
-
-        <div className="mb-4">
-          <ResearchBriefPanel
-            brief={card.researchBrief}
-            isLoading={researchBriefLoading}
-            error={researchBriefError}
-          />
-        </div>
-
-        {/* Serenity Skills Analysis (可折叠) */}
-        {serenityBundle && (
-          <div className="mb-4">
-            <button
-              onClick={() => setShowSerenity(!showSerenity)}
-              className="flex w-full items-center justify-between rounded-[8px] border border-[var(--brand-border)] bg-[var(--brand-soft)] p-3 text-left"
-            >
-              <div>
-                <div className="text-xs font-semibold text-[var(--brand-ink)]">
-                  Serenity Skills
-                </div>
-                <div className="text-sm text-[oklch(0.2_0.016_160)]">
-                  买方研究框架分析（Alpha、Bayesian、GF-DMA、TAM-Adj-PEG）
-                </div>
+        <div className="mb-4 grid gap-3 lg:grid-cols-[minmax(0,1.12fr)_minmax(280px,0.88fr)]">
+          <section className="rounded-[8px] border border-border bg-white p-4">
+            <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-[var(--brand-ink)]">
+              <FileText className="h-4 w-4" aria-hidden="true" />
+              决策摘要
+            </div>
+            <p className="text-sm leading-relaxed text-[oklch(0.2_0.018_160)]">
+              {card.summary.oneLine}
+            </p>
+            <div className="mt-3 border-t border-border pt-3">
+              <div className="mb-1 flex items-center gap-2 text-xs font-semibold text-[var(--brand-ink)]">
+                <Search className="h-4 w-4" aria-hidden="true" />
+                核心问题
               </div>
-              {showSerenity ? (
-                <ChevronUp className="h-4 w-4 text-[var(--brand-ink)]" />
-              ) : (
-                <ChevronDown className="h-4 w-4 text-[var(--brand-ink)]" />
+              <p className="text-base font-semibold leading-relaxed text-[oklch(0.18_0.014_160)]">
+                {card.summary.keyQuestion}
+              </p>
+            </div>
+          </section>
+
+          <section className="rounded-[8px] border border-border bg-white p-4">
+            <div className="mb-3 text-xs font-semibold text-[var(--brand-ink)]">Bull / Bear 快照</div>
+            <div className="space-y-3">
+              {card.summary.bullCase && (
+                <div className="border-l-2 border-[var(--brand-dot)] pl-3">
+                  <div className="mb-1 text-xs font-semibold text-[var(--brand-ink)]">Bull case</div>
+                  <p className="text-sm leading-relaxed text-[oklch(0.24_0.016_160)]">
+                    {card.summary.bullCase}
+                  </p>
+                </div>
               )}
-            </button>
-
-            {showSerenity && (
-              <div className="mt-2 space-y-2">
-                {/* 数据状态提示 */}
-                {serenityBundle?.dataNotice && (
-                  <SerenityDataNotice customNotice={serenityBundle.dataNotice} />
-                )}
-                {/* 标签切换 */}
-                <div className="flex flex-wrap gap-1">
-                  <button
-                    onClick={() => setActiveSerenityTab('memo')}
-                    className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                      activeSerenityTab === 'memo'
-                        ? 'bg-[var(--brand-ink)] text-white'
-                        : 'bg-white border border-border text-[oklch(0.2_0.016_160)]'
-                    }`}
-                  >
-                    买方备忘录
-                  </button>
-                  <button
-                    onClick={() => setActiveSerenityTab('alpha')}
-                    className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                      activeSerenityTab === 'alpha'
-                        ? 'bg-[var(--brand-ink)] text-white'
-                        : 'bg-white border border-border text-[oklch(0.2_0.016_160)]'
-                    }`}
-                  >
-                    Serenity Alpha
-                  </button>
-                  <button
-                    onClick={() => setActiveSerenityTab('bayesian')}
-                    className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                      activeSerenityTab === 'bayesian'
-                        ? 'bg-[var(--brand-ink)] text-white'
-                        : 'bg-white border border-border text-[oklch(0.2_0.016_160)]'
-                    }`}
-                  >
-                    贝叶斯估值
-                  </button>
-                  <button
-                    onClick={() => setActiveSerenityTab('gf-dma')}
-                    className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                      activeSerenityTab === 'gf-dma'
-                        ? 'bg-[var(--brand-ink)] text-white'
-                        : 'bg-white border border-border text-[oklch(0.2_0.016_160)]'
-                    }`}
-                  >
-                    GF-DMA 健康指数
-                  </button>
-                  <button
-                    onClick={() => setActiveSerenityTab('tam-adj-peg')}
-                    className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                      activeSerenityTab === 'tam-adj-peg'
-                        ? 'bg-[var(--brand-ink)] text-white'
-                        : 'bg-white border border-border text-[oklch(0.2_0.016_160)]'
-                    }`}
-                  >
-                    TAM-Adj-PEG
-                  </button>
+              {card.summary.bearCase && (
+                <div className="border-l-2 border-[var(--risk-ink)] pl-3">
+                  <div className="mb-1 text-xs font-semibold text-[var(--risk-ink)]">Bear case</div>
+                  <p className="text-sm leading-relaxed text-[var(--risk-ink)]">
+                    {card.summary.bearCase}
+                  </p>
                 </div>
+              )}
+            </div>
+          </section>
+        </div>
 
-                {/* 内容区域 */}
-                <div className="space-y-4">
-                  {(card.serenityMemo || serenityMemoLoading || serenityMemoError) ? (
-                    <SerenitySkillMemoPanel
-                      memo={card.serenityMemo}
-                      isLoading={serenityMemoLoading}
-                      error={serenityMemoError}
-                      mode={activeSerenityTab === 'memo' ? 'overview' : 'skill'}
-                      skillId={tabToSerenitySkill(activeSerenityTab)}
-                    />
-                  ) : (
-                    <>
-                      {activeSerenityTab === 'alpha' && (
-                        <SerenityAlphaPanel analysis={serenityBundle.alphaAnalysis} />
-                      )}
-                      {activeSerenityTab === 'bayesian' && (
-                        <BayesianValuationPanel analysis={serenityBundle.bayesianValuation} />
-                      )}
-                      {activeSerenityTab === 'gf-dma' && (
-                        <GfDmaHealthIndexPanel analysis={serenityBundle.gfDmaHealthIndex} />
-                      )}
-                      {activeSerenityTab === 'tam-adj-peg' && (
-                        <TamAdjPegPanel analysis={serenityBundle.tamAdjPeg} />
-                      )}
-                      {activeSerenityTab === 'memo' && (
-                        <BuySideMemoPanel analysis={serenityBundle.buySideMemo} />
-                      )}
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
+        {hasResearchBrief && (
+          <details className="mb-5 rounded-[8px] border border-[var(--brand-border)] bg-white p-3">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold text-[var(--brand-ink)]">
+              <span className="inline-flex items-center gap-2">
+                <BrainCircuit className="h-4 w-4" aria-hidden="true" />
+                LLM 研究摘要
+              </span>
+              <span className="rounded-full border border-[var(--brand-border)] bg-[var(--brand-soft)] px-2.5 py-1 text-xs">
+                辅助解读
+              </span>
+            </summary>
+            <div className="mt-3">
+              <ResearchBriefPanel
+                brief={card.researchBrief}
+                isLoading={researchBriefLoading}
+                error={researchBriefError}
+              />
+            </div>
+          </details>
         )}
 
-        <div className="rounded-[8px] border-l-2 border-[var(--brand-dot)] bg-white p-4">
-          <div className="mb-1 text-xs font-semibold text-[var(--brand-ink)]">一句话摘要</div>
-          <p className="text-sm leading-relaxed text-[oklch(0.2_0.018_160)]">
-            {card.summary.oneLine}
-          </p>
+        <div className="space-y-5">
+          <section className="space-y-3">
+            <ResearchModuleHeader
+              icon={<BarChart3 className="h-4 w-4" aria-hidden="true" />}
+              title="财报快照"
+              subtitle="只保留本次财报最需要先看的收入、利润、EPS 与质量提示。"
+              source={activeEarningsSnapshot?.provider ?? primarySource}
+              generatedBy="数据层"
+              updatedAt={updatedAt}
+              confidence={dataQualityScore}
+              diagnostics={activeEarningsSnapshot?.warnings ?? []}
+            />
+            {activeEarningsSnapshot ? (
+              <EnhancedEarningsSnapshotPanel data={activeEarningsSnapshot} />
+            ) : (
+              <EmptyModuleState
+                title="暂无财报快照"
+                body="当前标的还没有可用的财报数据，仍可查看基础研究卡和后续补数提示。"
+              />
+            )}
+          </section>
+
+          <section className="space-y-3">
+            <ResearchModuleHeader
+              icon={<ShieldCheck className="h-4 w-4" aria-hidden="true" />}
+              title="公司指引"
+              subtitle="把结构化指引、SEC/Yahoo/FMP 证据和缺失原因放在同一模块。"
+              source={card.guidanceData?.source ?? activeGuidanceMeta?.guidanceSource ?? activeEarningsSnapshot?.provider ?? primarySource}
+              generatedBy={guidanceEvidence.length > 0 ? '文本抽取' : '数据层'}
+              updatedAt={updatedAt}
+              confidence={guidanceConfidence}
+              diagnostics={guidanceWarnings}
+            />
+            {activeEarningsSnapshot ? (
+              <EnhancedGuidanceComparePanel
+                guidance={guidance}
+                guidanceEvidence={guidanceEvidence}
+                warnings={guidanceWarnings}
+                source={card.guidanceData?.source ?? activeGuidanceMeta?.guidanceSource}
+                confidence={guidanceConfidence}
+              />
+            ) : (
+              <EmptyModuleState
+                title="暂无公司指引"
+                body="公司指引依赖财报、新闻稿或 SEC 附件文本；当前尚未取得可展示证据。"
+              />
+            )}
+          </section>
+
+          <section className="space-y-3">
+            <ResearchModuleHeader
+              icon={<Gauge className="h-4 w-4" aria-hidden="true" />}
+              title="买方情景推演"
+              subtitle="保留 Bull/Base/Bear 的变量、概率和触发条件，不把情景价格当成投资建议。"
+              source={scenarios ? `scenario ${scenarios.dataStatus}` : 'scenario provider'}
+              generatedBy={scenarios?.dataStatus === 'placeholder' ? 'fallback' : '规则引擎'}
+              updatedAt={updatedAt}
+              diagnostics={scenarioDiagnostics}
+            />
+            <EnhancedBullBaseBearScenariosPanel scenarios={scenarios} />
+          </section>
+
+          <section className="space-y-3">
+            <ResearchModuleHeader
+              icon={<BrainCircuit className="h-4 w-4" aria-hidden="true" />}
+              title="Serenity Skill 框架"
+              subtitle="统一展示买方备忘录、Alpha、Bayesian、GF-DMA 和 TAM-Adj-PEG 的结构化结论或缺失项。"
+              source={card.serenityMemo?.provider ?? primarySource}
+              generatedBy={hasSerenityMemo ? 'LLM / fallback' : 'Serenity 规则'}
+              updatedAt={shortDate(card.serenityMemo?.generatedAt) ?? updatedAt}
+              diagnostics={serenityDiagnostics}
+            />
+            {serenityBundle?.dataNotice && !card.serenityMemo && (
+              <SerenityDataNotice customNotice={serenityBundle.dataNotice} />
+            )}
+            <div className="flex flex-wrap gap-1">
+              {[
+                ['memo', '买方备忘录'],
+                ['alpha', 'Serenity Alpha'],
+                ['bayesian', '贝叶斯估值'],
+                ['gf-dma', 'GF-DMA'],
+                ['tam-adj-peg', 'TAM-Adj-PEG'],
+              ].map(([tab, label]) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveSerenityTab(tab as 'alpha' | 'bayesian' | 'gf-dma' | 'tam-adj-peg' | 'memo')}
+                  className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                    activeSerenityTab === tab
+                      ? 'bg-[var(--brand-ink)] text-white'
+                      : 'border border-border bg-white text-[oklch(0.2_0.016_160)]'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div className="space-y-4">
+              {(card.serenityMemo || serenityMemoLoading || serenityMemoError) ? (
+                <SerenitySkillMemoPanel
+                  memo={card.serenityMemo}
+                  isLoading={serenityMemoLoading}
+                  error={serenityMemoError}
+                  mode={activeSerenityTab === 'memo' ? 'overview' : 'skill'}
+                  skillId={tabToSerenitySkill(activeSerenityTab)}
+                />
+              ) : (
+                <>
+                  {activeSerenityTab === 'alpha' && (
+                    <SerenityAlphaPanel analysis={serenityBundle?.alphaAnalysis} />
+                  )}
+                  {activeSerenityTab === 'bayesian' && (
+                    <BayesianValuationPanel analysis={serenityBundle?.bayesianValuation} />
+                  )}
+                  {activeSerenityTab === 'gf-dma' && (
+                    <GfDmaHealthIndexPanel analysis={serenityBundle?.gfDmaHealthIndex} />
+                  )}
+                  {activeSerenityTab === 'tam-adj-peg' && (
+                    <TamAdjPegPanel analysis={serenityBundle?.tamAdjPeg} />
+                  )}
+                  {activeSerenityTab === 'memo' && (
+                    <BuySideMemoPanel analysis={serenityBundle?.buySideMemo} />
+                  )}
+                </>
+              )}
+            </div>
+          </section>
         </div>
-      </div>
 
-      <div className="grid gap-4 p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-        <section className="rounded-[8px] border border-border bg-white p-4">
-          <div className="mb-3 flex items-center gap-2 text-xs font-semibold text-[var(--brand-ink)]">
-            <Search className="h-4 w-4" aria-hidden="true" />
-            核心问题
-          </div>
-          <p className="text-base font-semibold leading-relaxed text-[oklch(0.18_0.014_160)]">
-            {card.summary.keyQuestion}
-          </p>
-        </section>
-
-        <section className="rounded-[8px] border border-border bg-white p-4">
-          <div className="mb-3 flex items-center gap-2 text-xs font-semibold text-[var(--brand-ink)]">
-            <FileText className="h-4 w-4" aria-hidden="true" />
-            Bull/Bear
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-            {card.summary.bullCase && (
-              <div className="rounded-[8px] border border-border bg-[oklch(0.992_0.005_85)] p-3">
-                <div className="mb-1 text-xs font-semibold text-[var(--brand-ink)]">Bull case</div>
-                <p className="text-sm leading-relaxed text-[oklch(0.24_0.016_160)]">
-                  {card.summary.bullCase}
-                </p>
+        <details className="mt-5 rounded-[8px] border border-border bg-white p-3">
+          <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-semibold text-[oklch(0.22_0.018_160)]">
+            <CheckCircle2 className="h-4 w-4 text-[var(--brand-ink)]" aria-hidden="true" />
+            追踪清单与风险
+          </summary>
+          <div className="mt-3 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.85fr)]">
+            <section>
+              <div className="mb-2 text-xs font-semibold text-[var(--brand-ink)]">Key signals</div>
+              <div className="flex flex-wrap gap-2">
+                {keySignals.map((item) => (
+                  <span
+                    key={item}
+                    className="rounded-full border border-[var(--brand-border)] bg-[var(--brand-soft)] px-3 py-1.5 text-sm font-medium leading-relaxed text-[var(--brand-ink)]"
+                  >
+                    {item}
+                  </span>
+                ))}
               </div>
-            )}
-            {card.summary.bearCase && (
-              <div className="rounded-[8px] border border-[var(--risk-border)] bg-[var(--risk-soft)] p-3">
-                <div className="mb-1 text-xs font-semibold text-[var(--risk-ink)]">Bear case</div>
-                <p className="text-sm leading-relaxed text-[var(--risk-ink)]">
-                  {card.summary.bearCase}
-                </p>
-              </div>
-            )}
-          </div>
-        </section>
-      </div>
+            </section>
 
-      <div className="grid gap-4 border-t border-border p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.85fr)]">
-        <section className="rounded-[8px] border border-border bg-[oklch(0.992_0.005_85)] p-4">
-          <div className="mb-3 flex items-center gap-2 text-xs font-semibold text-[var(--brand-ink)]">
-            <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
-            Key signals
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {keySignals.map((item) => (
-              <span
-                key={item}
-                className="rounded-full border border-[var(--brand-border)] bg-white px-3 py-1.5 text-sm font-medium leading-relaxed text-[var(--brand-ink)]"
-              >
-                {item}
-              </span>
-            ))}
-          </div>
-        </section>
-
-        <section className="rounded-[8px] border border-[var(--risk-border)] bg-[var(--risk-soft)] p-4">
-          <div className="mb-3 flex items-center gap-2 text-xs font-semibold text-[var(--risk-ink)]">
-            <AlertTriangle className="h-4 w-4" aria-hidden="true" />
-            Risks to watch
-          </div>
-          <div className="space-y-2">
-            {risks.map((item) => (
-              <div key={item} className="rounded-[8px] border border-[var(--risk-border)] bg-white/55 p-3 text-sm leading-relaxed text-[var(--risk-ink)]">
-                {item}
+            <section>
+              <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-[var(--risk-ink)]">
+                <AlertTriangle className="h-4 w-4" aria-hidden="true" />
+                Risks to watch
               </div>
-            ))}
+              <div className="space-y-2">
+                {risks.map((item) => (
+                  <div key={item} className="border-l-2 border-[var(--risk-ink)] pl-3 text-sm leading-relaxed text-[var(--risk-ink)]">
+                    {item}
+                  </div>
+                ))}
+              </div>
+            </section>
           </div>
-        </section>
+        </details>
       </div>
 
       <p className="border-t border-border p-4 text-xs leading-relaxed text-[oklch(0.5_0.018_160)] sm:p-5">
