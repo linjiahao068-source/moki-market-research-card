@@ -1,6 +1,7 @@
 import type { EvidenceRecord, FactQuality, FactRecord } from '@/types/evidence';
 import type { Evidence, ResearchCard } from '@/types/research-card';
 import { RESEARCH_REPORT_SCHEMA_VERSION } from '@/types/research-report';
+import { buildEvidenceReferenceLayer } from './evidenceReferenceLayer';
 import type {
   ResearchReport,
   ResearchReportClaim,
@@ -304,7 +305,7 @@ export function buildResearchReportFromCard(card: ResearchCard): ResearchReport 
     }),
   ];
 
-  return {
+  const reportBase: Omit<ResearchReport, 'evidenceLayer'> = {
     schemaVersion: RESEARCH_REPORT_SCHEMA_VERSION,
     id: `research-report-${card.slug}`,
     slug: card.slug,
@@ -338,5 +339,10 @@ export function buildResearchReportFromCard(card: ResearchCard): ResearchReport 
       researchCardSlug: card.slug,
       researchCardType: card.cardType,
     },
+  };
+
+  return {
+    ...reportBase,
+    evidenceLayer: buildEvidenceReferenceLayer(reportBase),
   };
 }

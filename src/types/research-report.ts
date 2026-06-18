@@ -6,7 +6,7 @@ import type {
   FactRecord,
 } from './evidence';
 
-export const RESEARCH_REPORT_SCHEMA_VERSION = 'v0.4.0' as const;
+export const RESEARCH_REPORT_SCHEMA_VERSION = 'v0.4.1' as const;
 
 export type ResearchReportSchemaVersion = typeof RESEARCH_REPORT_SCHEMA_VERSION;
 
@@ -28,6 +28,18 @@ export type ResearchReportTone = 'positive' | 'neutral' | 'negative' | 'watch' |
 export type SourceIngestionStatus = 'not_started' | 'partial' | 'strong' | 'fallback';
 
 export type EvidenceWeight = 'primary' | 'supporting' | 'context' | 'fallback';
+
+export type ResearchReportReferenceKind =
+  | 'claim'
+  | 'metric'
+  | 'section_item'
+  | 'follow_up_task';
+
+export type ResearchReportEvidenceRelation = 'supports' | 'source' | 'context' | 'requires_review';
+
+export type ResearchReportEvidenceLinkStatus = 'linked' | 'missing_source' | 'fallback_source' | 'needs_review';
+
+export type ResearchReportMissingReferenceSeverity = 'info' | 'warning' | 'blocking';
 
 export interface ResearchReportEntity {
   ticker: string;
@@ -129,6 +141,47 @@ export interface ResearchReportFollowUpTask {
   factIds: string[];
 }
 
+export interface ResearchReportReferenceTarget {
+  kind: ResearchReportReferenceKind;
+  sectionId?: ResearchReportSectionId;
+  id: string;
+  label: string;
+}
+
+export interface ResearchReportEvidenceLink {
+  id: string;
+  evidenceId: string;
+  factIds: string[];
+  target: ResearchReportReferenceTarget;
+  relation: ResearchReportEvidenceRelation;
+  status: ResearchReportEvidenceLinkStatus;
+  note: string;
+  warnings: string[];
+}
+
+export interface ResearchReportMissingReference {
+  id: string;
+  target: ResearchReportReferenceTarget;
+  reason: string;
+  severity: ResearchReportMissingReferenceSeverity;
+  factIds: string[];
+}
+
+export interface ResearchReportEvidenceLayerSummary {
+  evidenceReferenceCount: number;
+  factReferenceCount: number;
+  linkedTargetCount: number;
+  missingReferenceCount: number;
+  fallbackEvidenceCount: number;
+  warningCount: number;
+}
+
+export interface ResearchReportEvidenceLayer {
+  summary: ResearchReportEvidenceLayerSummary;
+  links: ResearchReportEvidenceLink[];
+  missingReferences: ResearchReportMissingReference[];
+}
+
 export interface ResearchReportLegacyLinks {
   researchCardSlug?: string;
   researchCardType?: string;
@@ -150,6 +203,7 @@ export interface ResearchReport {
   sections: ResearchReportSection[];
   evidenceReferences: ResearchReportEvidenceReference[];
   factReferences: ResearchReportFactReference[];
+  evidenceLayer: ResearchReportEvidenceLayer;
   followUpResearch: ResearchReportFollowUpTask[];
   disclaimer: string;
   legacy?: ResearchReportLegacyLinks;

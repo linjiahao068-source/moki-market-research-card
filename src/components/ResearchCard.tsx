@@ -13,12 +13,15 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { ResearchCard as ResearchCardType } from '@/types/research-card';
+import type { ResearchReport } from '@/types/research-report';
+import { EvidenceReferencePanel } from './research-report/EvidenceReferencePanel';
 import { ResearchCardSection } from './ResearchCardSection';
 import { EvidenceItem } from './EvidenceItem';
 import { DisclaimerBox } from './DisclaimerBox';
 
 interface ResearchCardProps {
   card: ResearchCardType;
+  report?: ResearchReport;
 }
 
 const sections = [
@@ -32,7 +35,7 @@ const sections = [
   { id: 'disclaimer', title: '8. 免责声明' },
 ];
 
-export function ResearchCard({ card }: ResearchCardProps) {
+export function ResearchCard({ card, report }: ResearchCardProps) {
   const topMetrics = card.fundamentals.keyMetrics.slice(0, 3);
   const topRisks = card.fundamentals.risks.slice(0, 3);
   const topSteps = card.nextSteps.slice(0, 3);
@@ -353,9 +356,13 @@ export function ResearchCard({ card }: ResearchCardProps) {
 
             <ResearchCardSection id="evidence" title="6. 证据链" variant="subtle">
               <div className="pt-1">
-                {card.evidence.map((ev) => (
-                  <EvidenceItem key={ev.id} evidence={ev} />
-                ))}
+                {report ? (
+                  <EvidenceReferencePanel report={report} />
+                ) : (
+                  card.evidence.map((ev) => (
+                    <EvidenceItem key={ev.id} evidence={ev} />
+                  ))
+                )}
               </div>
             </ResearchCardSection>
 

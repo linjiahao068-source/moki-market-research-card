@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ResearchCard } from '@/components/ResearchCard';
 import { getAllResearchCards, getResearchCardBySlug } from '@/data/researchCards';
+import { getResearchReportBySlug } from '@/data/researchReports';
 
 interface ResearchCardDetailPageProps {
   params: Promise<{
@@ -47,5 +48,7 @@ export default async function ResearchCardDetailPage({ params }: ResearchCardDet
     notFound();
   }
 
-  return <ResearchCard card={card} />;
+  const report = getResearchReportBySlug(slug);
+
+  return <ResearchCard card={card} report={report} />;
 }
