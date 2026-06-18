@@ -1,4 +1,4 @@
-import { AlertTriangle, ExternalLink, FileSearch, Link2, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, Database, ExternalLink, FileSearch, Link2, ShieldCheck } from 'lucide-react';
 import type {
   EvidenceWeight,
   ResearchReport,
@@ -52,9 +52,43 @@ function evidenceDate(evidence: ResearchReportEvidenceReference) {
 
 export function EvidenceReferencePanel({ report }: EvidenceReferencePanelProps) {
   const { summary, links, missingReferences } = report.evidenceLayer;
+  const ingestion = report.sourceIngestionState;
 
   return (
     <div className="space-y-4">
+      <div className="rounded-[8px] border border-[var(--brand-border)] bg-[var(--brand-soft)] p-4">
+        <div className="mb-3 flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-[var(--brand-ink)]">
+              <Database className="h-4 w-4" aria-hidden="true" />
+              Source Ingestion
+            </div>
+            <div className="flex flex-wrap gap-2 font-mono text-[11px] text-[oklch(0.4_0.02_75)]">
+              <span>{ingestion.status}</span>
+              <span>{ingestion.method}</span>
+              <span>{ingestion.records.length} records</span>
+              <span>{ingestion.freshness}</span>
+              {ingestion.lastIngestedAt && <span>{ingestion.lastIngestedAt.slice(0, 10)}</span>}
+            </div>
+          </div>
+          {ingestion.warnings.length > 0 && (
+            <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-[var(--risk-border)] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--risk-ink)]">
+              <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
+              {ingestion.warnings.length} warnings
+            </span>
+          )}
+        </div>
+        {ingestion.sourceSummary.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {ingestion.sourceSummary.slice(0, 8).map((source) => (
+              <span key={source} className="rounded-full border border-[var(--brand-border)] bg-white px-2.5 py-1 text-xs text-[var(--brand-ink)]">
+                {source}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-[8px] border border-border bg-white p-3">
           <div className="mb-1 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-normal text-[oklch(0.48_0.018_160)]">

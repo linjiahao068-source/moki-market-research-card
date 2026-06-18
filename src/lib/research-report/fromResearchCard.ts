@@ -1,11 +1,10 @@
-import type { EvidenceRecord, FactQuality, FactRecord } from '@/types/evidence';
-import type { Evidence, ResearchCard } from '@/types/research-card';
+import type { ResearchCard } from '@/types/research-card';
 import { RESEARCH_REPORT_SCHEMA_VERSION } from '@/types/research-report';
 import { buildEvidenceReferenceLayer } from './evidenceReferenceLayer';
+import { ingestResearchSourcesFromCard } from './sourceIngestion';
 import type {
   ResearchReport,
   ResearchReportClaim,
-  ResearchReportEvidenceReference,
   ResearchReportFactReference,
   ResearchReportFollowUpTask,
   ResearchReportMetric,
@@ -13,7 +12,6 @@ import type {
   ResearchReportSectionId,
   ResearchReportStatus,
   ResearchReportTone,
-  SourceIngestionStatus,
 } from '@/types/research-report';
 
 function slugPart(value: string) {
@@ -21,86 +19,6 @@ function slugPart(value: string) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '') || 'item';
-}
-
-function unique(items: Array<string | undefined>) {
-  return Array.from(new Set(items.filter(Boolean))) as string[];
-}
-
-function qualityFromLegacyConfidence(confidence: number): FactQuality | 'unknown' {
-  if (confidence >= 0.75) {
-    return 'verified';
-  }
-
-  if (confidence >= 0.55) {
-    return 'derived';
-  }
-
-  return 'fallback';
-}
-
-function isEvidenceRecord(item: EvidenceRecord | Evidence): item is EvidenceRecord {
-  return 'source' in item;
-}
-
-function evidenceWeight(sourceType: string, index: number): ResearchReportEvidenceReference['evidenceWeight'] {
-  const normalized = sourceType.toLowerCase();
-
-  if (normalized.includes('fallback') || normalized.includes('mock') || normalized.includes('checklist')) {
-    return 'fallback';
-  }
-
-  if (index === 0) {
-    return 'primary';
-  }
-
-  return index < 3 ? 'supporting' : 'context';
-}
-
-function mapEvidenceReference(item: EvidenceRecord | Evidence, index: number): ResearchReportEvidenceReference {
-  if (isEvidenceRecord(item)) {
-    return {
-      id: item.id,
-      title: item.sourceLabel ?? item.source,
-      sourceLabel: item.sourceLabel ?? item.source,
-      sourceType: item.sourceType,
-      sourceUrl: item.sourceUrl,
-      publishedAt: item.publishedAt,
-      fetchedAt: item.fetchedAt,
-      snippet: item.snippet,
-      sourceQuality: item.extracted ? 'extracted' : item.sourceType === 'fallback' ? 'fallback' : 'unknown',
-      evidenceWeight: evidenceWeight(item.sourceType, index),
-      warnings: item.warnings,
-    };
-  }
-
-  return {
-    id: item.id,
-    title: item.sourceLabel,
-    sourceLabel: item.sourceLabel,
-    sourceType: item.sourceType,
-    publishedAt: item.timestamp,
-    snippet: item.summary,
-    sourceQuality: qualityFromLegacyConfidence(item.confidence),
-    evidenceWeight: evidenceWeight(item.sourceType, index),
-    warnings: [],
-  };
-}
-
-function mapFactReference(fact: FactRecord): ResearchReportFactReference {
-  return {
-    id: fact.id,
-    kind: fact.kind,
-    label: fact.label,
-    value: fact.value,
-    numericValue: fact.numericValue,
-    unit: fact.unit,
-    periodLabel: fact.periodLabel,
-    source: fact.source,
-    quality: fact.quality,
-    evidenceIds: fact.evidenceIds,
-    warnings: fact.warnings,
-  };
 }
 
 function claim(
@@ -146,26 +64,6 @@ function section(input: {
   };
 }
 
-function buildSourceIngestionStatus(card: ResearchCard): SourceIngestionStatus {
-  if (card.matchStatus === 'unmatched' || card.isMock) {
-    return 'fallback';
-  }
-
-  if (card.factQuality?.coverage === 'strong') {
-    return 'strong';
-  }
-
-  if (card.factQuality?.coverage === 'partial' || card.factQuality?.coverage === 'minimal') {
-    return 'partial';
-  }
-
-  if (card.factQuality?.coverage === 'empty') {
-    return 'not_started';
-  }
-
-  return 'partial';
-}
-
 function buildReportStatus(card: ResearchCard): ResearchReportStatus {
   if (card.matchStatus === 'unmatched' || card.isMock) {
     return 'fallback';
@@ -191,29 +89,16 @@ function buildMetrics(card: ResearchCard, facts: ResearchReportFactReference[]):
   });
 }
 
-function buildSourceSummary(card: ResearchCard) {
-  return unique([
-    card.dataQuality?.sourceSummary,
-    ...(card.factQuality?.sourceDiversity ?? []),
-    card.sourceNote,
-  ]);
-}
-
 export function buildResearchReportFromCard(card: ResearchCard): ResearchReport {
-  const evidenceSource: Array<EvidenceRecord | Evidence> = card.researchEvidence?.length
-    ? card.researchEvidence
-    : card.evidence;
-  const evidenceReferences = evidenceSource.map((item, index) => mapEvidenceReference(item, index));
-  const factReferences = (card.facts ?? []).map(mapFactReference);
+  const {
+    evidenceReferences,
+    factReferences,
+    sourceIngestionState,
+  } = ingestResearchSourcesFromCard(card);
   const allEvidenceIds = evidenceReferences.map((item) => item.id);
   const allFactIds = factReferences.map((item) => item.id);
   const generatedAt = card.generatedAt ?? card.updatedAt;
-  const sourceWarnings = unique([
-    ...(card.factQuality?.warnings ?? []),
-    ...(card.dataQuality?.warnings ?? []),
-    ...(card.enhancedEarnings?.warnings ?? []),
-    ...(card.guidanceData?.warnings ?? []),
-  ]);
+  const sourceWarnings = sourceIngestionState.warnings;
 
   const followUpResearch: ResearchReportFollowUpTask[] = card.nextSteps.map((step, index) => ({
     id: `follow-up-${index + 1}`,
@@ -323,13 +208,7 @@ export function buildResearchReportFromCard(card: ResearchCard): ResearchReport 
     generatedAt,
     updatedAt: card.updatedAt,
     executiveSummary: card.summary,
-    sourceIngestionState: {
-      status: buildSourceIngestionStatus(card),
-      coverage: card.factQuality?.coverage ?? 'unknown',
-      freshness: card.factQuality?.freshness ?? 'unknown',
-      sourceSummary: buildSourceSummary(card),
-      warnings: sourceWarnings,
-    },
+    sourceIngestionState,
     sections,
     evidenceReferences,
     factReferences,

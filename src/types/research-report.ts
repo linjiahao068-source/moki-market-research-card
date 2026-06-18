@@ -6,7 +6,7 @@ import type {
   FactRecord,
 } from './evidence';
 
-export const RESEARCH_REPORT_SCHEMA_VERSION = 'v0.4.1' as const;
+export const RESEARCH_REPORT_SCHEMA_VERSION = 'v0.4.2' as const;
 
 export type ResearchReportSchemaVersion = typeof RESEARCH_REPORT_SCHEMA_VERSION;
 
@@ -28,6 +28,19 @@ export type ResearchReportTone = 'positive' | 'neutral' | 'negative' | 'watch' |
 export type SourceIngestionStatus = 'not_started' | 'partial' | 'strong' | 'fallback';
 
 export type EvidenceWeight = 'primary' | 'supporting' | 'context' | 'fallback';
+
+export type ResearchSourceIngestionMethod =
+  | 'legacy_card'
+  | 'research_data_layer'
+  | 'manual_entry'
+  | 'fallback';
+
+export type ResearchSourceIngestionRecordStatus =
+  | 'ingested'
+  | 'partial'
+  | 'fallback'
+  | 'missing'
+  | 'rejected';
 
 export type ResearchReportReferenceKind =
   | 'claim'
@@ -59,9 +72,29 @@ export interface ResearchReportExecutiveSummary {
 
 export interface ResearchReportSourceIngestionState {
   status: SourceIngestionStatus;
+  method: ResearchSourceIngestionMethod;
   coverage: DataCoverageLevel | 'unknown';
   freshness: DataFreshnessLevel | 'unknown';
+  lastIngestedAt?: string;
   sourceSummary: string[];
+  warnings: string[];
+  records: ResearchSourceIngestionRecord[];
+}
+
+export interface ResearchSourceIngestionRecord {
+  id: string;
+  sourceId: string;
+  title: string;
+  sourceLabel: string;
+  sourceType: string;
+  method: ResearchSourceIngestionMethod;
+  status: ResearchSourceIngestionRecordStatus;
+  sourceUrl?: string;
+  publishedAt?: string;
+  fetchedAt?: string;
+  snippet?: string;
+  evidenceIds: string[];
+  factIds: string[];
   warnings: string[];
 }
 
