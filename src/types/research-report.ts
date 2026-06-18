@@ -6,7 +6,7 @@ import type {
   FactRecord,
 } from './evidence';
 
-export const RESEARCH_REPORT_SCHEMA_VERSION = 'v0.4.4' as const;
+export const RESEARCH_REPORT_SCHEMA_VERSION = 'v0.4.5' as const;
 
 export type ResearchReportSchemaVersion = typeof RESEARCH_REPORT_SCHEMA_VERSION;
 
@@ -303,9 +303,21 @@ export interface BuySideResearchReport {
   disclaimer: string;
 }
 
-export type TechnicalDashboardStatus = 'mock' | 'partial_mock' | 'blocked';
+export type TechnicalDashboardStatus = 'adapted' | 'partial_adapter' | 'mock' | 'partial_mock' | 'blocked';
 
-export type TechnicalDashboardMode = 'mock_from_research_report' | 'adapter_pending';
+export type TechnicalDashboardMode =
+  | 'technical_data_adapter'
+  | 'legacy_context_adapter'
+  | 'mock_from_research_report'
+  | 'adapter_pending';
+
+export type TechnicalDataProvider =
+  | 'legacy_technical_context'
+  | 'basic_data_quote'
+  | 'market_data_provider'
+  | 'none';
+
+export type TechnicalDataAdapterStatus = 'adapted' | 'partial' | 'unavailable';
 
 export type TechnicalDashboardSignal = 'constructive' | 'neutral' | 'caution' | 'missing';
 
@@ -324,6 +336,10 @@ export interface TechnicalDashboardSummary {
   mode: TechnicalDashboardMode;
   generatedAt: string;
   adapterReady: boolean;
+  adapterStatus: TechnicalDataAdapterStatus;
+  provider: TechnicalDataProvider;
+  liveDataAvailable: boolean;
+  dataAsOf?: string;
   sourceRecordCount: number;
   linkedEvidenceCount: number;
   missingReferenceCount: number;
@@ -342,6 +358,10 @@ export interface TechnicalDashboardIndicator {
   factIds: string[];
   sourceIds: string[];
   note: string;
+  provider?: TechnicalDataProvider;
+  dataStatus?: TechnicalDataAdapterStatus;
+  asOf?: string;
+  warnings?: string[];
 }
 
 export interface TechnicalDashboardZone {
@@ -351,6 +371,10 @@ export interface TechnicalDashboardZone {
   zoneType: 'support' | 'resistance' | 'range' | 'watch';
   signal: TechnicalDashboardSignal;
   note?: string;
+  provider?: TechnicalDataProvider;
+  dataStatus?: TechnicalDataAdapterStatus;
+  asOf?: string;
+  warnings?: string[];
 }
 
 export interface TechnicalDashboardScenarioReadThrough {
@@ -363,6 +387,52 @@ export interface TechnicalDashboardScenarioReadThrough {
   factIds: string[];
 }
 
+export interface TechnicalDataPoint {
+  id: string;
+  category: TechnicalDashboardIndicatorCategory;
+  label: string;
+  valueLabel: string;
+  rawValue?: string | number;
+  unit?: string;
+  signal: TechnicalDashboardSignal;
+  status: TechnicalDataAdapterStatus;
+  provider: TechnicalDataProvider;
+  asOf?: string;
+  evidenceIds: string[];
+  factIds: string[];
+  sourceIds: string[];
+  warnings: string[];
+}
+
+export interface TechnicalDataZone {
+  id: string;
+  label: string;
+  level: string;
+  zoneType: TechnicalDashboardZone['zoneType'];
+  signal: TechnicalDashboardSignal;
+  status: TechnicalDataAdapterStatus;
+  provider: TechnicalDataProvider;
+  asOf?: string;
+  evidenceIds: string[];
+  factIds: string[];
+  sourceIds: string[];
+  warnings: string[];
+}
+
+export interface TechnicalDataSnapshot {
+  id: string;
+  ticker: string;
+  provider: TechnicalDataProvider;
+  status: TechnicalDataAdapterStatus;
+  generatedAt: string;
+  dataAsOf?: string;
+  liveDataAvailable: boolean;
+  points: TechnicalDataPoint[];
+  zones: TechnicalDataZone[];
+  sourceSummary: string[];
+  warnings: string[];
+}
+
 export interface TechnicalDashboard {
   id: string;
   title: string;
@@ -371,6 +441,7 @@ export interface TechnicalDashboard {
   generatedAt: string;
   headline: string;
   summary: TechnicalDashboardSummary;
+  dataSnapshot: TechnicalDataSnapshot;
   indicators: TechnicalDashboardIndicator[];
   zones: TechnicalDashboardZone[];
   scenarioReadThrough: TechnicalDashboardScenarioReadThrough[];

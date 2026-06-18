@@ -32,7 +32,7 @@ const sections = [
   { id: 'sentiment', title: '3. Market Narrative' },
   { id: 'fundamentals', title: '4. Business Fundamentals' },
   { id: 'events', title: '5. Catalysts & Events' },
-  { id: 'technical', title: '6. Technical Dashboard' },
+  { id: 'technical', title: '6. Technical Data' },
   { id: 'evidence', title: '7. 证据链' },
   { id: 'nextsteps', title: '8. 下一步研究' },
   { id: 'disclaimer', title: '9. 免责声明' },
@@ -325,7 +325,7 @@ export function ResearchCard({ card, report }: ResearchCardProps) {
               </div>
             </ResearchCardSection>
 
-            <ResearchCardSection id="technical" title="6. Technical Dashboard Mock">
+            <ResearchCardSection id="technical" title="6. Technical Data Adapter">
               <div className="space-y-5">
                 {report?.technicalDashboard && (
                   <TechnicalDashboardPanel report={report} />

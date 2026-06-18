@@ -22,12 +22,16 @@ interface TechnicalDashboardPanelProps {
 }
 
 const statusLabels: Record<TechnicalDashboardStatus, string> = {
+  adapted: 'Adapted',
+  partial_adapter: 'Partial Adapter',
   mock: 'Mock',
   partial_mock: 'Partial Mock',
   blocked: 'Blocked',
 };
 
 const statusStyles: Record<TechnicalDashboardStatus, string> = {
+  adapted: 'border-[var(--brand-border)] bg-[var(--brand-soft)] text-[var(--brand-ink)]',
+  partial_adapter: 'border-[oklch(0.88_0.045_70)] bg-[oklch(0.98_0.035_80)] text-[oklch(0.39_0.08_60)]',
   mock: 'border-[var(--brand-border)] bg-[var(--brand-soft)] text-[var(--brand-ink)]',
   partial_mock: 'border-[oklch(0.88_0.045_70)] bg-[oklch(0.98_0.035_80)] text-[oklch(0.39_0.08_60)]',
   blocked: 'border-[var(--risk-border)] bg-[var(--risk-soft)] text-[var(--risk-ink)]',
@@ -94,7 +98,7 @@ export function TechnicalDashboardPanel({ report }: TechnicalDashboardPanelProps
           <div className="min-w-0">
             <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-[var(--brand-ink)]">
               <LineChart className="h-4 w-4" aria-hidden="true" />
-              Technical Dashboard Mock
+              Technical Data Adapter
             </div>
             <h3 className="text-xl font-bold leading-tight text-[oklch(0.16_0.014_160)]">
               {dashboard.title}
@@ -107,7 +111,7 @@ export function TechnicalDashboardPanel({ report }: TechnicalDashboardPanelProps
             </span>
             <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-2.5 py-1 font-mono text-xs text-[oklch(0.46_0.018_160)]">
               <Database className="h-3.5 w-3.5" aria-hidden="true" />
-              Adapter pending
+              {summary.adapterReady ? 'Adapter ready' : 'Adapter pending'}
             </span>
           </div>
         </div>
@@ -138,10 +142,10 @@ export function TechnicalDashboardPanel({ report }: TechnicalDashboardPanelProps
           <div className="rounded-[8px] border border-border bg-[oklch(0.992_0.005_85)] p-3">
             <div className="mb-1 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-normal text-[oklch(0.48_0.018_160)]">
               <BarChart3 className="h-3.5 w-3.5" aria-hidden="true" />
-              Linked
+              Provider
             </div>
-            <div className="font-mono text-xl font-semibold text-[oklch(0.18_0.014_160)]">
-              {summary.linkedEvidenceCount}
+            <div className="truncate font-mono text-xs font-semibold text-[oklch(0.18_0.014_160)]">
+              {summary.provider}
             </div>
           </div>
           <div className="rounded-[8px] border border-border bg-[oklch(0.992_0.005_85)] p-3">
@@ -182,9 +186,16 @@ export function TechnicalDashboardPanel({ report }: TechnicalDashboardPanelProps
                 <p className="mb-2 text-xs leading-relaxed text-[oklch(0.45_0.018_160)]">
                   {indicator.note}
                 </p>
-                <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${reviewStyles[indicator.reviewStatus]}`}>
-                  {reviewLabels[indicator.reviewStatus]}
-                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${reviewStyles[indicator.reviewStatus]}`}>
+                    {reviewLabels[indicator.reviewStatus]}
+                  </span>
+                  {indicator.dataStatus && (
+                    <span className="inline-flex rounded-full border border-border bg-white px-2 py-0.5 font-mono text-[10px] text-[oklch(0.44_0.018_160)]">
+                      {indicator.dataStatus}
+                    </span>
+                  )}
+                </div>
               </article>
             ))}
           </div>
@@ -257,6 +268,20 @@ export function TechnicalDashboardPanel({ report }: TechnicalDashboardPanelProps
                 {summary.adapterReady ? 'ready' : 'pending'}
               </div>
             </div>
+            <div className="rounded-[8px] border border-border bg-muted p-3">
+              <div className="mb-1 text-xs font-semibold text-[oklch(0.44_0.018_160)]">Live Data</div>
+              <div className="font-mono text-xs text-[oklch(0.2_0.016_160)]">
+                {summary.liveDataAvailable ? 'available' : 'not connected'}
+              </div>
+            </div>
+            {summary.dataAsOf && (
+              <div className="rounded-[8px] border border-border bg-muted p-3">
+                <div className="mb-1 text-xs font-semibold text-[oklch(0.44_0.018_160)]">Data As Of</div>
+                <div className="font-mono text-xs text-[oklch(0.2_0.016_160)]">
+                  {summary.dataAsOf}
+                </div>
+              </div>
+            )}
             {dashboard.warnings.length > 0 && (
               <div className="rounded-[8px] border border-[var(--risk-border)] bg-[var(--risk-soft)] p-3">
                 <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-[var(--risk-ink)]">

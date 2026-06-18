@@ -2,7 +2,7 @@ import type { ResearchCard } from '@/types/research-card';
 import { RESEARCH_REPORT_SCHEMA_VERSION } from '@/types/research-report';
 import { buildEvidenceReferenceLayer } from './evidenceReferenceLayer';
 import { generateBuySideReport } from './buySideReportGenerator';
-import { buildTechnicalDashboardMock } from './technicalDashboardMock';
+import { buildTechnicalDashboardFromAdapter } from './technicalDataAdapter';
 import { ingestResearchSourcesFromCard } from './sourceIngestion';
 import type {
   ResearchReport,
@@ -241,6 +241,6 @@ export function buildResearchReportFromCard(card: ResearchCard): ResearchReport 
 
   return {
     ...reportWithBuySide,
-    technicalDashboard: buildTechnicalDashboardMock(reportWithBuySide),
+    technicalDashboard: buildTechnicalDashboardFromAdapter(reportWithBuySide),
   };
 }

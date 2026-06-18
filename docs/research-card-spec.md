@@ -1,6 +1,6 @@
 # 研究报告结构规范
 
-v0.3.7 起，用户界面从多种实验卡片类型收敛为 `Executive Investment View`。v0.4.4 已在 `ResearchReport` schema 基础层上新增 Evidence Reference Layer、Research Source Ingestion、Buy-Side Report Generator 和 Technical Dashboard Mock，`ResearchCard` 继续作为 legacy 兼容输入与现有渲染层存在。
+v0.3.7 起，用户界面从多种实验卡片类型收敛为 `Executive Investment View`。v0.4.5 已在 `ResearchReport` schema 基础层上新增 Evidence Reference Layer、Research Source Ingestion、Buy-Side Report Generator、Technical Dashboard Mock 和 Technical Data Adapter，`ResearchCard` 继续作为 legacy 兼容输入与现有渲染层存在。
 
 ## 当前报告结构
 
@@ -24,9 +24,9 @@ v0.3.7 起，用户界面从多种实验卡片类型收敛为 `Executive Investm
 
 保留来源、发布时间、抓取时间、摘录和诊断提示。底层仍保留质量/置信字段用于排序和生成，但 v0.3.7 起不在用户界面展示置信度百分比。
 
-### 6. Technical Dashboard Mock
+### 6. Technical Data Adapter
 
-基于已有技术文案、关键区间、buy-side monitoring plan 和 scenario read-through 展示技术仪表盘 mock。当前版本不接实时行情、不计算技术指标、不形成操作建议。
+基于已有技术文案、关键区间、buy-side monitoring plan 和 scenario read-through 生成 `TechnicalDataSnapshot` 并驱动技术仪表盘。当前版本不接实时行情、不计算技术指标、不形成操作建议。
 
 ### 7. Follow-up Research
 
@@ -79,6 +79,15 @@ v0.3.7 起，用户界面从多种实验卡片类型收敛为 `Executive Investm
 - `technicalContext.keyZones` 映射为 `technical_context` section items，供 dashboard 展示关键区间。
 - 详情页技术区新增 Technical Dashboard Mock 面板，同时保留 legacy technical context 文案作为过渡。
 - v0.4.4 不接实时行情、不计算技术指标、不生成交易建议；所有技术项继续显示 review/source 状态。
+
+## v0.4.5 Technical Data Adapter
+
+- `ResearchReport.schemaVersion` 当前固定为 `v0.4.5`。
+- `ResearchReport.technicalDashboard.dataSnapshot` 新增结构化技术数据快照，包含 provider、adapter status、data points、zones、source summary 和 warnings。
+- `ResearchReport.technicalDashboard.summary` 新增 `adapterStatus`、`provider`、`liveDataAvailable` 和 `dataAsOf`。
+- `src/lib/research-report/technicalDataAdapter.ts` 把 legacy `technicalContext` 和 `technical_context` section 适配为 dashboard 可消费的技术数据。
+- `TechnicalDashboardPanel` 展示 adapter ready、provider、live data 状态和每个技术指标的 data status。
+- v0.4.5 不联网抓取行情、不计算技术指标、不生成交易信号；`legacy_technical_context` 只代表适配层已建立，不代表实时数据已接入。
 
 ## 迁移说明
 
