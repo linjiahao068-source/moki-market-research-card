@@ -1,6 +1,6 @@
 # 研究报告结构规范
 
-v0.3.7 起，用户界面从多种实验卡片类型收敛为 `Executive Investment View`。v0.4.2 已在 `ResearchReport` schema 基础层上新增 Evidence Reference Layer 和 Research Source Ingestion，`ResearchCard` 继续作为 legacy 兼容输入与现有渲染层存在。
+v0.3.7 起，用户界面从多种实验卡片类型收敛为 `Executive Investment View`。v0.4.3 已在 `ResearchReport` schema 基础层上新增 Evidence Reference Layer、Research Source Ingestion 和 Buy-Side Report Generator，`ResearchCard` 继续作为 legacy 兼容输入与现有渲染层存在。
 
 ## 当前报告结构
 
@@ -16,19 +16,23 @@ v0.3.7 起，用户界面从多种实验卡片类型收敛为 `Executive Investm
 
 保留 Bull / Base / Bear 的变量、概率、触发条件和后续可复盘事项。
 
-### 4. Evidence References
+### 4. Buy-Side Report Generator
+
+基于已摄取来源、证据引用和缺失项生成本地买方报告视图，包含 investment view、business quality、Bull/Base/Bear、monitoring plan 和 source audit。当前版本不生成目标价、评级或交易指令。
+
+### 5. Evidence References
 
 保留来源、发布时间、抓取时间、摘录和诊断提示。底层仍保留质量/置信字段用于排序和生成，但 v0.3.7 起不在用户界面展示置信度百分比。
 
-### 5. Technical Context
+### 6. Technical Context
 
 技术和交易相关信息仅作为背景，不形成操作建议。
 
-### 6. Follow-up Research
+### 7. Follow-up Research
 
 后续需要关注的指标、待验证假设、潜在风险点和补数任务。
 
-### 7. Disclaimer
+### 8. Disclaimer
 
 标准免责声明文本，明确说明研究内容仅供信息整理、研究辅助和教育参考，不构成投资建议。
 
@@ -58,6 +62,14 @@ v0.3.7 起，用户界面从多种实验卡片类型收敛为 `Executive Investm
 - `src/lib/research-report/sourceIngestion.ts` 统一规范化 legacy evidence、research data layer evidence 和 fact references。
 - 静态详情页证据区展示 Source Ingestion 摘要，用于检查 ingestion status、method、record count、freshness 和 source summary。
 - v0.4.2 不联网抓取新来源，只建立本地 ingestion 契约和 adapter。
+
+## v0.4.3 Buy-Side Report Generator
+
+- `ResearchReport.schemaVersion` 当前固定为 `v0.4.3`。
+- `ResearchReport.buySideReport` 新增本地买方报告产物，包含 generation state、investment view、business quality、Bull/Base/Bear、monitoring plan、source attribution 和 missing references。
+- `src/lib/research-report/buySideReportGenerator.ts` 消费 `sourceIngestionState`、`evidenceReferences`、`factReferences` 和 `evidenceLayer`，不绕过证据引用层。
+- 详情页新增 Buy-Side Report Generator 面板，用于检查生成状态、观点摘要、情景结构、监控指标和来源审计。
+- v0.4.3 不生成 target price、buy/sell/hold rating 或交易指令；遇到 fallback/partial 来源时写入 review state。
 
 ## 迁移说明
 

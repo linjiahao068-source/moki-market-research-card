@@ -1,6 +1,7 @@
 import type { ResearchCard } from '@/types/research-card';
 import { RESEARCH_REPORT_SCHEMA_VERSION } from '@/types/research-report';
 import { buildEvidenceReferenceLayer } from './evidenceReferenceLayer';
+import { generateBuySideReport } from './buySideReportGenerator';
 import { ingestResearchSourcesFromCard } from './sourceIngestion';
 import type {
   ResearchReport,
@@ -190,7 +191,7 @@ export function buildResearchReportFromCard(card: ResearchCard): ResearchReport 
     }),
   ];
 
-  const reportBase: Omit<ResearchReport, 'evidenceLayer'> = {
+  const reportBase: Omit<ResearchReport, 'evidenceLayer' | 'buySideReport'> = {
     schemaVersion: RESEARCH_REPORT_SCHEMA_VERSION,
     id: `research-report-${card.slug}`,
     slug: card.slug,
@@ -220,8 +221,13 @@ export function buildResearchReportFromCard(card: ResearchCard): ResearchReport 
     },
   };
 
-  return {
+  const reportWithEvidenceLayer: Omit<ResearchReport, 'buySideReport'> = {
     ...reportBase,
     evidenceLayer: buildEvidenceReferenceLayer(reportBase),
+  };
+
+  return {
+    ...reportWithEvidenceLayer,
+    buySideReport: generateBuySideReport(reportWithEvidenceLayer),
   };
 }

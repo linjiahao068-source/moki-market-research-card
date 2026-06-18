@@ -6,7 +6,7 @@ import type {
   FactRecord,
 } from './evidence';
 
-export const RESEARCH_REPORT_SCHEMA_VERSION = 'v0.4.2' as const;
+export const RESEARCH_REPORT_SCHEMA_VERSION = 'v0.4.3' as const;
 
 export type ResearchReportSchemaVersion = typeof RESEARCH_REPORT_SCHEMA_VERSION;
 
@@ -215,6 +215,94 @@ export interface ResearchReportEvidenceLayer {
   missingReferences: ResearchReportMissingReference[];
 }
 
+export type BuySideReportGenerationStatus = 'generated' | 'partial' | 'fallback';
+
+export type BuySideReportGenerationMethod = 'research_report_schema' | 'fallback';
+
+export type BuySideReportBias = 'constructive' | 'balanced' | 'cautious' | 'watch';
+
+export type BuySideReportReviewStatus = 'linked' | 'needs_source' | 'requires_review';
+
+export interface BuySideReportGenerationState {
+  status: BuySideReportGenerationStatus;
+  method: BuySideReportGenerationMethod;
+  generatedAt: string;
+  sourceCoverage: ResearchReportSourceIngestionState['coverage'];
+  sourceFreshness: ResearchReportSourceIngestionState['freshness'];
+  sourceRecordCount: number;
+  linkedEvidenceCount: number;
+  missingReferenceCount: number;
+  reviewRequired: boolean;
+  warnings: string[];
+}
+
+export interface BuySideReportInvestmentView {
+  bias: BuySideReportBias;
+  headline: string;
+  thesis: string[];
+  keyDebates: string[];
+  thesisBreakpoints: string[];
+  evidenceIds: string[];
+  factIds: string[];
+  reviewNotes: string[];
+}
+
+export interface BuySideReportBusinessQuality {
+  positioning: string;
+  revenueDrivers: string[];
+  financialReadThrough: string[];
+  keyRisks: string[];
+  evidenceIds: string[];
+  factIds: string[];
+}
+
+export interface BuySideReportScenario {
+  id: 'bull' | 'base' | 'bear';
+  label: string;
+  probabilityLabel: string;
+  narrative: string;
+  keyAssumptions: string[];
+  evidenceIds: string[];
+  factIds: string[];
+  reviewNotes: string[];
+}
+
+export interface BuySideReportMonitorItem {
+  id: string;
+  label: string;
+  currentState: string;
+  whyItMatters: string;
+  reviewStatus: BuySideReportReviewStatus;
+  evidenceIds: string[];
+  factIds: string[];
+}
+
+export interface BuySideReportSourceAttribution {
+  sourceId: string;
+  sourceLabel: string;
+  sourceType: string;
+  method: ResearchSourceIngestionMethod;
+  status: ResearchSourceIngestionRecordStatus;
+  evidenceIds: string[];
+  factIds: string[];
+  note: string;
+}
+
+export interface BuySideResearchReport {
+  id: string;
+  title: string;
+  generatedAt: string;
+  status: BuySideReportGenerationStatus;
+  investmentView: BuySideReportInvestmentView;
+  businessQuality: BuySideReportBusinessQuality;
+  scenarios: BuySideReportScenario[];
+  monitoringPlan: BuySideReportMonitorItem[];
+  sourceAttribution: BuySideReportSourceAttribution[];
+  missingReferences: ResearchReportMissingReference[];
+  generationState: BuySideReportGenerationState;
+  disclaimer: string;
+}
+
 export interface ResearchReportLegacyLinks {
   researchCardSlug?: string;
   researchCardType?: string;
@@ -237,6 +325,7 @@ export interface ResearchReport {
   evidenceReferences: ResearchReportEvidenceReference[];
   factReferences: ResearchReportFactReference[];
   evidenceLayer: ResearchReportEvidenceLayer;
+  buySideReport: BuySideResearchReport;
   followUpResearch: ResearchReportFollowUpTask[];
   disclaimer: string;
   legacy?: ResearchReportLegacyLinks;

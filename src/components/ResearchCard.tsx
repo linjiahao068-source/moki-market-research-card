@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { ResearchCard as ResearchCardType } from '@/types/research-card';
 import type { ResearchReport } from '@/types/research-report';
+import { BuySideReportPanel } from './research-report/BuySideReportPanel';
 import { EvidenceReferencePanel } from './research-report/EvidenceReferencePanel';
 import { ResearchCardSection } from './ResearchCardSection';
 import { EvidenceItem } from './EvidenceItem';
@@ -26,13 +27,14 @@ interface ResearchCardProps {
 
 const sections = [
   { id: 'summary', title: '1. Executive Summary' },
-  { id: 'sentiment', title: '2. Market Narrative' },
-  { id: 'fundamentals', title: '3. Business Fundamentals' },
-  { id: 'events', title: '4. Catalysts & Events' },
-  { id: 'technical', title: '5. Technical Context' },
-  { id: 'evidence', title: '6. 证据链' },
-  { id: 'nextsteps', title: '7. 下一步研究' },
-  { id: 'disclaimer', title: '8. 免责声明' },
+  { id: 'buy-side', title: '2. Buy-Side Report' },
+  { id: 'sentiment', title: '3. Market Narrative' },
+  { id: 'fundamentals', title: '4. Business Fundamentals' },
+  { id: 'events', title: '5. Catalysts & Events' },
+  { id: 'technical', title: '6. Technical Context' },
+  { id: 'evidence', title: '7. 证据链' },
+  { id: 'nextsteps', title: '8. 下一步研究' },
+  { id: 'disclaimer', title: '9. 免责声明' },
 ];
 
 export function ResearchCard({ card, report }: ResearchCardProps) {
@@ -182,7 +184,13 @@ export function ResearchCard({ card, report }: ResearchCardProps) {
               </div>
             </ResearchCardSection>
 
-            <ResearchCardSection id="sentiment" title="2. Market Narrative">
+            {report?.buySideReport && (
+              <ResearchCardSection id="buy-side" title="2. Buy-Side Report Generator" variant="elevated">
+                <BuySideReportPanel report={report} />
+              </ResearchCardSection>
+            )}
+
+            <ResearchCardSection id="sentiment" title="3. Market Narrative">
               <div className="space-y-5">
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                   <div className="rounded-[8px] border border-border bg-[oklch(0.992_0.005_85)] p-4">
@@ -232,7 +240,7 @@ export function ResearchCard({ card, report }: ResearchCardProps) {
               </div>
             </ResearchCardSection>
 
-            <ResearchCardSection id="fundamentals" title="3. 基本面">
+            <ResearchCardSection id="fundamentals" title="4. 基本面">
               <div className="space-y-5">
                 <div>
                   <div className="mb-2 text-xs font-semibold text-[oklch(0.45_0.018_160)]">
@@ -293,7 +301,7 @@ export function ResearchCard({ card, report }: ResearchCardProps) {
               </div>
             </ResearchCardSection>
 
-            <ResearchCardSection id="events" title="4. 政策/事件">
+            <ResearchCardSection id="events" title="5. 政策/事件">
               <div className="space-y-3">
                 {card.events.items.map((event, idx) => (
                   <div key={idx} className="rounded-[8px] border border-border bg-white p-4">
@@ -316,7 +324,7 @@ export function ResearchCard({ card, report }: ResearchCardProps) {
               </div>
             </ResearchCardSection>
 
-            <ResearchCardSection id="technical" title="5. 技术/交易面">
+            <ResearchCardSection id="technical" title="6. 技术/交易面">
               <div className="space-y-5">
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                   <div className="rounded-[8px] border border-border bg-white p-4">
@@ -354,7 +362,7 @@ export function ResearchCard({ card, report }: ResearchCardProps) {
               </div>
             </ResearchCardSection>
 
-            <ResearchCardSection id="evidence" title="6. 证据链" variant="subtle">
+            <ResearchCardSection id="evidence" title="7. 证据链" variant="subtle">
               <div className="pt-1">
                 {report ? (
                   <EvidenceReferencePanel report={report} />
@@ -366,7 +374,7 @@ export function ResearchCard({ card, report }: ResearchCardProps) {
               </div>
             </ResearchCardSection>
 
-            <ResearchCardSection id="nextsteps" title="7. 下一步研究">
+            <ResearchCardSection id="nextsteps" title="8. 下一步研究">
               <div className="space-y-3">
                 {card.nextSteps.map((step, idx) => (
                   <div key={idx} className="rounded-[8px] border border-border bg-white p-4">
