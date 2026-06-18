@@ -12,7 +12,7 @@
 - ORCL、NVDA、TSLA 三张静态样例卡
 - 统一 `Executive Investment View` 用户入口
 - `ResearchCard` legacy 兼容类型和模板
-- `ResearchReport` schema foundation、Evidence Reference Layer、Research Source Ingestion、Buy-Side Report Generator、Technical Dashboard Mock、Technical Data Adapter、兼容 adapter 和静态报告数据入口
+- `ResearchReport` schema foundation、Evidence Reference Layer、Research Source Ingestion、Buy-Side Report Generator、Technical Dashboard Mock、Technical Data Adapter、Integrated Research Report、兼容 adapter 和静态报告数据入口
 - 桌面端和移动端响应式布局
 - 黑白灰、哑光金与红棕风险色设计系统
 
@@ -66,7 +66,7 @@ src/
   components/research-report/ ResearchReport 展示组件
   components/ui/        通用基础组件
   data/                 静态研究卡与 ResearchReport 数据入口
-  lib/research-report/  ResearchCard -> ResearchReport adapter、source ingestion、evidence layer、buy-side generator、technical dashboard 与 technical data adapter
+  lib/research-report/  ResearchCard -> ResearchReport adapter、source ingestion、evidence layer、buy-side generator、technical data adapter 与 integrated report builder
   types/                ResearchCard、ResearchReport 与证据领域类型
 docs/
   product.md
@@ -78,6 +78,7 @@ docs/
   v0.4.3-buy-side-report-generator.md
   v0.4.4-technical-dashboard-mock.md
   v0.4.5-technical-data-adapter.md
+  v0.4.6-integrated-research-report.md
   claude-code-handoff.md
   Moki-Market-Design-UI-Spec-v1.0.pdf
 ```

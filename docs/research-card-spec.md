@@ -1,6 +1,6 @@
 # 研究报告结构规范
 
-v0.3.7 起，用户界面从多种实验卡片类型收敛为 `Executive Investment View`。v0.4.5 已在 `ResearchReport` schema 基础层上新增 Evidence Reference Layer、Research Source Ingestion、Buy-Side Report Generator、Technical Dashboard Mock 和 Technical Data Adapter，`ResearchCard` 继续作为 legacy 兼容输入与现有渲染层存在。
+v0.3.7 起，用户界面从多种实验卡片类型收敛为 `Executive Investment View`。v0.4.6 已在 `ResearchReport` schema 基础层上新增 Evidence Reference Layer、Research Source Ingestion、Buy-Side Report Generator、Technical Dashboard Mock、Technical Data Adapter 和 Integrated Research Report，`ResearchCard` 继续作为 legacy 兼容输入与现有渲染层存在。
 
 ## 当前报告结构
 
@@ -8,31 +8,35 @@ v0.3.7 起，用户界面从多种实验卡片类型收敛为 `Executive Investm
 
 用 1-2 句话概括当前研究问题、核心观察和证据缺口。
 
-### 2. Earnings & Guidance
+### 2. Integrated Research Report
+
+聚合 source ingestion、evidence layer、buy-side report、technical data 和 follow-up research，形成 readiness、pillar summaries、review queue 和 source audit。当前版本只做结构化整合，不生成投资评级或交易建议。
+
+### 3. Earnings & Guidance
 
 整理单季收入、利润、EPS、consensus、management guidance 和缺失原因。
 
-### 3. Scenario Map
+### 4. Scenario Map
 
 保留 Bull / Base / Bear 的变量、概率、触发条件和后续可复盘事项。
 
-### 4. Buy-Side Report Generator
+### 5. Buy-Side Report Generator
 
 基于已摄取来源、证据引用和缺失项生成本地买方报告视图，包含 investment view、business quality、Bull/Base/Bear、monitoring plan 和 source audit。当前版本不生成目标价、评级或交易指令。
 
-### 5. Evidence References
+### 6. Evidence References
 
 保留来源、发布时间、抓取时间、摘录和诊断提示。底层仍保留质量/置信字段用于排序和生成，但 v0.3.7 起不在用户界面展示置信度百分比。
 
-### 6. Technical Data Adapter
+### 7. Technical Data Adapter
 
 基于已有技术文案、关键区间、buy-side monitoring plan 和 scenario read-through 生成 `TechnicalDataSnapshot` 并驱动技术仪表盘。当前版本不接实时行情、不计算技术指标、不形成操作建议。
 
-### 7. Follow-up Research
+### 8. Follow-up Research
 
 后续需要关注的指标、待验证假设、潜在风险点和补数任务。
 
-### 8. Disclaimer
+### 9. Disclaimer
 
 标准免责声明文本，明确说明研究内容仅供信息整理、研究辅助和教育参考，不构成投资建议。
 
@@ -88,6 +92,15 @@ v0.3.7 起，用户界面从多种实验卡片类型收敛为 `Executive Investm
 - `src/lib/research-report/technicalDataAdapter.ts` 把 legacy `technicalContext` 和 `technical_context` section 适配为 dashboard 可消费的技术数据。
 - `TechnicalDashboardPanel` 展示 adapter ready、provider、live data 状态和每个技术指标的 data status。
 - v0.4.5 不联网抓取行情、不计算技术指标、不生成交易信号；`legacy_technical_context` 只代表适配层已建立，不代表实时数据已接入。
+
+## v0.4.6 Integrated Research Report
+
+- `ResearchReport.schemaVersion` 当前固定为 `v0.4.6`。
+- `ResearchReport.integratedReport` 新增整合研究报告产物，包含 readiness、pillar summaries、review queue、source audit 和 executive narrative。
+- `src/lib/research-report/integratedReportBuilder.ts` 聚合 `sourceIngestionState`、`evidenceLayer`、`buySideReport`、`technicalDashboard` 和 follow-up research。
+- `buildResearchReportFromCard` 构建顺序为 evidence layer -> buy-side report -> technical dashboard -> integrated report。
+- 详情页新增 Integrated Research Report 面板，放在 Executive Summary 后作为总览入口。
+- v0.4.6 不补写事实、不接新数据源、不生成评级、目标价或交易建议；readiness 和 review queue 由已有审计状态推导。
 
 ## 迁移说明
 

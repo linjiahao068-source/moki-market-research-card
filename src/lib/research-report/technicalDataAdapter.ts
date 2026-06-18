@@ -16,7 +16,7 @@ import type {
   TechnicalDataZone,
 } from '@/types/research-report';
 
-type TechnicalAdapterInput = Omit<ResearchReport, 'technicalDashboard'>;
+type TechnicalAdapterInput = Omit<ResearchReport, 'technicalDashboard' | 'integratedReport'>;
 
 const LEGACY_PROVIDER: TechnicalDataProvider = 'legacy_technical_context';
 const ADAPTER_WARNING = 'Technical data adapter is using legacy technical context; live market data provider is not connected yet.';

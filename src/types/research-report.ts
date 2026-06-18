@@ -6,7 +6,7 @@ import type {
   FactRecord,
 } from './evidence';
 
-export const RESEARCH_REPORT_SCHEMA_VERSION = 'v0.4.5' as const;
+export const RESEARCH_REPORT_SCHEMA_VERSION = 'v0.4.6' as const;
 
 export type ResearchReportSchemaVersion = typeof RESEARCH_REPORT_SCHEMA_VERSION;
 
@@ -449,6 +449,77 @@ export interface TechnicalDashboard {
   disclaimer: string;
 }
 
+export type IntegratedReportStatus = 'ready' | 'partial' | 'blocked';
+
+export type IntegratedReportPillarId =
+  | 'source_ingestion'
+  | 'evidence_layer'
+  | 'buy_side_report'
+  | 'technical_data'
+  | 'follow_up_research';
+
+export type IntegratedReportPillarStatus = 'ready' | 'partial' | 'needs_review' | 'blocked';
+
+export type IntegratedReportPriority = 'high' | 'medium' | 'low';
+
+export interface IntegratedReportReadiness {
+  status: IntegratedReportStatus;
+  generatedAt: string;
+  sourceStatus: SourceIngestionStatus;
+  buySideStatus: BuySideReportGenerationStatus;
+  technicalStatus: TechnicalDashboardStatus;
+  evidenceMissingCount: number;
+  warningCount: number;
+  reviewRequired: boolean;
+}
+
+export interface IntegratedReportPillar {
+  id: IntegratedReportPillarId;
+  title: string;
+  status: IntegratedReportPillarStatus;
+  headline: string;
+  detail: string;
+  evidenceIds: string[];
+  factIds: string[];
+  warnings: string[];
+}
+
+export interface IntegratedReportReviewItem {
+  id: string;
+  priority: IntegratedReportPriority;
+  title: string;
+  reason: string;
+  source: IntegratedReportPillarId;
+  evidenceIds: string[];
+  factIds: string[];
+}
+
+export interface IntegratedReportSourceAudit {
+  sourceRecordCount: number;
+  evidenceReferenceCount: number;
+  factReferenceCount: number;
+  linkedTargetCount: number;
+  missingReferenceCount: number;
+  fallbackEvidenceCount: number;
+  technicalProvider: TechnicalDataProvider;
+  liveTechnicalDataAvailable: boolean;
+  sourceSummary: string[];
+}
+
+export interface IntegratedResearchReport {
+  id: string;
+  title: string;
+  status: IntegratedReportStatus;
+  generatedAt: string;
+  headline: string;
+  executiveNarrative: string;
+  readiness: IntegratedReportReadiness;
+  pillars: IntegratedReportPillar[];
+  reviewQueue: IntegratedReportReviewItem[];
+  sourceAudit: IntegratedReportSourceAudit;
+  disclaimer: string;
+}
+
 export interface ResearchReportLegacyLinks {
   researchCardSlug?: string;
   researchCardType?: string;
@@ -473,6 +544,7 @@ export interface ResearchReport {
   evidenceLayer: ResearchReportEvidenceLayer;
   buySideReport: BuySideResearchReport;
   technicalDashboard: TechnicalDashboard;
+  integratedReport: IntegratedResearchReport;
   followUpResearch: ResearchReportFollowUpTask[];
   disclaimer: string;
   legacy?: ResearchReportLegacyLinks;

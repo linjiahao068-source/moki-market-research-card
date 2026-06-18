@@ -16,6 +16,7 @@ import { ResearchCard as ResearchCardType } from '@/types/research-card';
 import type { ResearchReport } from '@/types/research-report';
 import { BuySideReportPanel } from './research-report/BuySideReportPanel';
 import { EvidenceReferencePanel } from './research-report/EvidenceReferencePanel';
+import { IntegratedResearchReportPanel } from './research-report/IntegratedResearchReportPanel';
 import { TechnicalDashboardPanel } from './research-report/TechnicalDashboardPanel';
 import { ResearchCardSection } from './ResearchCardSection';
 import { EvidenceItem } from './EvidenceItem';
@@ -28,14 +29,15 @@ interface ResearchCardProps {
 
 const sections = [
   { id: 'summary', title: '1. Executive Summary' },
-  { id: 'buy-side', title: '2. Buy-Side Report' },
-  { id: 'sentiment', title: '3. Market Narrative' },
-  { id: 'fundamentals', title: '4. Business Fundamentals' },
-  { id: 'events', title: '5. Catalysts & Events' },
-  { id: 'technical', title: '6. Technical Data' },
-  { id: 'evidence', title: '7. 证据链' },
-  { id: 'nextsteps', title: '8. 下一步研究' },
-  { id: 'disclaimer', title: '9. 免责声明' },
+  { id: 'integrated', title: '2. Integrated Report' },
+  { id: 'buy-side', title: '3. Buy-Side Report' },
+  { id: 'sentiment', title: '4. Market Narrative' },
+  { id: 'fundamentals', title: '5. Business Fundamentals' },
+  { id: 'events', title: '6. Catalysts & Events' },
+  { id: 'technical', title: '7. Technical Data' },
+  { id: 'evidence', title: '8. 证据链' },
+  { id: 'nextsteps', title: '9. 下一步研究' },
+  { id: 'disclaimer', title: '10. 免责声明' },
 ];
 
 export function ResearchCard({ card, report }: ResearchCardProps) {
@@ -185,13 +187,19 @@ export function ResearchCard({ card, report }: ResearchCardProps) {
               </div>
             </ResearchCardSection>
 
+            {report?.integratedReport && (
+              <ResearchCardSection id="integrated" title="2. Integrated Research Report" variant="elevated">
+                <IntegratedResearchReportPanel report={report} />
+              </ResearchCardSection>
+            )}
+
             {report?.buySideReport && (
-              <ResearchCardSection id="buy-side" title="2. Buy-Side Report Generator" variant="elevated">
+              <ResearchCardSection id="buy-side" title="3. Buy-Side Report Generator" variant="elevated">
                 <BuySideReportPanel report={report} />
               </ResearchCardSection>
             )}
 
-            <ResearchCardSection id="sentiment" title="3. Market Narrative">
+            <ResearchCardSection id="sentiment" title="4. Market Narrative">
               <div className="space-y-5">
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                   <div className="rounded-[8px] border border-border bg-[oklch(0.992_0.005_85)] p-4">
@@ -241,7 +249,7 @@ export function ResearchCard({ card, report }: ResearchCardProps) {
               </div>
             </ResearchCardSection>
 
-            <ResearchCardSection id="fundamentals" title="4. 基本面">
+            <ResearchCardSection id="fundamentals" title="5. 基本面">
               <div className="space-y-5">
                 <div>
                   <div className="mb-2 text-xs font-semibold text-[oklch(0.45_0.018_160)]">
@@ -302,7 +310,7 @@ export function ResearchCard({ card, report }: ResearchCardProps) {
               </div>
             </ResearchCardSection>
 
-            <ResearchCardSection id="events" title="5. 政策/事件">
+            <ResearchCardSection id="events" title="6. 政策/事件">
               <div className="space-y-3">
                 {card.events.items.map((event, idx) => (
                   <div key={idx} className="rounded-[8px] border border-border bg-white p-4">
@@ -325,7 +333,7 @@ export function ResearchCard({ card, report }: ResearchCardProps) {
               </div>
             </ResearchCardSection>
 
-            <ResearchCardSection id="technical" title="6. Technical Data Adapter">
+            <ResearchCardSection id="technical" title="7. Technical Data Adapter">
               <div className="space-y-5">
                 {report?.technicalDashboard && (
                   <TechnicalDashboardPanel report={report} />
@@ -367,7 +375,7 @@ export function ResearchCard({ card, report }: ResearchCardProps) {
               </div>
             </ResearchCardSection>
 
-            <ResearchCardSection id="evidence" title="7. 证据链" variant="subtle">
+            <ResearchCardSection id="evidence" title="8. 证据链" variant="subtle">
               <div className="pt-1">
                 {report ? (
                   <EvidenceReferencePanel report={report} />
@@ -379,7 +387,7 @@ export function ResearchCard({ card, report }: ResearchCardProps) {
               </div>
             </ResearchCardSection>
 
-            <ResearchCardSection id="nextsteps" title="8. 下一步研究">
+            <ResearchCardSection id="nextsteps" title="9. 下一步研究">
               <div className="space-y-3">
                 {card.nextSteps.map((step, idx) => (
                   <div key={idx} className="rounded-[8px] border border-border bg-white p-4">

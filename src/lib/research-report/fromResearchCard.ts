@@ -2,6 +2,7 @@ import type { ResearchCard } from '@/types/research-card';
 import { RESEARCH_REPORT_SCHEMA_VERSION } from '@/types/research-report';
 import { buildEvidenceReferenceLayer } from './evidenceReferenceLayer';
 import { generateBuySideReport } from './buySideReportGenerator';
+import { buildIntegratedResearchReport } from './integratedReportBuilder';
 import { buildTechnicalDashboardFromAdapter } from './technicalDataAdapter';
 import { ingestResearchSourcesFromCard } from './sourceIngestion';
 import type {
@@ -199,7 +200,7 @@ export function buildResearchReportFromCard(card: ResearchCard): ResearchReport 
     }),
   ];
 
-  const reportBase: Omit<ResearchReport, 'evidenceLayer' | 'buySideReport' | 'technicalDashboard'> = {
+  const reportBase: Omit<ResearchReport, 'evidenceLayer' | 'buySideReport' | 'technicalDashboard' | 'integratedReport'> = {
     schemaVersion: RESEARCH_REPORT_SCHEMA_VERSION,
     id: `research-report-${card.slug}`,
     slug: card.slug,
@@ -229,18 +230,23 @@ export function buildResearchReportFromCard(card: ResearchCard): ResearchReport 
     },
   };
 
-  const reportWithEvidenceLayer: Omit<ResearchReport, 'buySideReport' | 'technicalDashboard'> = {
+  const reportWithEvidenceLayer: Omit<ResearchReport, 'buySideReport' | 'technicalDashboard' | 'integratedReport'> = {
     ...reportBase,
     evidenceLayer: buildEvidenceReferenceLayer(reportBase),
   };
 
-  const reportWithBuySide: Omit<ResearchReport, 'technicalDashboard'> = {
+  const reportWithBuySide: Omit<ResearchReport, 'technicalDashboard' | 'integratedReport'> = {
     ...reportWithEvidenceLayer,
     buySideReport: generateBuySideReport(reportWithEvidenceLayer),
   };
 
-  return {
+  const reportWithTechnical: Omit<ResearchReport, 'integratedReport'> = {
     ...reportWithBuySide,
     technicalDashboard: buildTechnicalDashboardFromAdapter(reportWithBuySide),
+  };
+
+  return {
+    ...reportWithTechnical,
+    integratedReport: buildIntegratedResearchReport(reportWithTechnical),
   };
 }
