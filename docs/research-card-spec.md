@@ -1,6 +1,6 @@
 # 研究报告结构规范
 
-v0.3.7 起，用户界面从多种实验卡片类型收敛为 `Executive Investment View`。v0.4.3 已在 `ResearchReport` schema 基础层上新增 Evidence Reference Layer、Research Source Ingestion 和 Buy-Side Report Generator，`ResearchCard` 继续作为 legacy 兼容输入与现有渲染层存在。
+v0.3.7 起，用户界面从多种实验卡片类型收敛为 `Executive Investment View`。v0.4.4 已在 `ResearchReport` schema 基础层上新增 Evidence Reference Layer、Research Source Ingestion、Buy-Side Report Generator 和 Technical Dashboard Mock，`ResearchCard` 继续作为 legacy 兼容输入与现有渲染层存在。
 
 ## 当前报告结构
 
@@ -24,9 +24,9 @@ v0.3.7 起，用户界面从多种实验卡片类型收敛为 `Executive Investm
 
 保留来源、发布时间、抓取时间、摘录和诊断提示。底层仍保留质量/置信字段用于排序和生成，但 v0.3.7 起不在用户界面展示置信度百分比。
 
-### 6. Technical Context
+### 6. Technical Dashboard Mock
 
-技术和交易相关信息仅作为背景，不形成操作建议。
+基于已有技术文案、关键区间、buy-side monitoring plan 和 scenario read-through 展示技术仪表盘 mock。当前版本不接实时行情、不计算技术指标、不形成操作建议。
 
 ### 7. Follow-up Research
 
@@ -70,6 +70,15 @@ v0.3.7 起，用户界面从多种实验卡片类型收敛为 `Executive Investm
 - `src/lib/research-report/buySideReportGenerator.ts` 消费 `sourceIngestionState`、`evidenceReferences`、`factReferences` 和 `evidenceLayer`，不绕过证据引用层。
 - 详情页新增 Buy-Side Report Generator 面板，用于检查生成状态、观点摘要、情景结构、监控指标和来源审计。
 - v0.4.3 不生成 target price、buy/sell/hold rating 或交易指令；遇到 fallback/partial 来源时写入 review state。
+
+## v0.4.4 Technical Dashboard Mock
+
+- `ResearchReport.schemaVersion` 当前固定为 `v0.4.4`。
+- `ResearchReport.technicalDashboard` 新增技术仪表盘 mock 产物，包含 summary、indicator matrix、key zones、scenario read-through、warnings 和 adapter readiness。
+- `src/lib/research-report/technicalDashboardMock.ts` 消费 `technical_context` section、`buySideReport.monitoringPlan`、`buySideReport.scenarios`、`sourceIngestionState` 和 `evidenceLayer`。
+- `technicalContext.keyZones` 映射为 `technical_context` section items，供 dashboard 展示关键区间。
+- 详情页技术区新增 Technical Dashboard Mock 面板，同时保留 legacy technical context 文案作为过渡。
+- v0.4.4 不接实时行情、不计算技术指标、不生成交易建议；所有技术项继续显示 review/source 状态。
 
 ## 迁移说明
 

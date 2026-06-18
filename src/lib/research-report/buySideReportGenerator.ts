@@ -15,7 +15,7 @@ import type {
   ResearchSourceIngestionRecord,
 } from '@/types/research-report';
 
-type BuySideReportInput = Omit<ResearchReport, 'buySideReport'>;
+type BuySideReportInput = Omit<ResearchReport, 'buySideReport' | 'technicalDashboard'>;
 
 const BASE_PROBABILITY_LABEL = 'Base case - model pending';
 const REVIEW_LIMIT = 8;

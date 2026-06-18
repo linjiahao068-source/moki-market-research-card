@@ -2,6 +2,7 @@ import type { ResearchCard } from '@/types/research-card';
 import { RESEARCH_REPORT_SCHEMA_VERSION } from '@/types/research-report';
 import { buildEvidenceReferenceLayer } from './evidenceReferenceLayer';
 import { generateBuySideReport } from './buySideReportGenerator';
+import { buildTechnicalDashboardMock } from './technicalDashboardMock';
 import { ingestResearchSourcesFromCard } from './sourceIngestion';
 import type {
   ResearchReport,
@@ -171,6 +172,13 @@ export function buildResearchReportFromCard(card: ResearchCard): ResearchReport 
         claim('technical_context', 'Volume', card.technicalContext.volume, 'neutral', 1),
         claim('technical_context', 'Options IV', card.technicalContext.optionsIv, 'watch', 2),
       ],
+      items: card.technicalContext.keyZones.map((zone, index) => ({
+        id: `technical-zone-${index + 1}`,
+        title: `${zone.type}: ${zone.level}`,
+        body: zone.note ?? 'Technical zone from legacy context; adapter evidence pending.',
+        evidenceIds: [],
+        factIds: [],
+      })),
     }),
     section({
       id: 'follow_up_research',
@@ -191,7 +199,7 @@ export function buildResearchReportFromCard(card: ResearchCard): ResearchReport 
     }),
   ];
 
-  const reportBase: Omit<ResearchReport, 'evidenceLayer' | 'buySideReport'> = {
+  const reportBase: Omit<ResearchReport, 'evidenceLayer' | 'buySideReport' | 'technicalDashboard'> = {
     schemaVersion: RESEARCH_REPORT_SCHEMA_VERSION,
     id: `research-report-${card.slug}`,
     slug: card.slug,
@@ -221,13 +229,18 @@ export function buildResearchReportFromCard(card: ResearchCard): ResearchReport 
     },
   };
 
-  const reportWithEvidenceLayer: Omit<ResearchReport, 'buySideReport'> = {
+  const reportWithEvidenceLayer: Omit<ResearchReport, 'buySideReport' | 'technicalDashboard'> = {
     ...reportBase,
     evidenceLayer: buildEvidenceReferenceLayer(reportBase),
   };
 
-  return {
+  const reportWithBuySide: Omit<ResearchReport, 'technicalDashboard'> = {
     ...reportWithEvidenceLayer,
     buySideReport: generateBuySideReport(reportWithEvidenceLayer),
+  };
+
+  return {
+    ...reportWithBuySide,
+    technicalDashboard: buildTechnicalDashboardMock(reportWithBuySide),
   };
 }

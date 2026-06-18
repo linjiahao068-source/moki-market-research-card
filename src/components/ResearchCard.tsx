@@ -16,6 +16,7 @@ import { ResearchCard as ResearchCardType } from '@/types/research-card';
 import type { ResearchReport } from '@/types/research-report';
 import { BuySideReportPanel } from './research-report/BuySideReportPanel';
 import { EvidenceReferencePanel } from './research-report/EvidenceReferencePanel';
+import { TechnicalDashboardPanel } from './research-report/TechnicalDashboardPanel';
 import { ResearchCardSection } from './ResearchCardSection';
 import { EvidenceItem } from './EvidenceItem';
 import { DisclaimerBox } from './DisclaimerBox';
@@ -31,7 +32,7 @@ const sections = [
   { id: 'sentiment', title: '3. Market Narrative' },
   { id: 'fundamentals', title: '4. Business Fundamentals' },
   { id: 'events', title: '5. Catalysts & Events' },
-  { id: 'technical', title: '6. Technical Context' },
+  { id: 'technical', title: '6. Technical Dashboard' },
   { id: 'evidence', title: '7. 证据链' },
   { id: 'nextsteps', title: '8. 下一步研究' },
   { id: 'disclaimer', title: '9. 免责声明' },
@@ -324,8 +325,12 @@ export function ResearchCard({ card, report }: ResearchCardProps) {
               </div>
             </ResearchCardSection>
 
-            <ResearchCardSection id="technical" title="6. 技术/交易面">
+            <ResearchCardSection id="technical" title="6. Technical Dashboard Mock">
               <div className="space-y-5">
+                {report?.technicalDashboard && (
+                  <TechnicalDashboardPanel report={report} />
+                )}
+
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                   <div className="rounded-[8px] border border-border bg-white p-4">
                     <div className="mb-2 text-[11px] font-semibold text-[oklch(0.5_0.018_160)]">价格走势</div>

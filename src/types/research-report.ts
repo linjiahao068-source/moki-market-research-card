@@ -6,7 +6,7 @@ import type {
   FactRecord,
 } from './evidence';
 
-export const RESEARCH_REPORT_SCHEMA_VERSION = 'v0.4.3' as const;
+export const RESEARCH_REPORT_SCHEMA_VERSION = 'v0.4.4' as const;
 
 export type ResearchReportSchemaVersion = typeof RESEARCH_REPORT_SCHEMA_VERSION;
 
@@ -303,6 +303,81 @@ export interface BuySideResearchReport {
   disclaimer: string;
 }
 
+export type TechnicalDashboardStatus = 'mock' | 'partial_mock' | 'blocked';
+
+export type TechnicalDashboardMode = 'mock_from_research_report' | 'adapter_pending';
+
+export type TechnicalDashboardSignal = 'constructive' | 'neutral' | 'caution' | 'missing';
+
+export type TechnicalDashboardIndicatorCategory =
+  | 'price_action'
+  | 'volume'
+  | 'volatility'
+  | 'scenario'
+  | 'monitoring'
+  | 'source_quality';
+
+export type TechnicalDashboardReviewStatus = 'linked' | 'needs_source' | 'requires_review';
+
+export interface TechnicalDashboardSummary {
+  status: TechnicalDashboardStatus;
+  mode: TechnicalDashboardMode;
+  generatedAt: string;
+  adapterReady: boolean;
+  sourceRecordCount: number;
+  linkedEvidenceCount: number;
+  missingReferenceCount: number;
+  warningCount: number;
+}
+
+export interface TechnicalDashboardIndicator {
+  id: string;
+  category: TechnicalDashboardIndicatorCategory;
+  label: string;
+  valueLabel: string;
+  state: string;
+  signal: TechnicalDashboardSignal;
+  reviewStatus: TechnicalDashboardReviewStatus;
+  evidenceIds: string[];
+  factIds: string[];
+  sourceIds: string[];
+  note: string;
+}
+
+export interface TechnicalDashboardZone {
+  id: string;
+  label: string;
+  level: string;
+  zoneType: 'support' | 'resistance' | 'range' | 'watch';
+  signal: TechnicalDashboardSignal;
+  note?: string;
+}
+
+export interface TechnicalDashboardScenarioReadThrough {
+  id: string;
+  scenarioId: BuySideReportScenario['id'];
+  label: string;
+  signal: TechnicalDashboardSignal;
+  watchItems: string[];
+  evidenceIds: string[];
+  factIds: string[];
+}
+
+export interface TechnicalDashboard {
+  id: string;
+  title: string;
+  status: TechnicalDashboardStatus;
+  mode: TechnicalDashboardMode;
+  generatedAt: string;
+  headline: string;
+  summary: TechnicalDashboardSummary;
+  indicators: TechnicalDashboardIndicator[];
+  zones: TechnicalDashboardZone[];
+  scenarioReadThrough: TechnicalDashboardScenarioReadThrough[];
+  warnings: string[];
+  disclaimer: string;
+}
+
 export interface ResearchReportLegacyLinks {
   researchCardSlug?: string;
   researchCardType?: string;
@@ -326,6 +401,7 @@ export interface ResearchReport {
   factReferences: ResearchReportFactReference[];
   evidenceLayer: ResearchReportEvidenceLayer;
   buySideReport: BuySideResearchReport;
+  technicalDashboard: TechnicalDashboard;
   followUpResearch: ResearchReportFollowUpTask[];
   disclaimer: string;
   legacy?: ResearchReportLegacyLinks;
