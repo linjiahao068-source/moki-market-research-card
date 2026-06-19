@@ -1,9 +1,12 @@
 import { useMemo, useState } from 'react';
-import { AlertTriangle, BarChart3, BrainCircuit, CheckCircle2, FileText, Gauge, Search, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, BarChart3, BrainCircuit, CheckCircle2, FileText, Gauge, Loader2, Search, ShieldCheck } from 'lucide-react';
 import { StockSymbolBadge } from '@/components/common/StockSymbolBadge';
 import { EnhancedEarningsSnapshotPanel } from '@/components/earnings/EnhancedEarningsSnapshotPanel';
 import { EnhancedGuidanceComparePanel } from '@/components/earnings/EnhancedGuidanceComparePanel';
 import { ResearchBriefPanel } from '@/components/research/ResearchBriefPanel';
+import { BuySideReportPanel } from '@/components/research-report/BuySideReportPanel';
+import { IntegratedResearchReportPanel } from '@/components/research-report/IntegratedResearchReportPanel';
+import { TechnicalDashboardPanel } from '@/components/research-report/TechnicalDashboardPanel';
 import { EnhancedBullBaseBearScenariosPanel } from '@/components/scenarios/EnhancedBullBaseBearScenariosPanel';
 import {
   SerenityAlphaPanel,
@@ -19,6 +22,7 @@ import { SecurityMetadataRow } from '@/components/security/SecurityMetadataRow';
 import { BasicCompanyData } from '@/types/basic-data';
 import { EarningsSnapshotData } from '@/types/earnings';
 import { ResearchCard } from '@/types/research-card';
+import type { ResearchReport } from '@/types/research-report';
 import { SecurityInputKind, SecurityMarket, SecurityRecord, SecurityResolution } from '@/types/security';
 import type { SerenitySkillId } from '@/types/serenity-memo';
 import { getBullBaseBearScenarios } from '@/lib/scenarios/providers';
@@ -27,11 +31,16 @@ import { ResearchModuleHeader } from './ResearchModuleHeader';
 
 interface GeneratedCardPreviewProps {
   card: ResearchCard | null;
+  report?: ResearchReport | null;
   isFallback?: boolean;
   candidates?: SecurityRecord[];
   rawInput?: string;
   basicData?: BasicCompanyData | null;
   earningsSnapshot?: EarningsSnapshotData | null;
+  researchReportLoading?: boolean;
+  researchReportError?: string;
+  technicalDataLoading?: boolean;
+  technicalDataError?: string;
   researchBriefLoading?: boolean;
   researchBriefError?: string;
   serenityMemoLoading?: boolean;
@@ -157,11 +166,16 @@ function EmptyModuleState({ title, body }: { title: string; body: string }) {
 
 export function GeneratedCardPreview({
   card,
+  report = null,
   isFallback = false,
   candidates = [],
   rawInput = '',
   basicData = null,
   earningsSnapshot = null,
+  researchReportLoading = false,
+  researchReportError = '',
+  technicalDataLoading = false,
+  technicalDataError = '',
   researchBriefLoading = false,
   researchBriefError = '',
   serenityMemoLoading = false,
@@ -264,13 +278,11 @@ export function GeneratedCardPreview({
   const activeEarningsSnapshot = earningsSnapshot ?? card.enhancedEarnings ?? null;
   const activeGuidanceMeta = activeEarningsSnapshot as (EarningsSnapshotData & {
     guidanceSource?: string;
-    dataQualityScore?: number;
   }) | null;
   const realDataAvailable = Boolean(
     card.dataQuality?.realDataAvailable ||
     hasUsableSerenityData(basicData, activeEarningsSnapshot)
   );
-  const dataQualityScore = card.dataQuality?.score ?? activeGuidanceMeta?.dataQualityScore;
   const dataModeLabel = realDataAvailable ? '真实数据' : 'fallback';
   const sourceNote = `${card.sourceNote ?? card.disclaimer} 财报快照中的预测值和指引对比依赖第三方数据或文本抽取，需结合来源复核。`;
   const guidance = card.guidanceData?.guidance ?? activeEarningsSnapshot?.guidance ?? [];
@@ -290,6 +302,41 @@ export function GeneratedCardPreview({
     ...(card.serenityMemo?.warnings ?? []),
     serenityBundle?.dataNotice,
   ]);
+  const reportReferenceCount = report?.evidenceReferences.length ?? 0;
+  const reportMissingReferenceCount = report?.evidenceLayer.summary.missingReferenceCount ?? 0;
+  const reportSourceRecordCount = report?.sourceIngestionState.records.length ?? 0;
+  const reportSourceChunkCount = report?.sourceIngestionState.chunks.length ?? 0;
+  const reportGenerationState = report?.generationState;
+  const reportModeLabel = reportGenerationState?.method === 'llm_research_report_json'
+    ? '原生 API'
+    : '兼容输入';
+  const reportProviderLabel = [
+    reportGenerationState?.provider,
+    reportGenerationState?.model,
+  ].filter(Boolean).join(' / ') || (report?.legacy ? 'legacy-adapter' : 'unknown');
+  const reportWarnings = uniqueStrings([
+    researchReportError,
+    ...(reportGenerationState?.warnings ?? []),
+  ]);
+  const integratedReport = report?.integratedReport;
+  const buySideReport = report?.buySideReport;
+  const integratedReviewCount = integratedReport
+    ? integratedReport.reviewQueue.length + integratedReport.readiness.evidenceMissingCount
+    : 0;
+  const buySideReviewCount = buySideReport
+    ? buySideReport.generationState.missingReferenceCount + buySideReport.generationState.warnings.length
+    : 0;
+  const technicalDashboard = report?.technicalDashboard;
+  const technicalGapCount = technicalDashboard
+    ? technicalDashboard.summary.missingReferenceCount + technicalDashboard.summary.warningCount
+    : 0;
+  const technicalLiveDataAvailable = Boolean(technicalDashboard?.summary.liveDataAvailable);
+  const technicalTitle = technicalLiveDataAvailable
+    ? 'Technical Structure Dashboard'
+    : 'Technical Structure Dashboard Fallback';
+  const technicalDescription = technicalLiveDataAvailable
+    ? 'Yahoo chart candlestick view, EMA overlays, volume bars, calculated indicators, benchmark relative strength, key zones, and scenario read-through from the current ResearchReport.'
+    : 'Legacy technical-context fallback with adapter readiness, key zones, scenario read-through, and gaps while live K-line data is unavailable.';
 
   return (
     <article className="overflow-hidden rounded-[8px] border border-border bg-white shadow-[0_12px_40px_-32px_rgba(0,0,0,0.28)]">
@@ -301,16 +348,11 @@ export function GeneratedCardPreview({
               <div className="mb-2 flex flex-wrap items-center gap-2">
                 <span className="inline-flex items-center gap-2 rounded-full border border-[var(--brand-border)] bg-[var(--brand-soft)] px-3 py-1 text-xs font-semibold text-[var(--brand-ink)]">
                   <span className="h-1.5 w-1.5 rounded-full bg-[var(--brand-dot)]" />
-                  {isFallback ? 'Fallback View' : card.isMock ? 'Fallback View' : 'Executive Investment View'}
+                  {isFallback || card.isMock ? 'ResearchReport Fallback' : 'ResearchReport Draft'}
                 </span>
                 <span className="rounded-full border border-border bg-white px-2.5 py-1 text-xs font-medium text-[oklch(0.45_0.018_160)]">
-                  数据：{dataModeLabel}
+                  资料：{dataModeLabel}
                 </span>
-                {dataQualityScore !== undefined && (
-                  <span className="rounded-full border border-border bg-white px-2.5 py-1 text-xs font-medium text-[oklch(0.45_0.018_160)]">
-                    数据质量 {dataQualityScore.toFixed(1)}/10
-                  </span>
-                )}
               </div>
               <p className="text-sm text-[oklch(0.48_0.018_160)]">{card.companyName}</p>
               <h2 className="mt-1 text-2xl font-bold leading-tight text-[oklch(0.16_0.014_160)]">
@@ -340,6 +382,184 @@ export function GeneratedCardPreview({
           </p>
         )}
 
+        {report && (
+          <section className="mb-4 rounded-[8px] border border-[var(--brand-border)] bg-[var(--brand-soft)] p-4">
+            <div className="mb-3 flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0">
+                <div className="mb-1 flex items-center gap-2 text-xs font-semibold text-[var(--brand-ink)]">
+                  <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+                  ResearchReport 输出契约
+                </div>
+                <div className="text-sm font-semibold text-[oklch(0.18_0.014_160)]">
+                  {report.schemaVersion} / {report.reportType}
+                </div>
+                <div className="mt-1 text-xs text-[oklch(0.45_0.018_160)]">
+                  {reportProviderLabel} / chunks {reportSourceChunkCount}
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {researchReportLoading && (
+                  <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-[var(--brand-border)] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--brand-ink)]">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                    API 生成中
+                  </span>
+                )}
+                <span className="w-fit rounded-full border border-[var(--brand-border)] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--brand-ink)]">
+                  {reportModeLabel}
+                </span>
+              </div>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-4">
+              <div className="rounded-[8px] border border-[var(--brand-border)] bg-white px-3 py-2">
+                <div className="text-[11px] font-semibold text-[oklch(0.48_0.018_160)]">Sections</div>
+                <div className="font-mono text-lg font-semibold text-[oklch(0.18_0.014_160)]">
+                  {report.sections.length}
+                </div>
+              </div>
+              <div className="rounded-[8px] border border-[var(--brand-border)] bg-white px-3 py-2">
+                <div className="text-[11px] font-semibold text-[oklch(0.48_0.018_160)]">References</div>
+                <div className="font-mono text-lg font-semibold text-[oklch(0.18_0.014_160)]">
+                  {reportReferenceCount}
+                </div>
+              </div>
+              <div className="rounded-[8px] border border-[var(--brand-border)] bg-white px-3 py-2">
+                <div className="text-[11px] font-semibold text-[oklch(0.48_0.018_160)]">待补引用</div>
+                <div className="font-mono text-lg font-semibold text-[oklch(0.18_0.014_160)]">
+                  {reportMissingReferenceCount}
+                </div>
+              </div>
+              <div className="rounded-[8px] border border-[var(--brand-border)] bg-white px-3 py-2">
+                <div className="text-[11px] font-semibold text-[oklch(0.48_0.018_160)]">Sources</div>
+                <div className="font-mono text-lg font-semibold text-[oklch(0.18_0.014_160)]">
+                  {reportSourceRecordCount}
+                </div>
+              </div>
+            </div>
+            {reportWarnings.length > 0 && (
+              <div className="mt-3 rounded-[8px] border border-[var(--brand-border)] bg-white px-3 py-2 text-xs leading-relaxed text-[var(--brand-ink)]">
+                {reportWarnings.slice(0, 2).map((warning) => (
+                  <div key={warning}>{warning}</div>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+
+        {integratedReport && report && (
+          <section className="mb-5">
+            <div className="mb-3 rounded-[8px] border border-[var(--brand-border)] bg-white p-4">
+              <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                  <div className="mb-1 text-xs font-semibold text-[var(--brand-ink)]">
+                    Primary Output
+                  </div>
+                  <h3 className="text-lg font-bold leading-tight text-[oklch(0.16_0.014_160)]">
+                    Integrated Research Report
+                  </h3>
+                  <p className="mt-1 text-xs leading-relaxed text-[oklch(0.45_0.018_160)]">
+                    Unified readiness, source audit, buy-side thesis, technical K-line state, evidence gaps, and review queue from the current ResearchReport.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <span className="rounded-full border border-[var(--brand-border)] bg-[var(--brand-soft)] px-2.5 py-1 text-xs font-semibold text-[var(--brand-ink)]">
+                    {integratedReport.status}
+                  </span>
+                  <span className="rounded-full border border-border bg-[oklch(0.992_0.005_85)] px-2.5 py-1 text-xs font-semibold text-[oklch(0.36_0.018_160)]">
+                    Review {integratedReviewCount}
+                  </span>
+                  <span className="rounded-full border border-border bg-[oklch(0.992_0.005_85)] px-2.5 py-1 text-xs font-semibold text-[oklch(0.36_0.018_160)]">
+                    K-line {integratedReport.sourceAudit.technicalChartAvailable ? 'on' : 'pending'}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <IntegratedResearchReportPanel report={report} />
+          </section>
+        )}
+
+        {buySideReport && report && (
+          <section className="mb-5">
+            <div className="mb-3 rounded-[8px] border border-[var(--brand-border)] bg-white p-4">
+              <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                  <div className="mb-1 text-xs font-semibold text-[var(--brand-ink)]">
+                    Report Pillar
+                  </div>
+                  <h3 className="text-lg font-bold leading-tight text-[oklch(0.16_0.014_160)]">
+                    Buy-Side Research Report
+                  </h3>
+                  <p className="mt-1 text-xs leading-relaxed text-[oklch(0.45_0.018_160)]">
+                    Investment view, key debates, business quality, scenarios, monitoring plan, and source audit from the current ResearchReport.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <span className="rounded-full border border-[var(--brand-border)] bg-[var(--brand-soft)] px-2.5 py-1 text-xs font-semibold text-[var(--brand-ink)]">
+                    {buySideReport.status}
+                  </span>
+                  <span className="rounded-full border border-border bg-[oklch(0.992_0.005_85)] px-2.5 py-1 text-xs font-semibold text-[oklch(0.36_0.018_160)]">
+                    Review {buySideReviewCount}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <BuySideReportPanel report={report} />
+          </section>
+        )}
+
+        {technicalDashboard && report && (
+          <section className="mb-5">
+            <div className="mb-3 rounded-[8px] border border-[var(--brand-border)] bg-white p-4">
+              <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                  <div className="mb-1 text-xs font-semibold text-[var(--brand-ink)]">
+                    Technical Structure
+                  </div>
+                  <h3 className="text-lg font-bold leading-tight text-[oklch(0.16_0.014_160)]">
+                    {technicalTitle}
+                  </h3>
+                  <p className="mt-1 text-xs leading-relaxed text-[oklch(0.45_0.018_160)]">
+                    {technicalDescription}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {technicalDataLoading && (
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--brand-border)] bg-white px-2.5 py-1 text-xs font-semibold text-[var(--brand-ink)]">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                      K-line loading
+                    </span>
+                  )}
+                  <span className="rounded-full border border-[var(--brand-border)] bg-[var(--brand-soft)] px-2.5 py-1 text-xs font-semibold text-[var(--brand-ink)]">
+                    {technicalDashboard.status}
+                  </span>
+                  <span className="rounded-full border border-border bg-[oklch(0.992_0.005_85)] px-2.5 py-1 text-xs font-semibold text-[oklch(0.36_0.018_160)]">
+                    Live data {technicalDashboard.summary.liveDataAvailable ? 'on' : 'off'}
+                  </span>
+                  <span className="rounded-full border border-border bg-[oklch(0.992_0.005_85)] px-2.5 py-1 text-xs font-semibold text-[oklch(0.36_0.018_160)]">
+                    Gaps {technicalGapCount}
+                  </span>
+                </div>
+              </div>
+              {technicalDataError && (
+                <div className="mt-3 rounded-[8px] border border-[var(--risk-border)] bg-[var(--risk-soft)] px-3 py-2 text-xs leading-relaxed text-[var(--risk-ink)]">
+                  {technicalDataError}
+                </div>
+              )}
+            </div>
+            <TechnicalDashboardPanel report={report} />
+          </section>
+        )}
+
+        <details className="mb-5 rounded-[8px] border border-border bg-white p-3" open={!buySideReport}>
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold text-[oklch(0.22_0.018_160)]">
+            <span className="inline-flex items-center gap-2">
+              <FileText className="h-4 w-4 text-[var(--brand-ink)]" aria-hidden="true" />
+              Supporting Research Modules
+            </span>
+            <span className="rounded-full border border-border bg-muted px-2.5 py-1 text-xs text-[oklch(0.45_0.018_160)]">
+              legacy diagnostics
+            </span>
+          </summary>
+          <div className="mt-4">
         <div className="mb-4 grid gap-3 lg:grid-cols-[minmax(0,1.12fr)_minmax(280px,0.88fr)]">
           <section className="rounded-[8px] border border-border bg-white p-4">
             <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-[var(--brand-ink)]">
@@ -388,7 +608,7 @@ export function GeneratedCardPreview({
             <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold text-[var(--brand-ink)]">
               <span className="inline-flex items-center gap-2">
                 <BrainCircuit className="h-4 w-4" aria-hidden="true" />
-                LLM 研究摘要
+                ResearchReport 辅助摘要
               </span>
               <span className="rounded-full border border-[var(--brand-border)] bg-[var(--brand-soft)] px-2.5 py-1 text-xs">
                 辅助解读
@@ -409,7 +629,7 @@ export function GeneratedCardPreview({
             <ResearchModuleHeader
               icon={<BarChart3 className="h-4 w-4" aria-hidden="true" />}
               title="财报快照"
-              subtitle="只保留本次财报最需要先看的收入、利润、EPS 与质量提示。"
+              subtitle="只保留本次财报最需要先看的收入、利润、EPS 与来源提示。"
               source={activeEarningsSnapshot?.provider ?? primarySource}
               generatedBy="数据层"
               updatedAt={updatedAt}
@@ -420,7 +640,7 @@ export function GeneratedCardPreview({
             ) : (
               <EmptyModuleState
                 title="暂无财报快照"
-                body="当前标的还没有可用的财报数据，仍可查看基础研究卡和后续补数提示。"
+                body="当前标的还没有可用的财报数据，仍可查看 ResearchReport 草稿和后续补数提示。"
               />
             )}
           </section>
@@ -528,6 +748,8 @@ export function GeneratedCardPreview({
             </div>
           </section>
         </div>
+          </div>
+        </details>
 
         <details className="mt-5 rounded-[8px] border border-border bg-white p-3">
           <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-semibold text-[oklch(0.22_0.018_160)]">

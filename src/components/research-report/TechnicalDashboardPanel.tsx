@@ -16,6 +16,7 @@ import type {
   TechnicalDashboardStatus,
   TechnicalDashboardZone,
 } from '@/types/research-report';
+import { TechnicalKLineChartPanel } from './TechnicalKLineChartPanel';
 
 interface TechnicalDashboardPanelProps {
   report: ResearchReport;
@@ -24,7 +25,7 @@ interface TechnicalDashboardPanelProps {
 const statusLabels: Record<TechnicalDashboardStatus, string> = {
   adapted: 'Adapted',
   partial_adapter: 'Partial Adapter',
-  mock: 'Mock',
+  mock: 'Mock Ready',
   partial_mock: 'Partial Mock',
   blocked: 'Blocked',
 };
@@ -90,6 +91,11 @@ function EmptyState({ label }: { label: string }) {
 export function TechnicalDashboardPanel({ report }: TechnicalDashboardPanelProps) {
   const dashboard = report.technicalDashboard;
   const { summary } = dashboard;
+  const isLiveAdapter = summary.liveDataAvailable && dashboard.mode === 'technical_data_adapter';
+  const liveDataLabel = isLiveAdapter ? 'Yahoo K-line' : 'fallback only';
+  const indicatorTitle = isLiveAdapter ? 'Indicator Matrix' : 'Indicator Matrix Fallback';
+  const zoneTitle = isLiveAdapter ? 'Calculated Key Zones' : 'Key Zones Fallback';
+  const kLineChart = dashboard.dataSnapshot.chart;
 
   return (
     <div className="space-y-4">
@@ -98,7 +104,7 @@ export function TechnicalDashboardPanel({ report }: TechnicalDashboardPanelProps
           <div className="min-w-0">
             <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-[var(--brand-ink)]">
               <LineChart className="h-4 w-4" aria-hidden="true" />
-              Technical Data Adapter
+              Technical Structure Dashboard
             </div>
             <h3 className="text-xl font-bold leading-tight text-[oklch(0.16_0.014_160)]">
               {dashboard.title}
@@ -111,7 +117,7 @@ export function TechnicalDashboardPanel({ report }: TechnicalDashboardPanelProps
             </span>
             <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-2.5 py-1 font-mono text-xs text-[oklch(0.46_0.018_160)]">
               <Database className="h-3.5 w-3.5" aria-hidden="true" />
-              {summary.adapterReady ? 'Adapter ready' : 'Adapter pending'}
+              {liveDataLabel}
             </span>
           </div>
         </div>
@@ -142,7 +148,7 @@ export function TechnicalDashboardPanel({ report }: TechnicalDashboardPanelProps
           <div className="rounded-[8px] border border-border bg-[oklch(0.992_0.005_85)] p-3">
             <div className="mb-1 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-normal text-[oklch(0.48_0.018_160)]">
               <BarChart3 className="h-3.5 w-3.5" aria-hidden="true" />
-              Provider
+              Data Mode
             </div>
             <div className="truncate font-mono text-xs font-semibold text-[oklch(0.18_0.014_160)]">
               {summary.provider}
@@ -160,11 +166,17 @@ export function TechnicalDashboardPanel({ report }: TechnicalDashboardPanelProps
         </div>
       </div>
 
+      {kLineChart?.bars.length ? (
+        <TechnicalKLineChartPanel chart={kLineChart} />
+      ) : (
+        <EmptyState label="K-line chart pending live Yahoo chart data" />
+      )}
+
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.42fr)]">
         <section className="rounded-[8px] border border-border bg-white p-4">
           <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-[oklch(0.18_0.014_160)]">
             <Activity className="h-4 w-4" aria-hidden="true" />
-            Indicator Matrix
+            {indicatorTitle}
           </div>
           <div className="grid gap-2 md:grid-cols-2">
             {dashboard.indicators.map((indicator) => (
@@ -204,7 +216,7 @@ export function TechnicalDashboardPanel({ report }: TechnicalDashboardPanelProps
         <section className="rounded-[8px] border border-border bg-white p-4">
           <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-[oklch(0.18_0.014_160)]">
             <Layers className="h-4 w-4" aria-hidden="true" />
-            Key Zones
+            {zoneTitle}
           </div>
           <div className="space-y-2">
             {dashboard.zones.length > 0 ? (
@@ -255,7 +267,7 @@ export function TechnicalDashboardPanel({ report }: TechnicalDashboardPanelProps
         <section className="rounded-[8px] border border-border bg-white p-4">
           <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-[oklch(0.18_0.014_160)]">
             <ShieldAlert className="h-4 w-4" aria-hidden="true" />
-            Data Readiness
+            Technical Readiness
           </div>
           <div className="space-y-2">
             <div className="rounded-[8px] border border-border bg-muted p-3">
@@ -271,7 +283,7 @@ export function TechnicalDashboardPanel({ report }: TechnicalDashboardPanelProps
             <div className="rounded-[8px] border border-border bg-muted p-3">
               <div className="mb-1 text-xs font-semibold text-[oklch(0.44_0.018_160)]">Live Data</div>
               <div className="font-mono text-xs text-[oklch(0.2_0.016_160)]">
-                {summary.liveDataAvailable ? 'available' : 'not connected'}
+                {summary.liveDataAvailable ? 'available' : 'fallback'}
               </div>
             </div>
             {summary.dataAsOf && (

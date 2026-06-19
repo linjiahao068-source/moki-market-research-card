@@ -8,14 +8,22 @@ import {
   generateRealDataResearchCard,
   mockGenerateResearchCard,
 } from '@/lib/generateResearchCard/mockGenerateResearchCard';
+import { attachTechnicalDataSnapshotToReport } from '@/lib/research-report/attachTechnicalDataSnapshot';
+import { buildResearchReportFromCard } from '@/lib/research-report/fromResearchCard';
 import { resolveSecurityInput } from '@/lib/security/resolveSecurityInput';
-import { BasicCompanyData } from '@/types/basic-data';
-import { EarningsSnapshotData } from '@/types/earnings';
-import { LLMResearchInput } from '@/types/evidence';
-import { ResearchBrief } from '@/types/research-brief';
-import { ResearchCard } from '@/types/research-card';
-import { SecurityRecord } from '@/types/security';
-import { SerenityMemo } from '@/types/serenity-memo';
+import type { BasicCompanyData } from '@/types/basic-data';
+import type { EarningsSnapshotData } from '@/types/earnings';
+import type { LLMResearchInput } from '@/types/evidence';
+import type { ResearchBrief } from '@/types/research-brief';
+import type { ResearchCard } from '@/types/research-card';
+import type {
+  ResearchReport,
+  ResearchSourceInput,
+  ResearchSourceInputType,
+  TechnicalDataSnapshot,
+} from '@/types/research-report';
+import type { SecurityRecord } from '@/types/security';
+import type { SerenityMemo } from '@/types/serenity-memo';
 import { GeneratedCardPreview } from './GeneratedCardPreview';
 
 interface TickerInputFormProps {
@@ -24,7 +32,33 @@ interface TickerInputFormProps {
 
 interface GeneratedState {
   card: ResearchCard;
+  report: ResearchReport;
   isFallback: boolean;
+}
+
+function buildGeneratedState(card: ResearchCard, isFallback: boolean): GeneratedState {
+  return {
+    card,
+    report: buildResearchReportFromCard(card),
+    isFallback,
+  };
+}
+
+function buildReportForCardUpdate(current: GeneratedState, card: ResearchCard) {
+  if (current.report.generationState?.method === 'llm_research_report_json') {
+    return current.report;
+  }
+
+  const report = buildResearchReportFromCard(card);
+
+  if (current.report.generationState && current.report.generationState.provider !== 'legacy-adapter') {
+    return {
+      ...report,
+      generationState: current.report.generationState,
+    };
+  }
+
+  return report;
 }
 
 function resolveInitialCard(initialQuery: string): GeneratedState | null {
@@ -34,14 +68,51 @@ function resolveInitialCard(initialQuery: string): GeneratedState | null {
     return null;
   }
 
-  return {
-    card: result.card,
-    isFallback: result.resolution.status === 'unmatched',
-  };
+  return buildGeneratedState(result.card, result.resolution.status === 'unmatched');
 }
 
 function buildCandidateInput(candidate: SecurityRecord) {
   return candidate.symbol ?? candidate.numericCode ?? candidate.chineseNameHK ?? candidate.companyName;
+}
+
+function buildManualSourceInputs({
+  query,
+  sourceText,
+  sourceTitle,
+  sourceType,
+}: {
+  query: string;
+  sourceText: string;
+  sourceTitle: string;
+  sourceType: ResearchSourceInputType;
+}): ResearchSourceInput[] {
+  const text = sourceText.trim();
+
+  if (!text) {
+    return [];
+  }
+
+  const now = new Date().toISOString();
+  const title = sourceTitle.trim() || `${query || 'Manual'} source excerpt`;
+
+  return [
+    {
+      title,
+      sourceLabel: title,
+      sourceType,
+      fetchedAt: now,
+      text,
+    },
+  ];
+}
+
+function attachSourceInputs(card: ResearchCard, sourceInputs: ResearchSourceInput[]) {
+  return sourceInputs.length > 0
+    ? {
+        ...card,
+        sourceInputs,
+      }
+    : card;
 }
 
 async function fetchBasicData(query: string): Promise<{ data: BasicCompanyData | null; error: string }> {
@@ -132,7 +203,7 @@ async function fetchResearchBrief(input?: LLMResearchInput): Promise<{ brief: Re
     if (!response.ok) {
       return {
         brief: null,
-        error: 'LLM Research Brief 生成失败，已保留基础研究卡。',
+        error: 'LLM 辅助摘要生成失败，已保留基础 ResearchReport 草稿。',
       };
     }
 
@@ -145,7 +216,84 @@ async function fetchResearchBrief(input?: LLMResearchInput): Promise<{ brief: Re
   } catch {
     return {
       brief: null,
-      error: 'LLM Research Brief 请求超时或失败，已保留基础研究卡。',
+      error: 'LLM 辅助摘要请求超时或失败，已保留基础 ResearchReport 草稿。',
+    };
+  } finally {
+    window.clearTimeout(timeout);
+  }
+}
+
+async function fetchResearchReport(card: ResearchCard): Promise<{ report: ResearchReport | null; error: string }> {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 135000);
+
+  try {
+    const response = await fetch('/api/research-report', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ card }),
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      return {
+        report: null,
+        error: 'ResearchReport API 生成失败，已保留兼容报告。',
+      };
+    }
+
+    const payload = await response.json() as { report?: ResearchReport };
+
+    return {
+      report: payload.report ?? null,
+      error: payload.report ? '' : 'ResearchReport API 暂无可展示结果，已保留兼容报告。',
+    };
+  } catch {
+    return {
+      report: null,
+      error: 'ResearchReport API 请求超时或失败，已保留兼容报告。',
+    };
+  } finally {
+    window.clearTimeout(timeout);
+  }
+}
+
+async function fetchTechnicalData(card: ResearchCard): Promise<{ snapshot: TechnicalDataSnapshot | null; error: string }> {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 30000);
+
+  try {
+    const response = await fetch('/api/technical-data', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ card }),
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      return {
+        snapshot: null,
+        error: 'Technical data adapter request failed; dashboard kept legacy fallback.',
+      };
+    }
+
+    const payload = await response.json() as { snapshot?: TechnicalDataSnapshot };
+    const snapshot = payload.snapshot ?? null;
+
+    return {
+      snapshot,
+      error: snapshot?.status === 'unavailable'
+        ? snapshot.warnings[0] ?? 'Technical data adapter returned no usable live data.'
+        : '',
+    };
+  } catch {
+    return {
+      snapshot: null,
+      error: 'Technical data adapter timed out; dashboard kept legacy fallback.',
     };
   } finally {
     window.clearTimeout(timeout);
@@ -176,7 +324,7 @@ async function fetchSerenityMemo(input?: LLMResearchInput): Promise<{ memo: Sere
     if (!response.ok) {
       return {
         memo: null,
-        error: 'Serenity Skill Memo 生成失败，已保留基础研究卡。',
+        error: 'Serenity Skill Memo 生成失败，已保留基础 ResearchReport 草稿。',
       };
     }
 
@@ -189,7 +337,7 @@ async function fetchSerenityMemo(input?: LLMResearchInput): Promise<{ memo: Sere
   } catch {
     return {
       memo: null,
-      error: 'Serenity Skill Memo 请求超时或失败，已保留基础研究卡。',
+      error: 'Serenity Skill Memo 请求超时或失败，已保留基础 ResearchReport 草稿。',
     };
   } finally {
     window.clearTimeout(timeout);
@@ -198,6 +346,9 @@ async function fetchSerenityMemo(input?: LLMResearchInput): Promise<{ memo: Sere
 
 export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
   const [query, setQuery] = useState(initialQuery);
+  const [sourceText, setSourceText] = useState('');
+  const [sourceTitle, setSourceTitle] = useState('');
+  const [sourceType, setSourceType] = useState<ResearchSourceInputType>('manual_note');
   const [error, setError] = useState('');
   const [basicDataError, setBasicDataError] = useState('');
   const [earningsSnapshotError, setEarningsSnapshotError] = useState('');
@@ -208,10 +359,81 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
   const [isPending, startTransition] = useTransition();
   const [isBasicDataLoading, setIsBasicDataLoading] = useState(false);
   const [isEarningsSnapshotLoading, setIsEarningsSnapshotLoading] = useState(false);
+  const [isResearchReportLoading, setIsResearchReportLoading] = useState(false);
+  const [researchReportError, setResearchReportError] = useState('');
+  const [isTechnicalDataLoading, setIsTechnicalDataLoading] = useState(false);
+  const [technicalDataError, setTechnicalDataError] = useState('');
   const [isResearchBriefLoading, setIsResearchBriefLoading] = useState(false);
   const [researchBriefError, setResearchBriefError] = useState('');
   const [isSerenityMemoLoading, setIsSerenityMemoLoading] = useState(false);
   const [serenityMemoError, setSerenityMemoError] = useState('');
+
+  async function attachResearchReport(card: ResearchCard) {
+    setResearchReportError('');
+    setIsResearchReportLoading(true);
+    const result = await fetchResearchReport(card);
+    setIsResearchReportLoading(false);
+
+    if (result.error) {
+      setResearchReportError(result.error);
+    }
+
+    if (!result.report) {
+      return;
+    }
+
+    setGenerated((current) => {
+      if (!current || current.card.slug !== card.slug) {
+        return current;
+      }
+
+      const nextReport = current.card.technicalDataSnapshot
+        ? attachTechnicalDataSnapshotToReport(result.report ?? current.report, current.card.technicalDataSnapshot)
+        : result.report ?? current.report;
+
+      return {
+        ...current,
+        report: nextReport,
+      };
+    });
+  }
+
+  async function attachTechnicalData(card: ResearchCard) {
+    setTechnicalDataError('');
+    setIsTechnicalDataLoading(true);
+    const result = await fetchTechnicalData(card);
+    setIsTechnicalDataLoading(false);
+
+    if (result.error) {
+      setTechnicalDataError(result.error);
+    }
+
+    if (!result.snapshot) {
+      return;
+    }
+
+    const snapshot = result.snapshot;
+
+    setGenerated((current) => {
+      if (!current || current.card.slug !== card.slug) {
+        return current;
+      }
+
+      const nextCard = {
+        ...current.card,
+        technicalDataSnapshot: snapshot,
+      };
+      const baseReport = current.report.generationState?.method === 'llm_research_report_json'
+        ? current.report
+        : buildReportForCardUpdate(current, nextCard);
+
+      return {
+        ...current,
+        card: nextCard,
+        report: attachTechnicalDataSnapshotToReport(baseReport, snapshot),
+      };
+    });
+  }
 
   async function attachResearchBrief(card: ResearchCard) {
     setResearchBriefError('');
@@ -232,12 +454,15 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
         return current;
       }
 
+      const nextCard = {
+        ...current.card,
+        researchBrief: result.brief ?? undefined,
+      };
+
       return {
         ...current,
-        card: {
-          ...current.card,
-          researchBrief: result.brief ?? undefined,
-        },
+        card: nextCard,
+        report: buildReportForCardUpdate(current, nextCard),
       };
     });
   }
@@ -261,17 +486,22 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
         return current;
       }
 
+      const nextCard = {
+        ...current.card,
+        serenityMemo: result.memo ?? undefined,
+      };
+
       return {
         ...current,
-        card: {
-          ...current.card,
-          serenityMemo: result.memo ?? undefined,
-        },
+        card: nextCard,
+        report: buildReportForCardUpdate(current, nextCard),
       };
     });
   }
 
   function attachGeneratedAnalysis(card: ResearchCard) {
+    void attachTechnicalData(card);
+    void attachResearchReport(card);
     void attachResearchBrief(card);
     void attachSerenityMemo(card);
   }
@@ -282,6 +512,8 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
     setError('');
     setBasicDataError('');
     setEarningsSnapshotError('');
+    setResearchReportError('');
+    setTechnicalDataError('');
     setResearchBriefError('');
     setSerenityMemoError('');
     setCandidates([]);
@@ -313,13 +545,18 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
       return;
     }
 
-    startTransition(() => {
-      setGenerated({
-        card: result.card,
-        isFallback: result.resolution.status === 'unmatched',
-      });
+    const sourceInputs = buildManualSourceInputs({
+      query: candidateInput,
+      sourceText,
+      sourceTitle,
+      sourceType,
     });
-    attachGeneratedAnalysis(result.card);
+    const cardWithSources = attachSourceInputs(result.card, sourceInputs);
+
+    startTransition(() => {
+      setGenerated(buildGeneratedState(cardWithSources, result.resolution.status === 'unmatched'));
+    });
+    attachGeneratedAnalysis(cardWithSources);
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -331,6 +568,8 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
       setError('请输入股票代码、Ticker 或中文名。');
       setCandidates([]);
       setGenerated(null);
+      setResearchReportError('');
+      setTechnicalDataError('');
       setResearchBriefError('');
       setSerenityMemoError('');
       return;
@@ -340,6 +579,8 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
       setError('暂不支持该输入格式。');
       setCandidates([]);
       setGenerated(null);
+      setResearchReportError('');
+      setTechnicalDataError('');
       setResearchBriefError('');
       setSerenityMemoError('');
       return;
@@ -349,6 +590,8 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
       setError('匹配到多个证券，请选择候选项，或输入更精确的股票代码、Ticker 或中文名。');
       setCandidates(resolution.candidates);
       setGenerated(null);
+      setResearchReportError('');
+      setTechnicalDataError('');
       setResearchBriefError('');
       setSerenityMemoError('');
       return;
@@ -357,6 +600,8 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
     setError('');
     setBasicDataError('');
     setEarningsSnapshotError('');
+    setResearchReportError('');
+    setTechnicalDataError('');
     setResearchBriefError('');
     setSerenityMemoError('');
     setCandidates([]);
@@ -387,13 +632,18 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
       return;
     }
 
-    startTransition(() => {
-      setGenerated({
-        card: result.card,
-        isFallback: result.resolution.status === 'unmatched',
-      });
+    const sourceInputs = buildManualSourceInputs({
+      query,
+      sourceText,
+      sourceTitle,
+      sourceType,
     });
-    attachGeneratedAnalysis(result.card);
+    const cardWithSources = attachSourceInputs(result.card, sourceInputs);
+
+    startTransition(() => {
+      setGenerated(buildGeneratedState(cardWithSources, result.resolution.status === 'unmatched'));
+    });
+    attachGeneratedAnalysis(cardWithSources);
   }
 
   return (
@@ -439,11 +689,53 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
         <div className="mb-5 rounded-[8px] border border-[var(--brand-border)] bg-[var(--brand-soft)] p-3">
           <div className="text-xs font-semibold text-[var(--brand-ink)]">输出结构</div>
           <div className="mt-1 text-sm font-semibold text-[oklch(0.18_0.014_160)]">
-            Executive Investment View
+            ResearchReport Schema
           </div>
           <p className="mt-1 text-xs leading-relaxed text-[oklch(0.43_0.018_160)]">
-            固定输出执行摘要、财报与指引、买方情景和证据引用，后续将迁移到 ResearchReport schema。
+            固定输出执行摘要、财报与指引、买方情景、监控项和 References；旧 ResearchCard 结构仅作为缺失数据时的兼容输入。
           </p>
+        </div>
+
+        <div className="mb-5 rounded-[8px] border border-border bg-[oklch(0.985_0.004_95)] p-3">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div>
+              <div className="text-xs font-semibold text-[var(--brand-ink)]">Source Ingestion</div>
+              <div className="mt-1 text-sm font-semibold text-[oklch(0.18_0.014_160)]">来源摘录</div>
+            </div>
+            <span className="rounded-full border border-[var(--brand-border)] bg-white px-2.5 py-1 text-[11px] font-semibold text-[var(--brand-ink)]">
+              v0.4.9
+            </span>
+          </div>
+          <div className="grid gap-2">
+            <input
+              value={sourceTitle}
+              onChange={(event) => setSourceTitle(event.target.value)}
+              placeholder="10-Q / earnings transcript / news"
+              className="h-10 w-full rounded-[8px] border border-border bg-white px-3 text-sm font-medium text-[oklch(0.18_0.014_160)] outline-none transition-colors placeholder:font-normal placeholder:text-[oklch(0.58_0.018_160)] focus:border-[var(--brand-border)] focus:ring-2 focus:ring-[var(--brand-soft)]"
+            />
+            <select
+              value={sourceType}
+              onChange={(event) => setSourceType(event.target.value as ResearchSourceInputType)}
+              className="h-10 w-full rounded-[8px] border border-border bg-white px-3 text-sm font-medium text-[oklch(0.18_0.014_160)] outline-none transition-colors focus:border-[var(--brand-border)] focus:ring-2 focus:ring-[var(--brand-soft)]"
+            >
+              <option value="manual_note">Manual note</option>
+              <option value="company_filing">Company filing</option>
+              <option value="earnings_transcript">Earnings transcript</option>
+              <option value="news">News</option>
+              <option value="data_provider">Data provider</option>
+              <option value="other">Other</option>
+            </select>
+            <textarea
+              value={sourceText}
+              onChange={(event) => setSourceText(event.target.value)}
+              placeholder="Paste source excerpt"
+              rows={5}
+              className="min-h-28 w-full resize-y rounded-[8px] border border-border bg-white px-3 py-2 text-sm leading-relaxed text-[oklch(0.18_0.014_160)] outline-none transition-colors placeholder:text-[oklch(0.58_0.018_160)] focus:border-[var(--brand-border)] focus:ring-2 focus:ring-[var(--brand-soft)]"
+            />
+          </div>
+          <div className="mt-2 text-xs font-medium text-[oklch(0.48_0.018_160)]">
+            {sourceText.trim() ? `${sourceText.trim().length} chars queued` : 'Optional'}
+          </div>
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
@@ -468,9 +760,14 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
             type="button"
             onClick={() => {
               setQuery('');
+              setSourceText('');
+              setSourceTitle('');
+              setSourceType('manual_note');
               setError('');
               setBasicDataError('');
               setEarningsSnapshotError('');
+              setResearchReportError('');
+              setTechnicalDataError('');
               setResearchBriefError('');
               setSerenityMemoError('');
               setCandidates([]);
@@ -509,6 +806,7 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
         )}
         <GeneratedCardPreview
           card={generated?.card ?? null}
+          report={generated?.report ?? null}
           isFallback={generated?.isFallback}
           candidates={candidates}
           rawInput={query}
@@ -516,6 +814,10 @@ export function TickerInputForm({ initialQuery = '' }: TickerInputFormProps) {
           earningsSnapshot={earningsSnapshot}
           researchBriefLoading={isResearchBriefLoading}
           researchBriefError={researchBriefError}
+          researchReportLoading={isResearchReportLoading}
+          researchReportError={researchReportError}
+          technicalDataLoading={isTechnicalDataLoading}
+          technicalDataError={technicalDataError}
           serenityMemoLoading={isSerenityMemoLoading}
           serenityMemoError={serenityMemoError}
         />

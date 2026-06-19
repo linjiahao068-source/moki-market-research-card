@@ -39,6 +39,14 @@ function integratedStatus(input: IntegratedReportInput): IntegratedReportStatus 
   return 'ready';
 }
 
+function technicalChartBarCount(input: IntegratedReportInput) {
+  return input.technicalDashboard.dataSnapshot.chart?.bars.length ?? 0;
+}
+
+function technicalChartAvailable(input: IntegratedReportInput) {
+  return input.technicalDashboard.summary.liveDataAvailable && technicalChartBarCount(input) > 0;
+}
+
 function pillarStatus(input: {
   blocked?: boolean;
   ready?: boolean;
@@ -65,6 +73,7 @@ function buildReadiness(input: IntegratedReportInput, status: IntegratedReportSt
     ...input.sourceIngestionState.warnings,
     ...input.buySideReport.generationState.warnings,
     ...input.technicalDashboard.warnings,
+    technicalChartAvailable(input) ? undefined : 'Technical K-line chart is not available.',
   ]).length + input.evidenceLayer.summary.warningCount;
 
   return {
@@ -96,6 +105,16 @@ function firstFactIds(input: IntegratedReportInput, limit = 8) {
 }
 
 function buildPillars(input: IntegratedReportInput): IntegratedReportPillar[] {
+  const chartBars = technicalChartBarCount(input);
+  const chartInterval = input.technicalDashboard.dataSnapshot.chart?.interval;
+  const technicalWarnings = unique([
+    ...input.technicalDashboard.warnings,
+    chartBars > 0 ? undefined : 'Technical K-line chart payload is missing.',
+  ]);
+  const technicalDetail = chartBars > 0
+    ? `${input.technicalDashboard.indicators.length} indicators, ${input.technicalDashboard.zones.length} zones, ${chartBars} K-line bars (${chartInterval ?? 'interval n/a'}), live data available.`
+    : `${input.technicalDashboard.indicators.length} indicators, ${input.technicalDashboard.zones.length} zones, live data ${input.technicalDashboard.summary.liveDataAvailable ? 'available without chart payload' : 'not connected'}.`;
+
   return [
     {
       id: 'source_ingestion',
@@ -145,14 +164,16 @@ function buildPillars(input: IntegratedReportInput): IntegratedReportPillar[] {
       title: 'Technical Data',
       status: pillarStatus({
         blocked: input.technicalDashboard.status === 'blocked',
-        ready: input.technicalDashboard.status === 'adapted',
-        warnings: input.technicalDashboard.warnings,
+        ready: input.technicalDashboard.status === 'adapted' && chartBars > 0,
+        warnings: technicalWarnings,
       }),
-      headline: `${input.technicalDashboard.summary.provider} / ${input.technicalDashboard.summary.adapterStatus}`,
-      detail: `${input.technicalDashboard.indicators.length} indicators, ${input.technicalDashboard.zones.length} zones, live data ${input.technicalDashboard.summary.liveDataAvailable ? 'available' : 'not connected'}.`,
+      headline: chartBars > 0
+        ? `${input.technicalDashboard.summary.provider} / ${chartBars} K-line bars`
+        : `${input.technicalDashboard.summary.provider} / ${input.technicalDashboard.summary.adapterStatus}`,
+      detail: technicalDetail,
       evidenceIds: input.technicalDashboard.indicators.flatMap((indicator) => indicator.evidenceIds).slice(0, 6),
       factIds: input.technicalDashboard.indicators.flatMap((indicator) => indicator.factIds).slice(0, 8),
-      warnings: input.technicalDashboard.warnings,
+      warnings: technicalWarnings,
     },
     {
       id: 'follow_up_research',
@@ -208,8 +229,11 @@ function buildReviewQueue(input: IntegratedReportInput, pillars: IntegratedRepor
 function buildExecutiveNarrative(input: IntegratedReportInput) {
   const thesis = input.buySideReport.investmentView.thesis[0] ?? input.executiveSummary.currentState;
   const sourceState = input.sourceIngestionState.status;
+  const chartState = technicalChartAvailable(input)
+    ? `${technicalChartBarCount(input)} K-line bars as of ${input.technicalDashboard.dataSnapshot.chart?.dataAsOf?.slice(0, 10) ?? input.technicalDashboard.summary.dataAsOf?.slice(0, 10) ?? 'latest session'}`
+    : 'no live K-line chart payload';
 
-  return `${thesis} Technical context is ${input.technicalDashboard.summary.adapterStatus} through ${input.technicalDashboard.summary.provider}; source ingestion is ${sourceState}.`;
+  return `${thesis} Technical context is ${input.technicalDashboard.summary.adapterStatus} through ${input.technicalDashboard.summary.provider} with ${chartState}; source ingestion is ${sourceState}.`;
 }
 
 export function buildIntegratedResearchReport(input: IntegratedReportInput): IntegratedResearchReport {
@@ -217,6 +241,7 @@ export function buildIntegratedResearchReport(input: IntegratedReportInput): Int
   const readiness = buildReadiness(input, status);
   const pillars = buildPillars(input);
   const reviewQueue = buildReviewQueue(input, pillars);
+  const chart = input.technicalDashboard.dataSnapshot.chart;
 
   return {
     id: `integrated-report-${input.slug}`,
@@ -237,9 +262,14 @@ export function buildIntegratedResearchReport(input: IntegratedReportInput): Int
       fallbackEvidenceCount: input.evidenceLayer.summary.fallbackEvidenceCount,
       technicalProvider: input.technicalDashboard.summary.provider,
       liveTechnicalDataAvailable: input.technicalDashboard.summary.liveDataAvailable,
+      technicalChartAvailable: Boolean(chart?.bars.length),
+      technicalChartBarCount: chart?.bars.length ?? 0,
+      technicalChartInterval: chart?.interval,
+      technicalDataAsOf: chart?.dataAsOf ?? input.technicalDashboard.summary.dataAsOf,
       sourceSummary: unique([
         ...input.sourceIngestionState.sourceSummary,
         ...input.technicalDashboard.dataSnapshot.sourceSummary,
+        chart?.bars.length ? `K-line chart ${chart.symbol} ${chart.range}/${chart.interval} bars=${chart.bars.length}` : undefined,
       ]).slice(0, 10),
     },
     disclaimer: `${input.disclaimer} Integrated report output is a research workflow summary only; it is not investment advice, a rating, or a trading instruction.`,

@@ -1,6 +1,8 @@
 # 研究报告结构规范
 
-v0.3.7 起，用户界面从多种实验卡片类型收敛为 `Executive Investment View`。v0.4.6 已在 `ResearchReport` schema 基础层上新增 Evidence Reference Layer、Research Source Ingestion、Buy-Side Report Generator、Technical Dashboard Mock、Technical Data Adapter 和 Integrated Research Report，`ResearchCard` 继续作为 legacy 兼容输入与现有渲染层存在。
+> v0.5.3 status: `/generate` now promotes Integrated Research Report as the primary output, combining source ingestion, evidence layer, Buy-Side Research Report, Yahoo chart K-line Technical Dashboard, readiness, source audit, and review queue.
+
+v0.3.7 起，用户界面从多种实验卡片类型收敛为 `Executive Investment View`。v0.5.3 已把 `/generate` 的主输出推进为 Integrated Research Report：`ResearchCard` 继续作为 seed 和 fallback 输入存在，但用户优先看到的是带 source audit、review queue、buy-side thesis 和 Yahoo chart technical snapshot 的整合报告产品视图。
 
 ## 当前报告结构
 
@@ -30,7 +32,7 @@ v0.3.7 起，用户界面从多种实验卡片类型收敛为 `Executive Investm
 
 ### 7. Technical Data Adapter
 
-基于已有技术文案、关键区间、buy-side monitoring plan 和 scenario read-through 生成 `TechnicalDataSnapshot` 并驱动技术仪表盘。当前版本不接实时行情、不计算技术指标、不形成操作建议。
+优先基于 Yahoo chart 日线 K 线生成 `TechnicalDataSnapshot` 并驱动技术仪表盘，覆盖 candlestick chart、EMA5/10/20/50 overlays、volume bars、MA20/MA50、RSI14、20d realized volatility、20d volume pressure、benchmark relative strength 和 support/resistance zones。Yahoo chart 不可用时，回退到已有技术文案、关键区间、buy-side monitoring plan 和 scenario read-through。当前版本不形成操作建议、评级或交易指令。
 
 ### 8. Follow-up Research
 
@@ -95,16 +97,91 @@ v0.3.7 起，用户界面从多种实验卡片类型收敛为 `Executive Investm
 
 ## v0.4.6 Integrated Research Report
 
-- `ResearchReport.schemaVersion` 当前固定为 `v0.4.6`。
+- `ResearchReport.schemaVersion` 在 v0.4.6 时固定为 `v0.4.6`。
 - `ResearchReport.integratedReport` 新增整合研究报告产物，包含 readiness、pillar summaries、review queue、source audit 和 executive narrative。
 - `src/lib/research-report/integratedReportBuilder.ts` 聚合 `sourceIngestionState`、`evidenceLayer`、`buySideReport`、`technicalDashboard` 和 follow-up research。
 - `buildResearchReportFromCard` 构建顺序为 evidence layer -> buy-side report -> technical dashboard -> integrated report。
 - 详情页新增 Integrated Research Report 面板，放在 Executive Summary 后作为总览入口。
 - v0.4.6 不补写事实、不接新数据源、不生成评级、目标价或交易建议；readiness 和 review queue 由已有审计状态推导。
 
+## v0.4.7 Pivot Repair
+
+- `ResearchReport.schemaVersion` 在 v0.4.7 时固定为 `v0.4.7`。
+- `/generate` 顶部和表单输出结构改为 `ResearchReport Schema`，不再出现版本调试型 `v0.3.7 Report Pivot` 文案。
+- 生成预览不再展示用户可见的数据质量分；内部 confidence/data quality 字段仍可用于排序、fallback 和后续生成。
+- 生成态同步携带 `ResearchReport` bridge，并展示 schema version、section count、reference count 和待补引用数量，明确当前主输出目标是 `ResearchReport`。
+- `ResearchCard -> ResearchReport` adapter 仅作为 v0.4.7 过渡输入保留；原生 `/api/research-report` 已由 v0.4.8 承接。
+- v0.4.7 不声称已完成 source discovery、真实 technical dashboard、Yahoo chart K 线或买方研报原生 LLM 生成。
+
+## v0.4.8 ResearchReport Generation API
+
+- `ResearchReport.schemaVersion` 在 v0.4.8 时固定为 `v0.4.8`。
+- 新增 `/api/research-report`，接收完整 `ResearchCard` seed，返回受约束的 `ResearchReport`。
+- 新增 `src/lib/llm/researchReport.ts`，统一处理 prompt、JSON 生成、校验、一次 repair、fallback 和下游 report layer 重建。
+- 新增 ResearchReport prompt 和 validator，固定 section ids、evidence ids、fact ids 与 tone 范围，并禁止输出置信度、数据质量分、评级、目标价或交易指令。
+- `/generate` 优先调用 `/api/research-report`；若原生 API 失败或 LLM 未配置，则保留兼容 adapter 产物并展示 generation warnings。
+- `ResearchBrief` 和 `SerenityMemo` 仍可作为辅助对象返回，但不再允许覆盖已经生成的原生 `ResearchReport JSON`。
+- v0.4.8 不声称已完成 source discovery、真实 Technical Structure Dashboard、Yahoo chart K 线、技术指标计算或 benchmark relative strength。
+
+## v0.4.9 Research Source Ingestion Real Layer
+
+- `ResearchReport.schemaVersion` 在 v0.4.9 时固定为 `v0.4.9`。
+- `ResearchCard.sourceInputs` 新增用户/API 提供来源输入，支持 company filing、earnings transcript、news、data provider、manual note 和 other。
+- `ResearchReport.sourceIngestionState.chunks` 新增来源切片数组，记录 chunk id、source id、evidence id、source label/type、文本摘要和 token estimate。
+- `ResearchSourceIngestionRecord.chunkIds` 将 source record 与 chunks/evidence references 连接起来。
+- `src/lib/research-report/sourceIngestion.ts` 支持 legacy evidence adapter 和 provided source ingestion 两条路径。
+- 新增 `/api/research-sources`，用于直接校验来源输入、source records、chunks、evidence references 和 optional fact references。
+- `/api/research-report` 支持在 card seed 之外传入 `sources` / `sourceInputs`，并把它们纳入 ResearchReport prompt payload。
+- `/generate` 新增可选来源摘录输入，生成预览展示 source record count 和 chunk count。
+- v0.4.9 不声称已完成自动 source discovery、远程文档抓取、PDF/HTML 解析、检索索引、Yahoo chart K 线或真实 Technical Structure Dashboard。
+
+## v0.5.0 Buy-Side Report Product UI
+
+- `ResearchReport.schemaVersion` 在 v0.5.0 时固定为 `v0.5.0`。
+- `/generate` 页面标题和 hero 文案推进为 `Buy-Side Research Report`。
+- 生成预览把 `BuySideReportPanel` 提升为主输出，优先展示 investment view、key debates、business quality、scenario lanes、monitoring plan 和 source audit。
+- `ResearchReport` schema/readiness/source count 仍在买方报告前展示，作为报告阅读前的契约和来源状态。
+- 旧的决策摘要、财报快照、公司指引、情景推演和 Serenity Skill 模块折叠到 `Supporting Research Modules`，作为诊断和回溯信息。
+- v0.5.0 不声称已完成 Technical Structure Dashboard 产品界面、Yahoo chart K 线、技术指标计算或 benchmark relative strength。
+
+## v0.5.1 Technical Structure Dashboard Mock
+
+- `ResearchReport.schemaVersion` 当前固定为 `v0.5.1`。
+- `/generate` 在 Buy-Side Research Report 之后新增 `Technical Structure Dashboard Mock` 主输出区。
+- `TechnicalDashboardPanel` 展示 indicator matrix mock、key zones mock、scenario read-through 和 technical readiness。
+- `technicalDashboard.mode` 使用 `mock_from_research_report`，状态在 mock / partial mock / blocked 之间表达，不再把该层误写成真实行情接入。
+- 技术 dashboard 显示 live data off、gap count、provider、adapter readiness 和 review notes。
+- v0.5.1 不声称已完成 Yahoo chart、global-stock-data K 线、移动均线、RSI、MACD、波动率带、成交量分布或 benchmark relative strength。
+
+## v0.5.2 Technical Data Adapter Real
+
+- `ResearchReport.schemaVersion` 当前固定为 `v0.5.2-hotfix`。
+- 新增 `/api/technical-data`，支持 `GET ?query=` 和 `POST { card }`，返回统一 `TechnicalDataSnapshot`。
+- 新增 Yahoo chart 日线 K 线 adapter，使用 `globalStockData/marketSymbol` 做 US/HK Yahoo symbol 映射。
+- `TechnicalDataSnapshot` 真实接入 `market_data_provider`，包含 MA20/MA50 trend、RSI14、20d realized volatility、20d volume pressure、benchmark relative strength、20d support/resistance 和 6mo range。
+- `/generate` 并行请求 technical data，并把 snapshot 合并回 `ResearchReport.technicalDataSnapshot`、`technicalDashboard` 和 `integratedReport`。
+- `technicalDashboard.mode` 在真实数据可用时使用 `technical_data_adapter`，状态进入 `adapted` 或 `partial_adapter`；Yahoo chart 不可用时回退到 v0.5.1 `mock_from_research_report`。
+- 当前版本仍不输出 target price、buy/sell/hold rating、交易指令或完整交易系统信号；技术数据只作为研究上下文和 readiness 输入。
+
+### v0.5.2-hotfix K-Line Chart Surface
+
+- `TechnicalDataSnapshot.chart` 新增 OHLCV bar 序列、EMA5/10/20/50 和图表 metadata。
+- 新增 `TechnicalKLineChartPanel`，使用 `lightweight-charts` 渲染 candlestick K 线、EMA overlays 和成交量柱。
+- `TechnicalDashboardPanel` 在 indicator matrix 之前显示真实 K 线图；没有 live Yahoo chart 时显示 fallback 空状态。
+- 当前 hotfix 先真实支持 Yahoo chart 日 K。5D、周 K、月 K、30m 等周期切换仍待后续扩展。
+
+## v0.5.3 Integrated Research Report Product UI
+
+- `ResearchReport.schemaVersion` 当前固定为 `v0.5.3`。
+- `/generate` 将 `IntegratedResearchReportPanel` 提升到 Buy-Side 和 Technical 之前，作为主输出入口。
+- `IntegratedReportSourceAudit` 新增 technical chart audit：`technicalChartAvailable`、`technicalChartBarCount`、`technicalChartInterval` 和 `technicalDataAsOf`。
+- `integratedReport.pillars.technical_data` 汇总 K-line bar count、indicator count、zone count 和 live data 状态。
+- `integratedReport.reviewQueue` 会在 K-line chart payload 缺失时生成可见复核项。
+- 当前版本仍不生成 target price、rating 或交易指令；Integrated Report 只做研究工作流总览、审计和下一步复核队列。
+
 ## 迁移说明
 
-- `ResearchCard.cardType` 暂统一为 `executive-investment-view`，后续由 `ResearchReport.reportType` 接管用户可见语义。
+- `ResearchCard.cardType` 暂统一为 `executive-investment-view`，v0.4.7 起用户可见语义应以 `ResearchReport.reportType` 为准。
 - `confidence` 暂保留在 facts/evidence/LLM 输出中供内部排序和生成使用，但不作为用户界面展示项。
 - 旧的情绪雷达、新闻解读、AI 云雷达等卡片类型不再作为用户可选入口。
-- v0.4.0 不替换当前 UI 渲染数据源，只建立可验证、可导出的 schema 基础层。
+- v0.5.3 已把 source/evidence/buy-side/technical/K-line 汇总为 Integrated Research Report 主输出；后续版本仍需补自动 discovery、章节检索、更多 provider fallback 和更完整的技术指标族。

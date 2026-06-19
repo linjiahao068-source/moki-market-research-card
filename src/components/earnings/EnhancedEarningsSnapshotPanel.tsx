@@ -48,43 +48,24 @@ function formatMetricValue(metric: EarningsMetricComparison, value?: number) {
   return formatMoneyCompact(value, metric.currency ?? 'USD');
 }
 
-/**
- * 数据质量头部组件
- */
-function DataQualityHeader({ data }: { data: EarningsSnapshotData | EnhancedEarningsSnapshot }) {
-  const isEnhanced = isEnhancedSnapshot(data);
-  const score = isEnhanced ? data.dataQualityScore : null;
-
-  let scoreColor = 'text-gray-600';
-  if (score !== null && score !== undefined) {
-    if (score >= 8) scoreColor = 'text-green-600';
-    else if (score >= 5) scoreColor = 'text-yellow-600';
-    else scoreColor = 'text-red-600';
-  }
+function DataStatusHeader({ data }: { data: EarningsSnapshotData | EnhancedEarningsSnapshot }) {
+  const hasWarnings = data.warnings.length > 0;
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-white p-3">
       <div className="flex items-center gap-2">
-        {score !== null && score !== undefined && score >= 7 ? (
-          <CheckCircle className="h-4 w-4 text-green-500" />
-        ) : score !== null && score !== undefined && score >= 4 ? (
-          <AlertTriangle className="h-4 w-4 text-yellow-500" />
-        ) : score !== null && score !== undefined ? (
-          <AlertTriangle className="h-4 w-4 text-red-500" />
+        {hasWarnings ? (
+          <AlertTriangle className="h-4 w-4 text-[var(--risk-ink)]" />
         ) : (
-          <div className="h-4 w-4" />
+          <CheckCircle className="h-4 w-4 text-[var(--brand-ink)]" />
         )}
         <span className="text-xs font-semibold text-gray-700">
           财报数据
-          {score !== null && score !== undefined && (
-            <span className={`ml-2 font-bold ${scoreColor}`}>
-              {score.toFixed(1)}/10
-            </span>
-          )}
         </span>
       </div>
       <div className="flex items-center gap-2 text-xs text-gray-500">
         <span>来源: {providerLabels[data.provider] || data.provider}</span>
+        {hasWarnings && <span>{data.warnings.length} 条提示</span>}
       </div>
     </div>
   );
@@ -260,8 +241,7 @@ export function EnhancedEarningsSnapshotPanel({ data }: EnhancedEarningsSnapshot
 
   return (
     <section className="space-y-4">
-      {/* 数据质量头部 */}
-      <DataQualityHeader data={data} />
+      <DataStatusHeader data={data} />
 
       {/* 主要内容 */}
       <div className="rounded-[8px] border border-border bg-white p-4 sm:p-5">

@@ -4,15 +4,15 @@ import { ChevronLeft } from 'lucide-react';
 import { TickerInputForm } from '@/components/generate/TickerInputForm';
 
 export const metadata: Metadata = {
-  title: 'Executive Investment View｜Moki Market',
-  description: '输入股票代码、Ticker 或中文名，生成面向买方研究流程的执行视图。',
+  title: 'Buy-Side Research Report - Moki Market',
+  description: 'Generate a source-backed buy-side research report draft from a ticker and optional source excerpts.',
   openGraph: {
-    title: 'Executive Investment View｜Moki Market',
-    description: '输入股票代码、Ticker 或中文名，生成面向买方研究流程的执行视图。',
+    title: 'Buy-Side Research Report - Moki Market',
+    description: 'Generate a source-backed buy-side research report draft from a ticker and optional source excerpts.',
   },
   twitter: {
-    title: 'Executive Investment View｜Moki Market',
-    description: '输入股票代码、Ticker 或中文名，生成面向买方研究流程的执行视图。',
+    title: 'Buy-Side Research Report - Moki Market',
+    description: 'Generate a source-backed buy-side research report draft from a ticker and optional source excerpts.',
   },
 };
 
@@ -35,25 +35,25 @@ export default async function GeneratePage({ searchParams }: GeneratePageProps) 
           className="mb-5 inline-flex h-9 items-center gap-2 rounded-[8px] border border-transparent px-3 text-sm font-medium text-[oklch(0.42_0.018_160)] transition-colors hover:border-border hover:bg-white hover:text-[oklch(0.2_0.018_160)]"
         >
           <ChevronLeft className="h-4 w-4" aria-hidden="true" />
-          返回首页
+          Back
         </Link>
 
         <section className="mb-5 rounded-[8px] border border-border bg-white p-5 shadow-[0_12px_40px_-32px_rgba(0,0,0,0.28)] sm:p-6">
           <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(300px,0.78fr)] lg:items-end">
             <div className="min-w-0">
               <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[var(--brand-border)] bg-[var(--brand-soft)] px-3 py-1 text-xs font-semibold text-[var(--brand-ink)]">
-                v0.3.7 Report Pivot
+                Buy-Side Report UI
               </div>
               <h1 className="mb-3 text-3xl font-bold leading-tight text-[oklch(0.16_0.014_160)] sm:text-4xl">
-                Executive Investment View
+                Buy-Side Research Report
               </h1>
               <p className="max-w-3xl text-sm leading-relaxed text-[oklch(0.43_0.018_160)] sm:text-base">
-                输入股票代码 / Ticker / 中文名，生成围绕财报、公司指引、买方情景和证据引用组织的研究报告占位结构。
+                Input a ticker and optional source excerpt to generate an investment view, key debates, business quality, scenario lanes, monitoring plan, and source audit.
               </p>
             </div>
 
             <div className="grid grid-cols-2 gap-2 text-xs">
-              {['Executive Summary', 'Earnings & Guidance', 'Scenario Map', 'Evidence References'].map((item) => (
+              {['Investment View', 'Business Quality', 'Technical Structure', 'Source Audit'].map((item) => (
                 <div key={item} className="rounded-[8px] border border-border bg-[oklch(0.992_0.005_85)] px-3 py-2 font-semibold text-[oklch(0.24_0.016_160)]">
                   {item}
                 </div>

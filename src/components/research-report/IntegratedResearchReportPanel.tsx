@@ -62,6 +62,10 @@ const priorityStyles: Record<IntegratedReportPriority, string> = {
 export function IntegratedResearchReportPanel({ report }: IntegratedResearchReportPanelProps) {
   const integrated = report.integratedReport;
   const { readiness, sourceAudit } = integrated;
+  const chartLabel = sourceAudit.technicalChartAvailable
+    ? `${sourceAudit.technicalChartBarCount} bars / ${sourceAudit.technicalChartInterval ?? 'interval n/a'}`
+    : 'chart pending';
+  const dataAsOf = sourceAudit.technicalDataAsOf?.slice(0, 10);
 
   return (
     <div className="space-y-4">
@@ -85,6 +89,25 @@ export function IntegratedResearchReportPanel({ report }: IntegratedResearchRepo
         <p className="mb-4 rounded-[8px] border border-[var(--brand-border)] bg-[var(--brand-soft)] p-3 text-sm leading-relaxed text-[var(--brand-ink)]">
           {integrated.executiveNarrative}
         </p>
+
+        <div className="mb-4 grid gap-2 md:grid-cols-4">
+          <div className="rounded-[8px] border border-border bg-white p-3">
+            <div className="mb-1 text-[11px] font-semibold uppercase tracking-normal text-[oklch(0.48_0.018_160)]">Source</div>
+            <div className="text-sm font-semibold text-[oklch(0.18_0.014_160)]">{readiness.sourceStatus}</div>
+          </div>
+          <div className="rounded-[8px] border border-border bg-white p-3">
+            <div className="mb-1 text-[11px] font-semibold uppercase tracking-normal text-[oklch(0.48_0.018_160)]">Buy-side</div>
+            <div className="text-sm font-semibold text-[oklch(0.18_0.014_160)]">{readiness.buySideStatus}</div>
+          </div>
+          <div className="rounded-[8px] border border-border bg-white p-3">
+            <div className="mb-1 text-[11px] font-semibold uppercase tracking-normal text-[oklch(0.48_0.018_160)]">Technical</div>
+            <div className="text-sm font-semibold text-[oklch(0.18_0.014_160)]">{readiness.technicalStatus}</div>
+          </div>
+          <div className="rounded-[8px] border border-border bg-white p-3">
+            <div className="mb-1 text-[11px] font-semibold uppercase tracking-normal text-[oklch(0.48_0.018_160)]">K-line</div>
+            <div className="truncate text-sm font-semibold text-[oklch(0.18_0.014_160)]">{chartLabel}</div>
+          </div>
+        </div>
 
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-[8px] border border-border bg-[oklch(0.992_0.005_85)] p-3">
@@ -110,8 +133,11 @@ export function IntegratedResearchReportPanel({ report }: IntegratedResearchRepo
               <LineChart className="h-3.5 w-3.5" aria-hidden="true" />
               Technical
             </div>
-            <div className="truncate font-mono text-xs font-semibold text-[oklch(0.18_0.014_160)]">
+            <div className="truncate font-mono text-xs font-semibold text-[oklch(0.18_0.014_160)]" title={sourceAudit.technicalProvider}>
               {sourceAudit.technicalProvider}
+            </div>
+            <div className="mt-1 truncate text-[11px] text-[oklch(0.48_0.018_160)]">
+              {dataAsOf ? `as of ${dataAsOf}` : 'as of n/a'}
             </div>
           </div>
           <div className="rounded-[8px] border border-border bg-[oklch(0.992_0.005_85)] p-3">
@@ -124,6 +150,15 @@ export function IntegratedResearchReportPanel({ report }: IntegratedResearchRepo
             </div>
           </div>
         </div>
+        {sourceAudit.sourceSummary.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {sourceAudit.sourceSummary.slice(0, 5).map((item) => (
+              <span key={item} className="rounded-full border border-border bg-white px-2.5 py-1 text-[10px] font-medium text-[oklch(0.42_0.018_160)]">
+                {item}
+              </span>
+            ))}
+          </div>
+        )}
       </section>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.42fr)]">

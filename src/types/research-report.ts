@@ -6,13 +6,17 @@ import type {
   FactRecord,
 } from './evidence';
 
-export const RESEARCH_REPORT_SCHEMA_VERSION = 'v0.4.6' as const;
+export const RESEARCH_REPORT_SCHEMA_VERSION = 'v0.5.3' as const;
 
 export type ResearchReportSchemaVersion = typeof RESEARCH_REPORT_SCHEMA_VERSION;
 
 export type ResearchReportType = 'executive-investment-view';
 
 export type ResearchReportStatus = 'snapshot' | 'generated' | 'fallback';
+
+export type ResearchReportGenerationMethod =
+  | 'llm_research_report_json'
+  | 'legacy_adapter_fallback';
 
 export type ResearchReportSectionId =
   | 'executive_summary'
@@ -32,8 +36,17 @@ export type EvidenceWeight = 'primary' | 'supporting' | 'context' | 'fallback';
 export type ResearchSourceIngestionMethod =
   | 'legacy_card'
   | 'research_data_layer'
+  | 'provided_source'
   | 'manual_entry'
   | 'fallback';
+
+export type ResearchSourceInputType =
+  | 'company_filing'
+  | 'earnings_transcript'
+  | 'news'
+  | 'data_provider'
+  | 'manual_note'
+  | 'other';
 
 export type ResearchSourceIngestionRecordStatus =
   | 'ingested'
@@ -70,6 +83,16 @@ export interface ResearchReportExecutiveSummary {
   bearCase?: string;
 }
 
+export interface ResearchReportGenerationState {
+  method: ResearchReportGenerationMethod;
+  generatedAt: string;
+  provider: string;
+  model?: string;
+  nativeJson: boolean;
+  fallbackUsed: boolean;
+  warnings: string[];
+}
+
 export interface ResearchReportSourceIngestionState {
   status: SourceIngestionStatus;
   method: ResearchSourceIngestionMethod;
@@ -78,7 +101,54 @@ export interface ResearchReportSourceIngestionState {
   lastIngestedAt?: string;
   sourceSummary: string[];
   warnings: string[];
+  chunks: ResearchSourceChunk[];
   records: ResearchSourceIngestionRecord[];
+}
+
+export interface ResearchSourceInputFact {
+  id?: string;
+  kind: FactRecord['kind'];
+  label: string;
+  value?: FactRecord['value'];
+  numericValue?: number;
+  unit: FactRecord['unit'];
+  periodLabel?: string;
+  fiscalYear?: string;
+  fiscalQuarter?: string;
+  source?: string;
+  quality?: FactQuality;
+  evidenceIds?: string[];
+  warnings?: string[];
+}
+
+export interface ResearchSourceInput {
+  id?: string;
+  title: string;
+  sourceLabel: string;
+  sourceType: ResearchSourceInputType | string;
+  sourceUrl?: string;
+  publishedAt?: string;
+  fetchedAt?: string;
+  text?: string;
+  snippets?: string[];
+  facts?: ResearchSourceInputFact[];
+  warnings?: string[];
+}
+
+export interface ResearchSourceChunk {
+  id: string;
+  sourceId: string;
+  chunkIndex: number;
+  title: string;
+  text: string;
+  evidenceId: string;
+  sourceLabel: string;
+  sourceType: string;
+  sourceUrl?: string;
+  publishedAt?: string;
+  fetchedAt?: string;
+  tokenEstimate: number;
+  warnings: string[];
 }
 
 export interface ResearchSourceIngestionRecord {
@@ -93,6 +163,7 @@ export interface ResearchSourceIngestionRecord {
   publishedAt?: string;
   fetchedAt?: string;
   snippet?: string;
+  chunkIds?: string[];
   evidenceIds: string[];
   factIds: string[];
   warnings: string[];
@@ -419,6 +490,29 @@ export interface TechnicalDataZone {
   warnings: string[];
 }
 
+export interface TechnicalKLineBar {
+  date: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+  ema5?: number;
+  ema10?: number;
+  ema20?: number;
+  ema50?: number;
+}
+
+export interface TechnicalKLineChart {
+  symbol: string;
+  range: string;
+  interval: string;
+  currency?: string;
+  dataAsOf?: string;
+  bars: TechnicalKLineBar[];
+  warnings: string[];
+}
+
 export interface TechnicalDataSnapshot {
   id: string;
   ticker: string;
@@ -427,6 +521,7 @@ export interface TechnicalDataSnapshot {
   generatedAt: string;
   dataAsOf?: string;
   liveDataAvailable: boolean;
+  chart?: TechnicalKLineChart;
   points: TechnicalDataPoint[];
   zones: TechnicalDataZone[];
   sourceSummary: string[];
@@ -503,6 +598,10 @@ export interface IntegratedReportSourceAudit {
   fallbackEvidenceCount: number;
   technicalProvider: TechnicalDataProvider;
   liveTechnicalDataAvailable: boolean;
+  technicalChartAvailable: boolean;
+  technicalChartBarCount: number;
+  technicalChartInterval?: string;
+  technicalDataAsOf?: string;
   sourceSummary: string[];
 }
 
@@ -536,6 +635,7 @@ export interface ResearchReport {
   entity: ResearchReportEntity;
   generatedAt: string;
   updatedAt: string;
+  generationState?: ResearchReportGenerationState;
   executiveSummary: ResearchReportExecutiveSummary;
   sourceIngestionState: ResearchReportSourceIngestionState;
   sections: ResearchReportSection[];
@@ -543,6 +643,7 @@ export interface ResearchReport {
   factReferences: ResearchReportFactReference[];
   evidenceLayer: ResearchReportEvidenceLayer;
   buySideReport: BuySideResearchReport;
+  technicalDataSnapshot?: TechnicalDataSnapshot;
   technicalDashboard: TechnicalDashboard;
   integratedReport: IntegratedResearchReport;
   followUpResearch: ResearchReportFollowUpTask[];

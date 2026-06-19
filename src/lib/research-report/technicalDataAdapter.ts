@@ -19,8 +19,8 @@ import type {
 type TechnicalAdapterInput = Omit<ResearchReport, 'technicalDashboard' | 'integratedReport'>;
 
 const LEGACY_PROVIDER: TechnicalDataProvider = 'legacy_technical_context';
-const ADAPTER_WARNING = 'Technical data adapter is using legacy technical context; live market data provider is not connected yet.';
-const LIVE_DATA_WARNING = 'Live price, volume, options, and calculated technical indicators are unavailable in v0.4.5.';
+const ADAPTER_WARNING = 'Technical Structure Dashboard fell back to ResearchReport context because no live technical snapshot is available.';
+const LIVE_DATA_WARNING = 'Yahoo chart K-line adapter is available in v0.5.2, but this report is using the legacy technical-context fallback.';
 
 function unique(items: Array<string | undefined>) {
   return Array.from(new Set(items.filter(Boolean))) as string[];
@@ -157,6 +157,12 @@ function zoneFromSectionItem(
 }
 
 function buildSnapshot(report: TechnicalAdapterInput): TechnicalDataSnapshot {
+  const liveSnapshot = report.technicalDataSnapshot;
+
+  if (liveSnapshot?.liveDataAvailable && liveSnapshot.status !== 'unavailable') {
+    return liveSnapshot;
+  }
+
   const technical = sectionById(report, 'technical_context');
   const points = [
     pointFromClaim(report, claimByTitle(technical, 'Price action'), 'price_action', 'Price Action'),
@@ -167,6 +173,7 @@ function buildSnapshot(report: TechnicalAdapterInput): TechnicalDataSnapshot {
   const warnings = unique([
     ADAPTER_WARNING,
     LIVE_DATA_WARNING,
+    ...(liveSnapshot?.warnings ?? []),
     ...points.flatMap((point) => point.warnings),
     ...zones.flatMap((zone) => zone.warnings),
   ]).slice(0, 10);
@@ -190,7 +197,7 @@ function buildSnapshot(report: TechnicalAdapterInput): TechnicalDataSnapshot {
 }
 
 function reviewStatus(point: TechnicalDataPoint): TechnicalDashboardReviewStatus {
-  if (point.evidenceIds.length > 0 || point.factIds.length > 0) {
+  if (point.evidenceIds.length > 0 || point.factIds.length > 0 || point.sourceIds.length > 0) {
     return 'linked';
   }
 
@@ -198,6 +205,8 @@ function reviewStatus(point: TechnicalDataPoint): TechnicalDashboardReviewStatus
 }
 
 function indicatorFromPoint(point: TechnicalDataPoint): TechnicalDashboardIndicator {
+  const isMarketData = point.provider === 'market_data_provider';
+
   return {
     id: `technical-${point.category}`,
     category: point.category,
@@ -211,7 +220,9 @@ function indicatorFromPoint(point: TechnicalDataPoint): TechnicalDashboardIndica
     sourceIds: point.sourceIds,
     note: point.status === 'unavailable'
       ? 'Technical data adapter could not map this field.'
-      : 'Adapted through the v0.4.5 technical data adapter.',
+      : isMarketData
+        ? 'Calculated from Yahoo chart K-line data through the v0.5.2 technical adapter.'
+        : 'Mapped through the legacy ResearchReport technical-context fallback.',
     provider: point.provider,
     dataStatus: point.status,
     asOf: point.asOf,
@@ -244,13 +255,17 @@ function indicatorFromMonitor(
 }
 
 function zoneFromDataZone(zone: TechnicalDataZone): TechnicalDashboardZone {
+  const isMarketData = zone.provider === 'market_data_provider';
+
   return {
     id: zone.id.replace('technical-data-', 'technical-'),
     label: zone.label,
     level: zone.level,
     zoneType: zone.zoneType,
     signal: zone.signal,
-    note: 'Adapted through the v0.4.5 technical data adapter.',
+    note: isMarketData
+      ? 'Calculated from Yahoo chart K-line data through the v0.5.2 technical adapter.'
+      : 'Mapped through the legacy ResearchReport technical-context fallback.',
     provider: zone.provider,
     dataStatus: zone.status,
     asOf: zone.asOf,
@@ -295,17 +310,54 @@ function dashboardStatus(snapshot: TechnicalDataSnapshot, report: TechnicalAdapt
     return 'blocked';
   }
 
-  if (snapshot.status === 'partial' || report.evidenceLayer.missingReferences.length > 0) {
+  if (snapshot.provider === 'market_data_provider' && snapshot.liveDataAvailable) {
+    if (snapshot.status === 'adapted' && report.evidenceLayer.missingReferences.length === 0) {
+      return 'adapted';
+    }
+
     return 'partial_adapter';
   }
 
-  return 'adapted';
+  if (snapshot.status === 'partial' || report.evidenceLayer.missingReferences.length > 0) {
+    return 'partial_mock';
+  }
+
+  return 'mock';
+}
+
+function dashboardMode(snapshot: TechnicalDataSnapshot): TechnicalDashboard['mode'] {
+  if (snapshot.provider === 'market_data_provider' && snapshot.liveDataAvailable) {
+    return 'technical_data_adapter';
+  }
+
+  if (snapshot.provider === LEGACY_PROVIDER) {
+    return 'mock_from_research_report';
+  }
+
+  return 'adapter_pending';
+}
+
+function dashboardHeadline(technical: ResearchReportSection | undefined, snapshot: TechnicalDataSnapshot) {
+  if (snapshot.provider === 'market_data_provider' && snapshot.liveDataAvailable) {
+    return `Yahoo chart K-line adapter is live as of ${snapshot.dataAsOf?.slice(0, 10) ?? 'latest available session'}; ${technical?.summary ?? 'technical context is linked to market data.'}`;
+  }
+
+  return technical?.summary ?? 'Technical context is pending market data adapter input.';
+}
+
+function dashboardDisclaimer(snapshot: TechnicalDataSnapshot) {
+  if (snapshot.provider === 'market_data_provider' && snapshot.liveDataAvailable) {
+    return 'Technical Structure Dashboard uses Yahoo chart K-line data and calculated indicators for research workflow context only. It is not investment advice, a rating, or a trading instruction.';
+  }
+
+  return 'Technical Structure Dashboard output is a fallback mock for research workflow design only. Live market data was not available for this report and the output is not investment advice.';
 }
 
 export function buildTechnicalDashboardFromAdapter(report: TechnicalAdapterInput): TechnicalDashboard {
   const technical = sectionById(report, 'technical_context');
   const snapshot = buildSnapshot(report);
   const status = dashboardStatus(snapshot, report);
+  const mode = dashboardMode(snapshot);
   const indicators = [
     ...snapshot.points.map(indicatorFromPoint),
     ...report.buySideReport.monitoringPlan.slice(0, 4).map((item, index) => indicatorFromMonitor(report, item, index)),
@@ -320,14 +372,14 @@ export function buildTechnicalDashboardFromAdapter(report: TechnicalAdapterInput
 
   return {
     id: `technical-dashboard-${report.slug}`,
-    title: `${report.entity.ticker} Technical Data Dashboard`,
+    title: `${report.entity.ticker} Technical Structure Dashboard`,
     status,
-    mode: 'legacy_context_adapter',
+    mode,
     generatedAt: report.updatedAt,
-    headline: technical?.summary ?? 'Technical context is pending market data adapter input.',
+    headline: dashboardHeadline(technical, snapshot),
     summary: {
       status,
-      mode: 'legacy_context_adapter',
+      mode,
       generatedAt: report.updatedAt,
       adapterReady: snapshot.status !== 'unavailable',
       adapterStatus: snapshot.status,
@@ -344,6 +396,6 @@ export function buildTechnicalDashboardFromAdapter(report: TechnicalAdapterInput
     zones: snapshot.zones.map(zoneFromDataZone),
     scenarioReadThrough: buildScenarioReadThrough(report),
     warnings,
-    disclaimer: 'Technical data adapter output is for research workflow design only. It does not use live market data in v0.4.5 and is not investment advice.',
+    disclaimer: dashboardDisclaimer(snapshot),
   };
 }

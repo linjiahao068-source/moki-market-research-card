@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   Activity,
@@ -18,6 +19,7 @@ import { BuySideReportPanel } from './research-report/BuySideReportPanel';
 import { EvidenceReferencePanel } from './research-report/EvidenceReferencePanel';
 import { IntegratedResearchReportPanel } from './research-report/IntegratedResearchReportPanel';
 import { TechnicalDashboardPanel } from './research-report/TechnicalDashboardPanel';
+import { attachTechnicalDataSnapshotToReport } from '@/lib/research-report/attachTechnicalDataSnapshot';
 import { ResearchCardSection } from './ResearchCardSection';
 import { EvidenceItem } from './EvidenceItem';
 import { DisclaimerBox } from './DisclaimerBox';
@@ -41,9 +43,68 @@ const sections = [
 ];
 
 export function ResearchCard({ card, report }: ResearchCardProps) {
+  const [liveReport, setLiveReport] = useState<ResearchReport | null>(null);
+  const [isTechnicalDataLoading, setIsTechnicalDataLoading] = useState(false);
+  const [technicalDataError, setTechnicalDataError] = useState('');
+  const activeReport = liveReport?.slug === report?.slug ? liveReport : report;
   const topMetrics = card.fundamentals.keyMetrics.slice(0, 3);
   const topRisks = card.fundamentals.risks.slice(0, 3);
   const topSteps = card.nextSteps.slice(0, 3);
+
+  useEffect(() => {
+    if (!report || report.technicalDashboard.dataSnapshot.chart?.bars.length) {
+      return undefined;
+    }
+
+    const controller = new AbortController();
+    const baseReport = report;
+
+    async function fetchTechnicalData() {
+      setTechnicalDataError('');
+      setIsTechnicalDataLoading(true);
+
+      try {
+        const response = await fetch('/api/technical-data', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ card }),
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          setTechnicalDataError('Technical K-line data is unavailable for this report.');
+          return;
+        }
+
+        const payload = await response.json() as {
+          snapshot?: NonNullable<ResearchReport['technicalDataSnapshot']>;
+        };
+
+        if (!payload.snapshot) {
+          setTechnicalDataError('Technical K-line data is unavailable for this report.');
+          return;
+        }
+
+        setLiveReport(attachTechnicalDataSnapshotToReport(baseReport, payload.snapshot));
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          setTechnicalDataError(error instanceof Error ? error.message : 'Technical K-line data request failed.');
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsTechnicalDataLoading(false);
+        }
+      }
+    }
+
+    void fetchTechnicalData();
+
+    return () => {
+      controller.abort();
+    };
+  }, [card, report]);
 
   return (
     <main className="min-h-screen bg-background">
@@ -68,7 +129,7 @@ export function ResearchCard({ card, report }: ResearchCardProps) {
                   </div>
                   <div className="min-w-0">
                     <div className="text-sm font-semibold text-[oklch(0.18_0.014_160)]">
-                      Moki Market Research Card
+                      Moki Market ResearchReport
                     </div>
                   </div>
                 </div>
@@ -187,15 +248,15 @@ export function ResearchCard({ card, report }: ResearchCardProps) {
               </div>
             </ResearchCardSection>
 
-            {report?.integratedReport && (
+            {activeReport?.integratedReport && (
               <ResearchCardSection id="integrated" title="2. Integrated Research Report" variant="elevated">
-                <IntegratedResearchReportPanel report={report} />
+                <IntegratedResearchReportPanel report={activeReport} />
               </ResearchCardSection>
             )}
 
-            {report?.buySideReport && (
+            {activeReport?.buySideReport && (
               <ResearchCardSection id="buy-side" title="3. Buy-Side Report Generator" variant="elevated">
-                <BuySideReportPanel report={report} />
+                <BuySideReportPanel report={activeReport} />
               </ResearchCardSection>
             )}
 
@@ -335,8 +396,18 @@ export function ResearchCard({ card, report }: ResearchCardProps) {
 
             <ResearchCardSection id="technical" title="7. Technical Data Adapter">
               <div className="space-y-5">
-                {report?.technicalDashboard && (
-                  <TechnicalDashboardPanel report={report} />
+                {isTechnicalDataLoading && (
+                  <div className="rounded-[8px] border border-[var(--brand-border)] bg-[var(--brand-soft)] px-3 py-2 text-xs font-semibold text-[var(--brand-ink)]">
+                    Loading Yahoo K-line chart...
+                  </div>
+                )}
+                {technicalDataError && (
+                  <div className="rounded-[8px] border border-[var(--risk-border)] bg-[var(--risk-soft)] px-3 py-2 text-xs leading-relaxed text-[var(--risk-ink)]">
+                    {technicalDataError}
+                  </div>
+                )}
+                {activeReport?.technicalDashboard && (
+                  <TechnicalDashboardPanel report={activeReport} />
                 )}
 
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
@@ -377,8 +448,8 @@ export function ResearchCard({ card, report }: ResearchCardProps) {
 
             <ResearchCardSection id="evidence" title="8. 证据链" variant="subtle">
               <div className="pt-1">
-                {report ? (
-                  <EvidenceReferencePanel report={report} />
+                {activeReport ? (
+                  <EvidenceReferencePanel report={activeReport} />
                 ) : (
                   card.evidence.map((ev) => (
                     <EvidenceItem key={ev.id} evidence={ev} />
@@ -426,7 +497,7 @@ export function ResearchCard({ card, report }: ResearchCardProps) {
                 </div>
                 <span className="font-semibold text-[oklch(0.25_0.035_155)]">Moki Market</span>
               </div>
-              <span className="font-mono">Research Card · {card.updatedAt}</span>
+              <span className="font-mono">ResearchReport · {card.updatedAt}</span>
             </footer>
           </div>
 

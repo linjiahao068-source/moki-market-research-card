@@ -1,7 +1,7 @@
 import { createHash } from 'crypto';
 import { NextResponse } from 'next/server';
 
-type CacheNamespace = 'basic-data' | 'earnings-snapshot' | 'research-brief' | 'serenity-memo';
+type CacheNamespace = 'basic-data' | 'earnings-snapshot' | 'research-brief' | 'research-report' | 'serenity-memo' | 'technical-data';
 
 type CacheVisibility = 'cdn' | 'internal' | 'none';
 
@@ -23,7 +23,7 @@ interface JsonResponseOptions {
   headers?: Record<string, string>;
 }
 
-const CACHE_VERSION = 'v0.3.6';
+const CACHE_VERSION = 'v0.5.3';
 const VOLATILE_KEYS = new Set(['generatedAt', 'fetchedAt']);
 
 function readPositiveInt(name: string, fallback: number, max: number) {
@@ -109,7 +109,7 @@ export function createRouteCacheKey(namespace: CacheNamespace, payload: unknown,
 }
 
 export function getRouteCacheTtlSeconds(namespace: CacheNamespace) {
-  if (namespace === 'research-brief' || namespace === 'serenity-memo') {
+  if (namespace === 'research-brief' || namespace === 'research-report' || namespace === 'serenity-memo') {
     return readPositiveInt('LLM_CACHE_TTL_SECONDS', 1800, 86400);
   }
 

@@ -1,5 +1,7 @@
 # Moki Market Research Card
 
+> v0.5.3: `/generate` now promotes Integrated Research Report as the primary output, unifying source ingestion, evidence references, Buy-Side Research Report, Yahoo chart K-line technical dashboard, readiness, source audit, and review queue. Buy-Side and Technical sections remain visible as report pillars below the integrated readout.
+
 面向中文美股用户的静态研究卡原型。项目将行情、新闻、财报线索、产业链变化和市场波动整理为可读、可追踪、可复盘的研究报告视图。
 
 本项目只提供研究辅助和教育参考，不构成投资建议。
@@ -12,7 +14,7 @@
 - ORCL、NVDA、TSLA 三张静态样例卡
 - 统一 `Executive Investment View` 用户入口
 - `ResearchCard` legacy 兼容类型和模板
-- `ResearchReport` schema foundation、Evidence Reference Layer、Research Source Ingestion、Buy-Side Report Generator、Technical Dashboard Mock、Technical Data Adapter、Integrated Research Report、兼容 adapter 和静态报告数据入口
+- `ResearchReport` schema foundation、Evidence Reference Layer、Research Source Ingestion、Buy-Side Report Generator、Technical Dashboard Mock、Technical Data Adapter、Integrated Research Report、v0.4.7 pivot repair、v0.4.8 ResearchReport Generation API、v0.4.9 Source Ingestion Real Layer、v0.5.0 Buy-Side Report Product UI、v0.5.1 Technical Structure Dashboard Mock、v0.5.2 Yahoo Chart Technical Data Adapter、v0.5.3 Integrated Research Report Product UI 和静态报告数据入口
 - 桌面端和移动端响应式布局
 - 黑白灰、哑光金与红棕风险色设计系统
 
@@ -66,7 +68,7 @@ src/
   components/research-report/ ResearchReport 展示组件
   components/ui/        通用基础组件
   data/                 静态研究卡与 ResearchReport 数据入口
-  lib/research-report/  ResearchCard -> ResearchReport adapter、source ingestion、evidence layer、buy-side generator、technical data adapter 与 integrated report builder
+  lib/research-report/  ResearchReport schema、legacy adapter、source ingestion、evidence layer、buy-side generator、technical data adapter 与 integrated report builder
   types/                ResearchCard、ResearchReport 与证据领域类型
 docs/
   product.md
@@ -79,6 +81,13 @@ docs/
   v0.4.4-technical-dashboard-mock.md
   v0.4.5-technical-data-adapter.md
   v0.4.6-integrated-research-report.md
+  v0.4.7-pivot-repair.md
+  v0.4.8-research-report-generation-api.md
+  v0.4.9-research-source-ingestion-real-layer.md
+  v0.5.0-buy-side-report-product-ui.md
+  v0.5.1-technical-structure-dashboard-mock.md
+  v0.5.2-technical-data-adapter-real.md
+  v0.5.3-integrated-research-report-product-ui.md
   claude-code-handoff.md
   Moki-Market-Design-UI-Spec-v1.0.pdf
 ```
@@ -91,7 +100,7 @@ docs/
 4. 不创建专属页面或专属组件。
 5. 运行 lint 和 build。
 
-新增数据后，样例库和 `research-card/[slug]` 静态路由会自动包含该研究卡。`src/data/researchReports.ts` 会通过兼容 adapter 生成对应的 `ResearchReport` 入口。
+新增数据后，样例库和 `research-card/[slug]` 静态路由会自动包含该研究卡。`src/data/researchReports.ts` 当前仍通过兼容 adapter 生成对应的静态 `ResearchReport` 入口；v0.5.3 起 `/generate` 将 Integrated Research Report 作为主输出，Buy-Side Research Report 和 Technical Structure Dashboard 作为 report pillars 展示，旧模块保留为 supporting diagnostics。
 
 ## 设计系统
 

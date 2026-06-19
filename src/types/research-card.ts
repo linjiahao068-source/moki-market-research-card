@@ -2,6 +2,7 @@ import type { EarningsSnapshotData, GuidanceMetricComparison } from './earnings'
 import type { DataQualityReport, EvidenceRecord, FactRecord, LLMResearchInput } from './evidence';
 import type { GlobalGuidanceEvidence } from './global-stock-data';
 import type { ResearchBrief } from './research-brief';
+import type { ResearchSourceInput, TechnicalDataSnapshot } from './research-report';
 import type { BullBaseBearScenarioSummary } from './scenario';
 import type { SerenityAnalysisBundle } from './serenity';
 import type { SerenityMemo } from './serenity-memo';
@@ -87,6 +88,8 @@ export interface ResearchCard {
   events: Events;
   technicalContext: TechnicalContext;
   evidence: Evidence[];
+  sourceInputs?: ResearchSourceInput[];
+  technicalDataSnapshot?: TechnicalDataSnapshot;
   researchEvidence?: EvidenceRecord[];
   facts?: FactRecord[];
   factQuality?: DataQualityReport;

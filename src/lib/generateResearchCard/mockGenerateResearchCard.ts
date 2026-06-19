@@ -74,7 +74,7 @@ function buildCopy(displaySymbol: string, companyName: string, theme: string, ca
         { title: 'Executive Summary', body: '把最需要先读的结论、关键问题和证据缺口放在首屏。' },
         { title: 'Earnings & Guidance', body: '对齐单季度 actual、consensus、management guidance 和缺失原因。' },
         { title: 'Scenario Map', body: '把 Bull / Base / Bear 情景拆成变量、触发条件和待验证事项。' },
-        { title: 'Evidence References', body: '保留来源、更新时间和摘录，方便后续 ResearchReport schema 接管。' },
+        { title: 'Evidence References', body: '保留来源、更新时间和摘录，并进入统一 References 结构。' },
       ],
       keySignals: ['收入与 EPS 兑现', '管理层指引变化', '关键业务指标', 'Bull/Base/Bear 触发条件', '证据缺口'],
       risks: ['数据覆盖不足', '指引与共识口径不一致', '关键业务指标走弱', '情景假设缺少来源支撑'],
